@@ -13,7 +13,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License.
  *
- *  $Id: 8250_pnp.c,v 1.10 2002/07/21 21:32:30 rmk Exp $
+ *  $Id: 8250_pnp.c,v 1.1.1.1 2007/08/03 05:47:12 johnson Exp $
  */
 #include <linux/module.h>
 #include <linux/init.h>

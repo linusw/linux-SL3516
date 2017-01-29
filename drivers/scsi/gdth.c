@@ -30,6 +30,12 @@
  * Linux kernel 2.2.x, 2.4.x, 2.6.x supported                           *
  *                                                                      *
  * $Log: gdth.c,v $
+ * Revision 1.1.1.1  2007/08/03 05:47:00  johnson
+ * init
+ *
+ * Revision 1.1.1.1  2006/04/03 08:40:58  amos_lee
+ * initial
+ *
  * Revision 1.73  2004/03/31 13:33:03  achim
  * Special command 0xfd implemented to detect 64-bit DMA support
  *

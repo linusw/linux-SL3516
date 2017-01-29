@@ -1,4 +1,4 @@
-/*  $Id: loop.s,v 1.23 2000/03/20 09:49:06 warner Exp $
+/*  $Id: xircom_pgs.S,v 1.1.1.1 2007/08/28 03:41:46 johnson Exp $
  * 
  *  Firmware for the Keyspan PDA Serial Adapter, a USB serial port based on
  *  the EzUSB microcontroller.

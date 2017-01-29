@@ -19,7 +19,7 @@
  *	08-Jul-2005  BJD  Fix OOPS when no platform data supplied
  *	20-Oct-2005  BJD  Fix timing calculation bug
  *
- * $Id: s3c2410.c,v 1.20 2005/11/07 11:14:31 gleixner Exp $
+ * $Id: s3c2410.c,v 1.1.1.1 2007/08/03 05:46:20 johnson Exp $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -2,7 +2,7 @@
 *  Define constants                                    *
 *                                                      *
 ********************************************************/
-#define VERSION_CLAW_H "$Revision: 1.6 $"
+#define VERSION_CLAW_H "$Revision: 1.1.1.1 $"
 /*-----------------------------------------------------*
 *     CCW command codes for CLAW protocol              *
 *------------------------------------------------------*/

@@ -47,12 +47,22 @@
 #include <linux/rmap.h>
 #include <linux/mempolicy.h>
 #include <linux/key.h>
+#include <linux/dma-mapping.h>
+#include <linux/pci.h>
 #include <net/sock.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
 #include <asm/setup.h>
 #include <asm/sections.h>
+#include <asm/arch/ipi.h>
+#include <asm/pgtable.h>
+#include <asm/pgalloc.h>
+
+
+#ifdef CONFIG_SL2312_SHARE_PIN
+	extern unsigned int share_pin_flag;
+#endif
 
 /*
  * This is one of the first .c files built. Error out early
@@ -76,6 +86,10 @@
  */
 #if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 95)
 #error Sorry, your GCC is too old. It builds incorrect kernels.
+#endif
+
+#ifdef CONFIG_GEMINI_IPI
+//void ipi_heart_bit();
 #endif
 
 static int init(void *);
@@ -119,6 +133,10 @@ extern void time_init(void);
 void (*late_time_init)(void);
 extern void softirq_init(void);
 
+#ifdef CONFIG_SL2312_LPC
+extern int InitLPCInterface(void);
+#endif
+
 /* Untouched command line (eg. for /proc) saved by arch-specific code. */
 char saved_command_line[COMMAND_LINE_SIZE];
 
@@ -127,6 +145,50 @@ static char *ramdisk_execute_command;
 
 /* Setup configured maximum number of CPUs to activate */
 static unsigned int max_cpus = NR_CPUS;
+
+//#define PWR_LED
+#ifdef PWR_LED
+#define PWR_LED_GPIO		7
+#define LED_ON		0
+#define LED_OFF		1
+pid_t pwr_led_pid;
+wait_queue_head_t   pwr_led_wait;
+void led_flash(void *data)
+{
+	unsigned long	timeout;
+	unsigned char	high=0;
+	daemonize("Power LED"); 
+	allow_signal(SIGKILL);
+	unsigned int start_time = jiffies;
+	
+	set_gemini_gpio_io_mode(PWR_LED_GPIO,1);
+	
+	while (1)
+	{
+		
+		high ^= 0x1;	// inverse
+		set_gemini_gpio_pin_status(PWR_LED_GPIO,high);
+		timeout = 1*HZ/2;
+		do
+		{
+			timeout = interruptible_sleep_on_timeout (&pwr_led_wait, timeout);
+		} while (!signal_pending (current) && (timeout > 0));
+	
+		if (signal_pending (current))
+		{
+			//			spin_lock_irq(&current->sigmask_lock);
+			flush_signals(current);
+			//			spin_unlock_irq(&current->sigmask_lock);
+			set_gemini_gpio_pin_status(PWR_LED_GPIO,LED_OFF);
+			break;
+		}
+		//if((jiffies - start_time)> 300*HZ){	// 3 minutes expire
+		//	set_gemini_gpio_pin_status(PWR_LED_GPIO,LED_OFF);
+		//	break;
+		//}
+	} 
+}
+#endif
 
 /*
  * Setup routine for controlling SMP activation
@@ -391,7 +453,33 @@ static void __init smp_init(void)
 static void noinline rest_init(void)
 	__releases(kernel_lock)
 {
+	unsigned int addr,data;
+	
 	kernel_thread(init, NULL, CLONE_FS | CLONE_SIGHAND);
+#ifdef PWR_LED	
+	init_waitqueue_head (&pwr_led_wait);
+	pwr_led_pid = kernel_thread ((void *)led_flash, NULL, CLONE_FS | CLONE_FILES);
+	if (pwr_led_pid < 0)
+    	{
+    		printk ("Unable to light Power LED\n");
+    	}
+#endif   
+
+	data = readl(IO_ADDRESS(SL2312_GLOBAL_BASE)+0x34);	// Clock Control Reg.
+#ifdef CONFIG_CPU2_CLOCK_OFF
+	data |= 0x1;
+#endif
+#ifdef CONFIG_IPSEC_CLOCK_OFF
+	data |= (1<<1);
+#endif
+#ifdef CONFIG_TVC_CLOCK_OFF
+	data |= (1<<12);
+#endif
+#ifdef CONFIG_USB_CLOCK_OFF
+	data |= (1<<6)|(1<<7);
+#endif
+	writel(data,IO_ADDRESS(SL2312_GLOBAL_BASE)+0x34);
+
 	numa_default_policy();
 	unlock_kernel();
 
@@ -446,6 +534,7 @@ asmlinkage void __init start_kernel(void)
 {
 	char * command_line;
 	extern struct kernel_param __start___param[], __stop___param[];
+	unsigned int reg;
 /*
  * Interrupts are still disabled. Do necessary setups, then
  * enable them
@@ -495,6 +584,9 @@ asmlinkage void __init start_kernel(void)
 	 * we've done PCI setups etc, and console_init() must be aware of
 	 * this. But we do want output early, in case something goes wrong.
 	 */
+#ifdef CONFIG_SL2312_LPC
+    InitLPCInterface();
+#endif	 
 	console_init();
 	if (panic_later)
 		panic(panic_later, panic_param);
@@ -508,6 +600,38 @@ asmlinkage void __init start_kernel(void)
 		initrd_start = 0;
 	}
 #endif
+
+#if defined(CONFIG_SCSI_SATA_LEPUS_MODULE) || defined(CONFIG_SCSI_SATA_LEPUS)
+	printk("Disable IDE...config to SATA mode\n");
+	reg = readl(IO_ADDRESS(SL2312_GLOBAL_BASE)+0x04);	//judge flash type
+	if((reg&0x03000000) == 0x01000000){
+		reg = readl(IO_ADDRESS(SL2312_GLOBAL_BASE)+GLOBAL_MISC_REG);
+		reg &= ~0x00000002 ;		// enable P.flash
+		writel(reg,IO_ADDRESS(SL2312_GLOBAL_BASE)+GLOBAL_MISC_REG);	
+	}
+
+	//micle add 20090203 for 1000FYPS with benson's advise begin
+	reg = readl(IO_ADDRESS(SL2312_GLOBAL_BASE)+GLOBAL_RESET_REG);
+       reg |=RESET_SATA0;
+       writel(reg,IO_ADDRESS(SL2312_GLOBAL_BASE)+GLOBAL_RESET_REG);    // Reset SATA module
+	mdelay(100);
+
+	reg = readl(IO_ADDRESS(SL2312_GLOBAL_BASE)+GLOBAL_MISC_REG);
+	//micle add 20090203 for 1000FYPS with benson's advise end
+
+	reg &= ~0x07000000;			// set iomux mode 0
+	reg |= 0x03000000;          //set mode 3  //micle add 20090203 for 1000FYPS with benson's advise 
+	writel(reg,IO_ADDRESS(SL2312_GLOBAL_BASE)+GLOBAL_MISC_REG);
+	
+	reg = readl(IO_ADDRESS(SL2312_SATA_BASE)+0x18);
+	reg |= 0x10;			// enable sata plug notification
+	writel(reg,IO_ADDRESS(SL2312_SATA_BASE)+0x18);	
+	
+	reg = readl(IO_ADDRESS(SL2312_SATA_BASE)+0x1C);
+	reg |= 0x10;			// enable sata plug notification
+	writel(reg,IO_ADDRESS(SL2312_SATA_BASE)+0x1C);	
+#endif
+
 	vfs_caches_init_early();
 	mem_init();
 	kmem_cache_init();
@@ -727,6 +851,9 @@ static int init(void * unused)
 				ramdisk_execute_command);
 	}
 
+#ifdef CONFIG_SL2312_SHARE_PIN
+	share_pin_flag = 0;
+#endif
 	/*
 	 * We try each of these until one succeeds.
 	 *
@@ -745,3 +872,25 @@ static int init(void * unused)
 
 	panic("No init found.  Try passing init= option to kernel.");
 }
+
+#if 0 //CONFIG_GEMINI_IPI
+void ipi_heart_bit()
+{
+	volatile struct s_mailbox *p_mbox = (struct s_mailbox *) __phys_to_virt(SHAREADDR);
+    int value;
+
+	printk("CPU1 ID test:\n");
+    if(getcpuid() != CPU1) {
+            printk("  CPU1 ID test failed\r\n");
+            while(1);
+    }
+    printk("  CPU1 ID test: Succeed\r\n");
+
+//	spin_lock_dt((spinlock_dt *)(&(p_mbox->lk)));
+	p_mbox->flag = MASTER_BIT | HEART_BIT;
+//	spin_unlock_dt((spinlock_dt *)(&(p_mbox->lk)));
+	//consistent_sync(__phys_to_virt(SHAREADDR), SHARE_MEM_SIZE, DMA_TO_DEVICE);
+	flush_cache_all();
+
+}
+#endif

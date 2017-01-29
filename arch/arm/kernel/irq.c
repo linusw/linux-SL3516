@@ -60,6 +60,8 @@ static LIST_HEAD(irq_pending);
 struct irqdesc irq_desc[NR_IRQS];
 void (*init_arch_irq)(void) __initdata = NULL;
 
+extern int fixup_irq(unsigned int irq);
+
 /*
  * No architecture-specific irq_finish function defined in arm/arch/irqs.h.
  */
@@ -535,8 +537,11 @@ static void do_pending_irqs(struct pt_regs *regs)
  */
 asmlinkage void asm_do_IRQ(unsigned int irq, struct pt_regs *regs)
 {
-	struct irqdesc *desc = irq_desc + irq;
+//	struct irqdesc *desc = irq_desc + irq;
+	struct irqdesc *desc ;
 
+	irq = fixup_irq(irq);
+    desc = irq_desc + irq;
 	/*
 	 * Some hardware gives randomly wrong interrupts.  Rather
 	 * than crashing, do something sensible.

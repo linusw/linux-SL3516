@@ -1,5 +1,5 @@
 /*
- * $Id: hid-ff.c,v 1.2 2002/04/18 22:02:47 jdeneux Exp $
+ * $Id: hid-ff.c,v 1.1.1.1 2007/08/28 03:41:43 johnson Exp $
  *
  *  Force feedback support for hid devices.
  *  Not all hid devices use the same protocol. For example, some use PID,

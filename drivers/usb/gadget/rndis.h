@@ -1,7 +1,7 @@
 /* 
  * RNDIS	Definitions for Remote NDIS
  * 
- * Version:	$Id: rndis.h,v 1.15 2004/03/25 21:33:46 robert Exp $
+ * Version:	$Id: rndis.h,v 1.1.1.1 2007/08/28 03:41:42 johnson Exp $
  * 
  * Authors:	Benedikt Spranger, Pengutronix
  * 		Robert Schwebel, Pengutronix

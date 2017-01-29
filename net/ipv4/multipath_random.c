@@ -2,7 +2,7 @@
  *              Random policy for multipath.
  *
  *
- * Version:	$Id: multipath_random.c,v 1.1.2.3 2004/09/21 08:42:11 elueck Exp $
+ * Version:	$Id: multipath_random.c,v 1.1.1.1 2007/08/03 05:49:44 johnson Exp $
  *
  * Authors:	Einar Lueck <elueck@de.ibm.com><lkml@einar-lueck.de>
  *

@@ -2,8 +2,8 @@
  *
  * Name:	skdrv2nd.h
  * Project:	GEnesis, PCI Gigabit Ethernet Adapter
- * Version:	$Revision: 1.10 $
- * Date:	$Date: 2003/12/11 16:04:45 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2007/08/03 05:46:36 $
  * Purpose:	Second header file for driver and all other modules
  *
  ******************************************************************************/

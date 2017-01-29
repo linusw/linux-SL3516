@@ -141,6 +141,11 @@ static struct scsi_driver sd_template = {
 	.end_flush		= sd_end_flush,
 };
 
+#if defined(CONFIG_SCSI_SATA_LEPUS_MODULE) || defined(CONFIG_SCSI_SATA_LEPUS)
+unsigned char sata0_name[4]={'N','U','L',0};
+unsigned char sata1_name[4]={'N','U','L',0};
+#endif
+
 /*
  * Device no to disk mapping:
  * 
@@ -1494,6 +1499,20 @@ static int sd_revalidate_disk(struct gendisk *disk)
 	 * react badly if we do.
 	 */
 	if (sdkp->media_present) {
+
+#if defined(CONFIG_SCSI_SATA_LEPUS_MODULE) || defined(CONFIG_SCSI_SATA_LEPUS)
+		if(strcmp(sdp->host->hostt->name,"sata_lepus0")==0){
+			sata0_name[0]=disk->disk_name[0];
+			sata0_name[1]=disk->disk_name[1];
+			sata0_name[2]=disk->disk_name[2];
+		}
+		else if(strcmp(sdp->host->hostt->name,"sata_lepus1")==0){
+			sata1_name[0]=disk->disk_name[0];
+			sata1_name[1]=disk->disk_name[1];
+			sata1_name[2]=disk->disk_name[2];
+		}
+#endif		
+
 		sd_read_capacity(sdkp, disk->disk_name, buffer);
 		if (sdp->removable)
 			sd_read_write_protect_flag(sdkp, disk->disk_name,
@@ -1668,6 +1687,19 @@ static void scsi_disk_release(struct kref *kref)
 	spin_lock(&sd_index_lock);
 	idr_remove(&sd_index_idr, sdkp->index);
 	spin_unlock(&sd_index_lock);
+
+#if defined(CONFIG_SCSI_SATA_LEPUS_MODULE) || defined(CONFIG_SCSI_SATA_LEPUS)
+		if(strcmp(sdkp->device->host->hostt->name,"sata_lepus0")==0){
+			sata0_name[0]='N';
+			sata0_name[1]='U';
+			sata0_name[2]='L';
+		}
+		else if(strcmp(sdkp->device->host->hostt->name,"sata_lepus1")==0){
+			sata1_name[0]='N';
+			sata1_name[1]='U';
+			sata1_name[2]='L';
+		}
+#endif
 
 	disk->private_data = NULL;
 	put_disk(disk);

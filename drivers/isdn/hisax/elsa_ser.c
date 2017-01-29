@@ -1,4 +1,4 @@
-/* $Id: elsa_ser.c,v 2.14.2.3 2004/02/11 13:21:33 keil Exp $
+/* $Id: elsa_ser.c,v 1.1.1.1 2007/08/03 05:45:57 johnson Exp $
  *
  * stuff for the serial modem on ELSA cards
  *

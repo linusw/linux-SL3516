@@ -2,8 +2,8 @@
  *
  * Name:	sktimer.c
  * Project:	Gigabit Ethernet Adapters, Event Scheduler Module
- * Version:	$Revision: 1.14 $
- * Date:	$Date: 2003/09/16 13:46:51 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2007/08/03 05:46:36 $
  * Purpose:	High level timer functions.
  *
  ******************************************************************************/
@@ -28,7 +28,7 @@
  */
 #if (defined(DEBUG) || ((!defined(LINT)) && (!defined(SK_SLIM))))
 static const char SysKonnectFileId[] =
-	"@(#) $Id: sktimer.c,v 1.14 2003/09/16 13:46:51 rschmidt Exp $ (C) Marvell.";
+	"@(#) $Id: sktimer.c,v 1.1.1.1 2007/08/03 05:46:36 johnson Exp $ (C) Marvell.";
 #endif
 
 #include "h/skdrv1st.h"		/* Driver Specific Definitions */

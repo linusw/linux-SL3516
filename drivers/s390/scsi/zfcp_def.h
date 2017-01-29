@@ -34,7 +34,7 @@
 #ifndef ZFCP_DEF_H
 #define ZFCP_DEF_H
 
-#define ZFCP_DEF_REVISION "$Revision: 1.111 $"
+#define ZFCP_DEF_REVISION "$Revision: 1.1.1.1 $"
 
 /*************************** INCLUDES *****************************************/
 

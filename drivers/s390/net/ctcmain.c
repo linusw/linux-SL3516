@@ -1,5 +1,5 @@
 /*
- * $Id: ctcmain.c,v 1.78 2005/09/07 12:18:02 pavlic Exp $
+ * $Id: ctcmain.c,v 1.1.1.1 2007/08/03 05:46:55 johnson Exp $
  *
  * CTC / ESCON network driver
  *
@@ -37,7 +37,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * RELEASE-TAG: CTC/ESCON network driver $Revision: 1.78 $
+ * RELEASE-TAG: CTC/ESCON network driver $Revision: 1.1.1.1 $
  *
  */
 #undef DEBUG
@@ -248,7 +248,7 @@ static void
 print_banner(void)
 {
 	static int printed = 0;
-	char vbuf[] = "$Revision: 1.78 $";
+	char vbuf[] = "$Revision: 1.1.1.1 $";
 	char *version = vbuf;
 
 	if (printed)

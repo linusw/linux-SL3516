@@ -1,5 +1,5 @@
 /*
- * $Id: ct82c710.c,v 1.11 2001/09/25 10:12:07 vojtech Exp $
+ * $Id: ct82c710.c,v 1.1.1.1 2007/08/03 05:45:53 johnson Exp $
  *
  *  Copyright (c) 1999-2001 Vojtech Pavlik
  */

@@ -29,7 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: mthca_srq.c 3047 2005-08-10 03:59:35Z roland $
+ * $Id: mthca_srq.c,v 1.1.1.1 2007/08/03 05:45:49 johnson Exp $
  */
 
 #include <linux/slab.h>

@@ -8,7 +8,7 @@
  *  License. See the file COPYING in the main directory of this archive for
  *  more details.
  *
- *  $Header: /cvsroot/linux/drivers/video/pm3fb.h,v 1.1 2002/02/25 19:11:06 marcelo Exp $
+ *  $Header: /cvsroot/ShadowDancer/Image/src/linux/include/video/pm3fb.h,v 1.1.1.1 2007/08/03 05:49:30 johnson Exp $
  *
  */
 

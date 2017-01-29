@@ -2,7 +2,7 @@
  * Routines common to all CFI-type probes.
  * (C) 2001-2003 Red Hat, Inc.
  * GPL'd
- * $Id: gen_probe.c,v 1.24 2005/11/07 11:14:23 gleixner Exp $
+ * $Id: gen_probe.c,v 1.1.1.1 2007/08/03 05:46:17 johnson Exp $
  */
 
 #include <linux/kernel.h>

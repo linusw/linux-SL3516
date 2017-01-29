@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: readinode.c,v 1.143 2005/11/07 11:14:41 gleixner Exp $
+ * $Id: readinode.c,v 1.1.1.1 2007/08/03 05:48:01 johnson Exp $
  *
  */
 

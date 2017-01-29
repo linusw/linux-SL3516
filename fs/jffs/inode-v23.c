@@ -10,7 +10,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * $Id: inode-v23.c,v 1.70 2001/10/02 09:16:02 dwmw2 Exp $
+ * $Id: inode-v23.c,v 1.1.1.1 2007/08/03 05:48:01 johnson Exp $
  *
  * Ported to Linux 2.3.x and MTD:
  * Copyright (C) 2000  Alexander Larsson (alex@cendio.se), Cendio Systems AB

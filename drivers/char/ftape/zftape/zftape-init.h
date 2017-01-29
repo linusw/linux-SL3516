@@ -19,9 +19,9 @@
  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/ftape/zftape/zftape-init.h,v $
- * $Revision: 1.2 $
- * $Date: 1997/10/05 19:19:05 $
+ * $Source: /cvsroot/ShadowDancer/Image/src/linux/drivers/char/ftape/zftape/zftape-init.h,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2007/08/03 05:45:34 $
  *
  * This file contains definitions and macro for the vfs 
  * interface defined by zftape

@@ -1,5 +1,5 @@
 /*
- * $Id: impa7.c,v 1.14 2005/11/07 11:14:27 gleixner Exp $
+ * $Id: impa7.c,v 1.1.1.1 2007/08/03 05:46:19 johnson Exp $
  *
  * Handle mapping of the NOR flash on implementa A7 boards
  *

@@ -62,6 +62,12 @@
 /***
  *
  * $Log: ltpc.c,v $
+ * Revision 1.1.1.1  2007/08/03 05:46:30  johnson
+ * init
+ *
+ * Revision 1.1.1.1  2006/04/03 08:40:54  amos_lee
+ * initial
+ *
  * Revision 1.1.2.1  2000/03/01 05:35:07  jgarzik
  * at and tr cleanup
  *

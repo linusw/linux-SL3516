@@ -11,7 +11,7 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
- * $Id: xip.h,v 1.2 2004/12/01 15:49:10 nico Exp $
+ * $Id: mtd-xip.h,v 1.1.1.1 2007/08/03 05:48:21 johnson Exp $
  */
 
 #ifndef __ARM_MTD_XIP_H__

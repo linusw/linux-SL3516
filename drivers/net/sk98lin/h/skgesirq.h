@@ -2,8 +2,8 @@
  *
  * Name:	skgesirq.h
  * Project:	Gigabit Ethernet Adapters, Common Modules
- * Version:	$Revision: 1.30 $
- * Date:	$Date: 2003/07/04 12:34:13 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2007/08/03 05:46:36 $
  * Purpose:	SK specific Gigabit Ethernet special IRQ functions
  *
  ******************************************************************************/

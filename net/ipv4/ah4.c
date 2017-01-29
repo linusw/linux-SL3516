@@ -8,6 +8,11 @@
 #include <net/icmp.h>
 #include <asm/scatterlist.h>
 
+#ifdef CONFIG_SL2312_IPSEC
+extern unsigned long crypto_flags, crypto_go;
+extern  spinlock_t crypto_done_lock;
+extern  unsigned int crypto_done ;
+#endif
 
 /* Clear mutable options and find final destination to substitute
  * into IP header for icv calculation. Options are already checked
@@ -96,8 +101,20 @@ static int ah_output(struct xfrm_state *x, struct sk_buff *skb)
 	ah->reserved = 0;
 	ah->spi = x->id.spi;
 	ah->seq_no = htonl(++x->replay.oseq);
+#ifdef CONFIG_SL2312_IPSEC		
+		//while (1) {
+		//if (crypto_go){
+		//	break;
+		//}
+		//schedule();
+		//};
+#endif	
+//printk("3\n");
 	ahp->icv(ahp, skb, ah->auth_data);
-
+	//printk("4\n");
+#ifdef CONFIG_SL2312_IPSEC			
+		crypto_go = 1;
+#endif	
 	top_iph->tos = iph->tos;
 	top_iph->ttl = iph->ttl;
 	top_iph->frag_off = iph->frag_off;
@@ -163,7 +180,20 @@ static int ah_input(struct xfrm_state *x, struct xfrm_decap_state *decap, struct
 		
 		memcpy(auth_data, ah->auth_data, ahp->icv_trunc_len);
 		skb_push(skb, skb->data - skb->nh.raw);
+#ifdef CONFIG_SL2312_IPSEC		
+		//while (1) {
+		//if (crypto_go){
+		//	break;
+		//}
+		//schedule();
+		//};
+#endif			
+		//printk("1\n");
 		ahp->icv(ahp, skb, ah->auth_data);
+		//printk("2\n");
+#ifdef CONFIG_SL2312_IPSEC			
+		crypto_go = 1;
+#endif	
 		if (memcmp(ah->auth_data, auth_data, ahp->icv_trunc_len)) {
 			x->stats.integrity_failed++;
 			goto out;

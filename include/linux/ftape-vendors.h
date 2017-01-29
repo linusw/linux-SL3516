@@ -20,9 +20,9 @@
  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/include/linux/ftape-vendors.h,v $
- * $Revision: 1.6 $
- * $Date: 1997/10/09 15:38:11 $
+ * $Source: /cvsroot/ShadowDancer/Image/src/linux/include/linux/ftape-vendors.h,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2007/08/03 05:49:07 $
  *
  *      This file contains the supported drive types with their
  *      QIC-117 spec. vendor code and drive dependent configuration

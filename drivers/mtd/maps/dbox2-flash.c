@@ -1,5 +1,5 @@
 /*
- * $Id: dbox2-flash.c,v 1.14 2005/11/07 11:14:26 gleixner Exp $
+ * $Id: dbox2-flash.c,v 1.1.1.1 2007/08/03 05:46:19 johnson Exp $
  *
  * D-Box 2 flash driver
  */

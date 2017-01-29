@@ -29,7 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: mthca_allocator.c 1349 2004-12-16 21:09:43Z roland $
+ * $Id: mthca_allocator.c,v 1.1.1.1 2007/08/03 05:45:49 johnson Exp $
  */
 
 #include <linux/errno.h>

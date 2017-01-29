@@ -1,78 +1,118 @@
-/* IP tables module for matching the value of the TTL 
- *
- * ipt_ttl.c,v 1.5 2000/11/13 11:16:08 laforge Exp
- *
- * (C) 2000,2001 by Harald Welte <laforge@netfilter.org>
+/* TTL modification target for IP tables
+ * (C) 2000,2005 by Harald Welte <laforge@netfilter.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
+ *
  */
 
 #include <linux/module.h>
 #include <linux/skbuff.h>
+#include <linux/ip.h>
+#include <net/checksum.h>
 
-#include <linux/netfilter_ipv4/ipt_ttl.h>
 #include <linux/netfilter_ipv4/ip_tables.h>
+#include <linux/netfilter_ipv4/ipt_TTL.h>
 
 MODULE_AUTHOR("Harald Welte <laforge@netfilter.org>");
-MODULE_DESCRIPTION("IP tables TTL matching module");
+MODULE_DESCRIPTION("IP tables TTL modification module");
 MODULE_LICENSE("GPL");
 
-static int match(const struct sk_buff *skb, const struct net_device *in,
-		 const struct net_device *out, const void *matchinfo,
-		 int offset, int *hotdrop)
+static unsigned int 
+ipt_ttl_target(struct sk_buff **pskb, const struct net_device *in, 
+		const struct net_device *out, unsigned int hooknum, 
+		const void *targinfo, void *userinfo)
 {
-	const struct ipt_ttl_info *info = matchinfo;
+	struct iphdr *iph;
+	const struct ipt_TTL_info *info = targinfo;
+	u_int16_t diffs[2];
+	int new_ttl;
+
+	if (!skb_make_writable(pskb, (*pskb)->len))
+		return NF_DROP;
+
+	iph = (*pskb)->nh.iph;
 
 	switch (info->mode) {
-		case IPT_TTL_EQ:
-			return (skb->nh.iph->ttl == info->ttl);
+		case IPT_TTL_SET:
+			new_ttl = info->ttl;
 			break;
-		case IPT_TTL_NE:
-			return (!(skb->nh.iph->ttl == info->ttl));
+		case IPT_TTL_INC:
+			new_ttl = iph->ttl + info->ttl;
+			if (new_ttl > 255)
+				new_ttl = 255;
 			break;
-		case IPT_TTL_LT:
-			return (skb->nh.iph->ttl < info->ttl);
-			break;
-		case IPT_TTL_GT:
-			return (skb->nh.iph->ttl > info->ttl);
+		case IPT_TTL_DEC:
+			new_ttl = iph->ttl - info->ttl;
+			if (new_ttl < 0)
+				new_ttl = 0;
 			break;
 		default:
-			printk(KERN_WARNING "ipt_ttl: unknown mode %d\n", 
-				info->mode);
-			return 0;
+			new_ttl = iph->ttl;
+			break;
 	}
 
-	return 0;
+	if (new_ttl != iph->ttl) {
+		diffs[0] = htons(((unsigned)iph->ttl) << 8) ^ 0xFFFF;
+		iph->ttl = new_ttl;
+		diffs[1] = htons(((unsigned)iph->ttl) << 8);
+		iph->check = csum_fold(csum_partial((char *)diffs,
+						    sizeof(diffs),
+						    iph->check^0xFFFF));
+	}
+
+	return IPT_CONTINUE;
 }
 
-static int checkentry(const char *tablename, const struct ipt_ip *ip,
-		      void *matchinfo, unsigned int matchsize,
-		      unsigned int hook_mask)
+static int ipt_ttl_checkentry(const char *tablename,
+		const struct ipt_entry *e,
+		void *targinfo,
+		unsigned int targinfosize,
+		unsigned int hook_mask)
 {
-	if (matchsize != IPT_ALIGN(sizeof(struct ipt_ttl_info)))
+	struct ipt_TTL_info *info = targinfo;
+
+	if (targinfosize != IPT_ALIGN(sizeof(struct ipt_TTL_info))) {
+		printk(KERN_WARNING "ipt_TTL: targinfosize %u != %Zu\n",
+				targinfosize,
+				IPT_ALIGN(sizeof(struct ipt_TTL_info)));
+		return 0;
+	}
+
+	if (strcmp(tablename, "mangle")) {
+		printk(KERN_WARNING "ipt_TTL: can only be called from "
+			"\"mangle\" table, not \"%s\"\n", tablename);
+		return 0;
+	}
+
+	if (info->mode > IPT_TTL_MAXMODE) {
+		printk(KERN_WARNING "ipt_TTL: invalid or unknown Mode %u\n", 
+			info->mode);
+		return 0;
+	}
+
+	if ((info->mode != IPT_TTL_SET) && (info->ttl == 0))
 		return 0;
 
 	return 1;
 }
 
-static struct ipt_match ttl_match = {
-	.name		= "ttl",
-	.match		= &match,
-	.checkentry	= &checkentry,
-	.me		= THIS_MODULE,
+static struct ipt_target ipt_TTL = { 
+	.name 		= "TTL",
+	.target 	= ipt_ttl_target, 
+	.checkentry 	= ipt_ttl_checkentry, 
+	.me 		= THIS_MODULE,
 };
 
 static int __init init(void)
 {
-	return ipt_register_match(&ttl_match);
+	return ipt_register_target(&ipt_TTL);
 }
 
 static void __exit fini(void)
 {
-	ipt_unregister_match(&ttl_match);
-
+	ipt_unregister_target(&ipt_TTL);
 }
 
 module_init(init);

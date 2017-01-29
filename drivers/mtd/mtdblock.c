@@ -1,7 +1,7 @@
 /*
  * Direct MTD block device access
  *
- * $Id: mtdblock.c,v 1.68 2005/11/07 11:14:20 gleixner Exp $
+ * $Id: mtdblock.c,v 1.2 2007/08/08 06:20:21 johnson Exp $
  *
  * (C) 2000-2003 Nicolas Pitre <nico@cam.org>
  * (C) 1999-2003 David Woodhouse <dwmw2@infradead.org>
@@ -69,7 +69,12 @@ static int erase_write (struct mtd_info *mtd, unsigned long pos,
 	set_current_state(TASK_INTERRUPTIBLE);
 	add_wait_queue(&wait_q, &wait);
 
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif
+
 	ret = MTD_ERASE(mtd, &erase);
+
 	if (ret) {
 		set_current_state(TASK_RUNNING);
 		remove_wait_queue(&wait_q, &wait);
@@ -82,15 +87,32 @@ static int erase_write (struct mtd_info *mtd, unsigned long pos,
 	schedule();  /* Wait for erase to finish. */
 	remove_wait_queue(&wait_q, &wait);
 
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif
+
 	/*
 	 * Next, writhe data to flash.
 	 */
 
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif
 	ret = MTD_WRITE (mtd, pos, len, &retlen, buf);
+
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif
+
 	if (ret)
 		return ret;
+
 	if (retlen != len)
 		return -EIO;
+
 	return 0;
 }
 
@@ -132,11 +154,24 @@ static int do_cached_write (struct mtdblk_dev *mtdblk, unsigned long pos,
 	size_t retlen;
 	int ret;
 
+
 	DEBUG(MTD_DEBUG_LEVEL2, "mtdblock: write on \"%s\" at 0x%lx, size 0x%x\n",
 		mtd->name, pos, len);
 
 	if (!sect_size)
-		return MTD_WRITE (mtd, pos, len, &retlen, buf);
+	{
+		//debug_Aaron on 07/30/2007 take crae of share pin
+		#ifdef CONFIG_SL2312_SHARE_PIN
+        		mtd_lock();                           // sl2312 share pin lock
+		#endif
+
+		ret =  MTD_WRITE (mtd, pos, len, &retlen, buf);
+
+		//debug_Aaron on 07/30/2007 take crae of share pin
+		#ifdef CONFIG_SL2312_SHARE_PIN
+        		mtd_unlock();                           // sl2312 share pin lock
+		#endif
+	}
 
 	while (len > 0) {
 		unsigned long sect_start = (pos/sect_size)*sect_size;
@@ -168,7 +203,19 @@ static int do_cached_write (struct mtdblk_dev *mtdblk, unsigned long pos,
 			    mtdblk->cache_offset != sect_start) {
 				/* fill the cache with the current sector */
 				mtdblk->cache_state = STATE_EMPTY;
+
+				//debug_Aaron on 07/30/2007 take crae of share pin
+				#ifdef CONFIG_SL2312_SHARE_PIN
+        				mtd_lock();                           // sl2312 share pin lock
+				#endif
+
 				ret = MTD_READ(mtd, sect_start, sect_size, &retlen, mtdblk->cache_data);
+
+				//debug_Aaron on 07/30/2007 take crae of share pin
+				#ifdef CONFIG_SL2312_SHARE_PIN
+        				mtd_unlock();                           // sl2312 share pin lock
+				#endif
+
 				if (ret)
 					return ret;
 				if (retlen != sect_size)
@@ -201,11 +248,25 @@ static int do_cached_read (struct mtdblk_dev *mtdblk, unsigned long pos,
 	size_t retlen;
 	int ret;
 
-	DEBUG(MTD_DEBUG_LEVEL2, "mtdblock: read on \"%s\" at 0x%lx, size 0x%x\n",
-			mtd->name, pos, len);
+ 	 DEBUG(MTD_DEBUG_LEVEL2, "mtdblock: read on \"%s\" at 0x%lx, size 0x%x\n",
+                       mtd->name, pos, len);
+
 
 	if (!sect_size)
-		return MTD_READ (mtd, pos, len, &retlen, buf);
+	{
+		//debug_Aaron on 07/30/2007 take care of share pin
+		#ifdef CONFIG_SL2312_SHARE_PIN
+        		mtd_lock();                             // sl2312 share pin lock
+		#endif
+
+		ret = MTD_READ (mtd, pos, len, &retlen, buf);
+
+		//debug_Aaron on 07/30/2007 take care of share pin
+		#ifdef CONFIG_SL2312_SHARE_PIN
+        		mtd_unlock();                           // sl2312 share pin lock
+		#endif
+		return ret;
+	}
 
 	while (len > 0) {
 		unsigned long sect_start = (pos/sect_size)*sect_size;
@@ -224,7 +285,19 @@ static int do_cached_read (struct mtdblk_dev *mtdblk, unsigned long pos,
 		    mtdblk->cache_offset == sect_start) {
 			memcpy (buf, mtdblk->cache_data + offset, size);
 		} else {
+		
+			//debug_Aaron on 07/30/2007 take care of share pin
+                	#ifdef CONFIG_SL2312_SHARE_PIN
+                        	mtd_lock();                             // sl2312 share pin lock
+                	#endif	
+
 			ret = MTD_READ (mtd, pos, size, &retlen, buf);
+
+			//debug_Aaron on 07/30/2007 take care of share pin
+        		#ifdef CONFIG_SL2312_SHARE_PIN
+                        	mtd_unlock();                             // sl2312 share pin lock
+                	#endif
+	
 			if (ret)
 				return ret;
 			if (retlen != size)
@@ -235,7 +308,6 @@ static int do_cached_read (struct mtdblk_dev *mtdblk, unsigned long pos,
 		pos += size;
 		len -= size;
 	}
-
 	return 0;
 }
 
@@ -243,6 +315,7 @@ static int mtdblock_readsect(struct mtd_blktrans_dev *dev,
 			      unsigned long block, char *buf)
 {
 	struct mtdblk_dev *mtdblk = mtdblks[dev->devnum];
+
 	return do_cached_read(mtdblk, block<<9, 512, buf);
 }
 
@@ -250,6 +323,7 @@ static int mtdblock_writesect(struct mtd_blktrans_dev *dev,
 			      unsigned long block, char *buf)
 {
 	struct mtdblk_dev *mtdblk = mtdblks[dev->devnum];
+
 	if (unlikely(!mtdblk->cache_data && mtdblk->cache_size)) {
 		mtdblk->cache_data = vmalloc(mtdblk->mtd->erasesize);
 		if (!mtdblk->cache_data)
@@ -328,6 +402,7 @@ static int mtdblock_flush(struct mtd_blktrans_dev *dev)
 	struct mtdblk_dev *mtdblk = mtdblks[dev->devnum];
 
 	down(&mtdblk->cache_sem);
+
 	write_cached_data(mtdblk);
 	up(&mtdblk->cache_sem);
 

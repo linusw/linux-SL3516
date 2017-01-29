@@ -1,5 +1,5 @@
 /*
- * linux/drivers/s390/net/qeth_tso.h ($Revision: 1.8 $)
+ * linux/drivers/s390/net/qeth_tso.h ($Revision: 1.1.1.1 $)
  *
  * Header file for qeth TCP Segmentation Offload support.
  *
@@ -7,7 +7,7 @@
  *
  *    Author(s): Frank Pavlic <fpavlic@de.ibm.com>
  *
- *    $Revision: 1.8 $	 $Date: 2005/05/04 20:19:18 $
+ *    $Revision: 1.1.1.1 $	 $Date: 2007/08/03 05:46:55 $
  *
  */
 #ifndef __QETH_TSO_H__

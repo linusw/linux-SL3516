@@ -23,6 +23,8 @@
 #define STORE_QUEUE_MINOR	155
 #define I2O_MINOR 166
 #define MICROCODE_MINOR		184
+#define GPIO_MINOR             185
+#define FLASH_CHIP_MINOR	186	//micle ++ 20090325 for EN29LV400A  
 #define MWAVE_MINOR	219		/* ACP/Mwave Modem */
 #define MPT_MINOR	220
 #define MISC_DYNAMIC_MINOR 255

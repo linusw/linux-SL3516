@@ -23,7 +23,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- *  $Id: uart00.c,v 1.35 2002/07/28 10:03:28 rmk Exp $
+ *  $Id: uart00.c,v 1.1.1.1 2007/08/03 05:47:14 johnson Exp $
  *
  */
 #include <linux/config.h>
@@ -759,7 +759,7 @@ static int __init uart00_init(void)
 {
 	int result;
 
-	printk(KERN_INFO "Serial: UART00 driver $Revision: 1.35 $\n");
+	printk(KERN_INFO "Serial: UART00 driver $Revision: 1.1.1.1 $\n");
 
 	printk(KERN_WARNING "serial_uart00:Using temporary major/minor pairs"
 		" - these WILL change in the future\n");

@@ -1,5 +1,5 @@
 /*
- * $Id: a3d.c,v 1.21 2002/01/22 20:11:50 vojtech Exp $
+ * $Id: a3d.c,v 1.1.1.1 2007/08/03 05:45:50 johnson Exp $
  *
  *  Copyright (c) 1998-2001 Vojtech Pavlik
  */

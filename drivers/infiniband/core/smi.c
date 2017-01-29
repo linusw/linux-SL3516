@@ -34,7 +34,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: smi.c 1389 2004-12-27 22:56:47Z roland $
+ * $Id: smi.c,v 1.1.1.1 2007/08/03 05:45:49 johnson Exp $
  */
 
 #include <rdma/ib_smi.h>

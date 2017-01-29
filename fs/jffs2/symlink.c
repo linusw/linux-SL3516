@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: symlink.c,v 1.19 2005/11/07 11:14:42 gleixner Exp $
+ * $Id: symlink.c,v 1.1.1.1 2007/08/03 05:48:02 johnson Exp $
  *
  */
 

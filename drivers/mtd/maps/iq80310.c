@@ -1,5 +1,5 @@
 /*
- * $Id: iq80310.c,v 1.21 2005/11/07 11:14:27 gleixner Exp $
+ * $Id: iq80310.c,v 1.1.1.1 2007/08/03 05:46:19 johnson Exp $
  *
  * Mapping for the Intel XScale IQ80310 evaluation board
  *

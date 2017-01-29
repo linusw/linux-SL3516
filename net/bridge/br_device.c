@@ -5,7 +5,7 @@
  *	Authors:
  *	Lennert Buytenhek		<buytenh@gnu.org>
  *
- *	$Id: br_device.c,v 1.6 2001/12/24 00:59:55 davem Exp $
+ *	$Id: br_device.c,v 1.1.1.1 2007/08/03 05:49:40 johnson Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License
@@ -49,13 +49,26 @@ int br_dev_xmit(struct sk_buff *skb, struct net_device *dev)
 	return 0;
 }
 
+
+#if defined(CONFIG_SL2312_TSO)
+struct net_bridge *current_br=NULL;
+#endif
+
 static int br_dev_open(struct net_device *dev)
 {
 	struct net_bridge *br = netdev_priv(dev);
 
+
+#if defined(CONFIG_SL2312_TSO)
+	current_br = netdev_priv(dev);
+#endif	
+
 	br_features_recompute(br);
 	netif_start_queue(dev);
-	br_stp_enable_bridge(br);
+
+   	//debug_Aaron on 2006/06/28, if stp off do not enable bridge
+        if (br->stp_enabled)
+		br_stp_enable_bridge(br);
 
 	return 0;
 }
@@ -66,7 +79,12 @@ static void br_dev_set_multicast_list(struct net_device *dev)
 
 static int br_dev_stop(struct net_device *dev)
 {
-	br_stp_disable_bridge(netdev_priv(dev));
+	//debug_Aaron on 2006/06/28, if stp off do not enable bridge
+	 struct net_bridge *br = netdev_priv(dev);
+
+	//debug_Aaron on 2006/06/28, if stp off do not enable bridge	
+	if (br->stp_enabled)
+		br_stp_disable_bridge(netdev_priv(dev));
 
 	netif_stop_queue(dev);
 

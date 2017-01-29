@@ -81,179 +81,12 @@ choice
 	prompt "ARM system type"
 	default ARCH_RPC
 
-config ARCH_CLPS7500
-	bool "Cirrus-CL-PS7500FE"
-	select TIMER_ACORN
-	select ISA
-
-config ARCH_CLPS711X
-	bool "CLPS711x/EP721x-based"
-
-config ARCH_CO285
-	bool "Co-EBSA285"
-	select FOOTBRIDGE
-	select FOOTBRIDGE_ADDIN
-
-config ARCH_EBSA110
-	bool "EBSA-110"
-	select ISA
-	help
-	  This is an evaluation board for the StrongARM processor available
-	  from Digital. It has limited hardware on-board, including an onboard
-	  Ethernet interface, two PCMCIA sockets, two serial ports and a
-	  parallel port.
-
-config ARCH_CAMELOT
-	bool "Epxa10db"
-	help
-	  This enables support for Altera's Excalibur XA10 development board.
-	  If you would like to build your kernel to run on one of these boards
-	  then you must say 'Y' here. Otherwise say 'N'
-
-config ARCH_FOOTBRIDGE
-	bool "FootBridge"
-	select FOOTBRIDGE
-
-config ARCH_INTEGRATOR
-	bool "Integrator"
-	select ARM_AMBA
-	select ICST525
-
-config ARCH_IOP3XX
-	bool "IOP3xx-based"
-	select PCI
-
-config ARCH_IXP4XX
-	bool "IXP4xx-based"
-	select DMABOUNCE
-	select PCI
-
-config ARCH_IXP2000
-	bool "IXP2400/2800-based"
-	select PCI
-
-config ARCH_L7200
-	bool "LinkUp-L7200"
-	select FIQ
-	help
-	  Say Y here if you intend to run this kernel on a LinkUp Systems
-	  L7200 Software Development Board which uses an ARM720T processor.
-	  Information on this board can be obtained at:
-
-	  <http://www.linkupsys.com/>
-
-	  If you have any questions or comments about the Linux kernel port
-	  to this board, send e-mail to <sjhill@cotw.com>.
-
-config ARCH_PXA
-	bool "PXA2xx-based"
-
-config ARCH_RPC
-	bool "RiscPC"
-	select ARCH_ACORN
-	select FIQ
-	select TIMER_ACORN
-	select ARCH_MAY_HAVE_PC_FDC
-	help
-	  On the Acorn Risc-PC, Linux can support the internal IDE disk and
-	  CD-ROM interface, serial and parallel port, and the floppy drive.
-
-config ARCH_SA1100
-	bool "SA1100-based"
-	select ISA
-	select ARCH_DISCONTIGMEM_ENABLE
-
-config ARCH_S3C2410
-	bool "Samsung S3C2410"
-	help
-	  Samsung S3C2410X CPU based systems, such as the Simtec Electronics
-	  BAST (<http://www.simtec.co.uk/products/EB110ITX/>), the IPAQ 1940 or
-	  the Samsung SMDK2410 development board (and derviatives).
-
-config ARCH_SHARK
-	bool "Shark"
-	select ISA
-	select ISA_DMA
-	select PCI
-
-config ARCH_LH7A40X
-	bool "Sharp LH7A40X"
-	help
-	  Say Y here for systems based on one of the Sharp LH7A40X
-	  System on a Chip processors.  These CPUs include an ARM922T
-	  core with a wide array of integrated devices for
-	  hand-held and low-power applications.
-
-config ARCH_OMAP
-	bool "TI OMAP"
-
-config ARCH_VERSATILE
-	bool "Versatile"
-	select ARM_AMBA
-	select ICST307
-	help
-	  This enables support for ARM Ltd Versatile board.
-
-config ARCH_REALVIEW
-	bool "RealView"
-	select ARM_AMBA
-	select ICST307
-	help
-	  This enables support for ARM Ltd RealView boards.
-
-config ARCH_IMX
-	bool "IMX"
-
-config ARCH_H720X
-	bool "Hynix-HMS720x-based"
-	help
-	  This enables support for systems based on the Hynix HMS720x
-
-config ARCH_AAEC2000
-	bool "Agilent AAEC-2000 based"
-	select ARM_AMBA
-	help
-	  This enables support for systems based on the Agilent AAEC-2000
+config ARCH_SL2312
+    bool "SL2312"
 
 endchoice
 
-source "arch/arm/mach-clps711x/Kconfig"
-
-source "arch/arm/mach-epxa10db/Kconfig"
-
-source "arch/arm/mach-footbridge/Kconfig"
-
-source "arch/arm/mach-integrator/Kconfig"
-
-source "arch/arm/mach-iop3xx/Kconfig"
-
-source "arch/arm/mach-ixp4xx/Kconfig"
-
-source "arch/arm/mach-ixp2000/Kconfig"
-
-source "arch/arm/mach-pxa/Kconfig"
-
-source "arch/arm/mach-sa1100/Kconfig"
-
-source "arch/arm/plat-omap/Kconfig"
-
-source "arch/arm/mach-omap1/Kconfig"
-
-source "arch/arm/mach-omap2/Kconfig"
-
-source "arch/arm/mach-s3c2410/Kconfig"
-
-source "arch/arm/mach-lh7a40x/Kconfig"
-
-source "arch/arm/mach-imx/Kconfig"
-
-source "arch/arm/mach-h720x/Kconfig"
-
-source "arch/arm/mach-versatile/Kconfig"
-
-source "arch/arm/mach-aaec2000/Kconfig"
-
-source "arch/arm/mach-realview/Kconfig"
+source "arch/arm/mach-sl2312/Kconfig"
 
 # Definitions to make life easier
 config ARCH_ACORN
@@ -309,6 +142,16 @@ config PCI
 	  <http://www.tldp.org/docs.html#howto>, contains valuable
 	  information about which PCI hardware does work under Linux and which
 	  doesn't.
+
+config SL2312_LPC
+    bool "LPC Host Support" 
+    depends on ARCH_SL2312
+    help
+
+config SL2312_LPC_IT8712
+    bool "IT8712 Support" 
+    depends on ARCH_SL2312 && SL2312_LPC
+    help    
 
 # Select the host bridge type
 config PCI_HOST_VIA82C505
@@ -694,6 +537,10 @@ if ALIGNMENT_TRAP
 source "drivers/mtd/Kconfig"
 endif
 
+if ARCH_SL2312
+source "drivers/telephony/Kconfig"
+endif
+
 source "drivers/parport/Kconfig"
 
 source "drivers/pnp/Kconfig"
@@ -704,7 +551,7 @@ source "drivers/acorn/block/Kconfig"
 
 if PCMCIA || ARCH_CLPS7500 || ARCH_IOP3XX || ARCH_IXP4XX \
 	|| ARCH_L7200 || ARCH_LH7A40X || ARCH_PXA || ARCH_RPC \
-	|| ARCH_S3C2410 || ARCH_SA1100 || ARCH_SHARK || FOOTBRIDGE
+	|| ARCH_S3C2410 || ARCH_SA1100 || ARCH_SHARK || FOOTBRIDGE || ARCH_SL2312
 source "drivers/ide/Kconfig"
 endif
 

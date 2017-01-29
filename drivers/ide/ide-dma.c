@@ -90,6 +90,23 @@
 #include <asm/io.h>
 #include <asm/irq.h>
 
+#define SATA_LED		1
+
+#ifdef SATA_LED
+extern unsigned int iomux;
+extern unsigned int hdd_led_select; //vanghan
+//#define GPIO_SATA0_LED	       (hdd_led_select>1 ? 5:(hdd_led_select ? 3:2))  //2:BLUE 3:YELLOW,5: nothing
+#define GPIO_SATA0_LED hdd_led_select
+#define GPIO_SATA0_LED_BLUE 2
+#define GPIO_SATA0_LED_YELLOW 3
+#define GPIO_SATA0_LED_RED 4
+
+//#define GPIO_SATA1_LED	       (hdd_led_select>1 ? 5:(hdd_led_select ? 3:2))  //2:BLUE 3:YELLOW
+#define GPIO_SATAT1_LED hdd_led_select
+#define SATA_LED_ACTIVE		1
+#define SATA_LED_INACTIVE	0
+#endif	
+
 static const struct drive_list_entry drive_whitelist [] = {
 
 	{ "Micropolis 2112A"	,       "ALL"		},
@@ -397,6 +414,21 @@ static int dma_timer_expiry (ide_drive_t *drive)
 	ide_hwif_t *hwif	= HWIF(drive);
 	u8 dma_stat		= hwif->INB(hwif->dma_status);
 
+#ifdef SATA_LED
+	if(iomux==2){
+		if(drive->name[2]=='c')
+			set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_INACTIVE);
+		else if(drive->name[2]=='d')
+			set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_INACTIVE);
+	}
+	else if(iomux==3){
+		if(drive->name[2]=='a')
+			set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_INACTIVE);
+		else if(drive->name[2]=='b')
+			set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_INACTIVE);
+	}
+#endif	
+
 	printk(KERN_WARNING "%s: dma_timer_expiry: dma status == 0x%02x\n",
 		drive->name, dma_stat);
 
@@ -604,6 +636,20 @@ void ide_dma_start(ide_drive_t *drive)
 	/* start DMA */
 	hwif->OUTB(dma_cmd|1, hwif->dma_command);
 	hwif->dma = 1;
+#ifdef SATA_LED
+	if(iomux==2){
+		if(drive->name[2]=='c')
+			set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_ACTIVE);
+		else if(drive->name[2]=='d')
+			set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_ACTIVE);
+	}
+	else if(iomux==3){
+		if(drive->name[2]=='a')
+			set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_ACTIVE);
+		else if(drive->name[2]=='b')
+			set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_ACTIVE);
+	}
+#endif	
 	wmb();
 }
 
@@ -629,6 +675,20 @@ int __ide_dma_end (ide_drive_t *drive)
 	/* verify good DMA status */
 	hwif->dma = 0;
 	wmb();
+#ifdef SATA_LED
+	if(iomux==2){
+		if(drive->name[2]=='c')
+			set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_INACTIVE);
+		else if(drive->name[2]=='d')
+			set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_INACTIVE);
+	}
+	else if(iomux==3){
+		if(drive->name[2]=='a')
+			set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_INACTIVE);
+		else if(drive->name[2]=='b')
+			set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_INACTIVE);
+	}
+#endif		
 	return (dma_stat & 7) != 4 ? (0x10 | dma_stat) : 0;
 }
 
@@ -775,8 +835,23 @@ EXPORT_SYMBOL(__ide_dma_lostirq);
 int __ide_dma_timeout (ide_drive_t *drive)
 {
 	printk(KERN_ERR "%s: timeout waiting for DMA\n", drive->name);
-	if (HWIF(drive)->ide_dma_test_irq(drive))
+	if (HWIF(drive)->ide_dma_test_irq(drive)){
+#ifdef SATA_LED
+	if(iomux==2){
+		if(drive->name[2]=='c')
+			set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_INACTIVE);
+		else if(drive->name[2]=='d')
+			set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_INACTIVE);
+	}
+	else if(iomux==3){
+		if(drive->name[2]=='a')
+			set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_INACTIVE);
+		else if(drive->name[2]=='b')
+			set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_INACTIVE);
+	}
+#endif		
 		return 0;
+	}
 
 	return HWIF(drive)->ide_dma_end(drive);
 }
@@ -946,6 +1021,16 @@ void ide_setup_dma (ide_hwif_t *hwif, unsigned long dma_base, unsigned int num_p
 		       hwif->drives[1].name, (dma_stat & 0x40) ? "DMA" : "pio");
 	}
 	printk("\n");
+
+#ifdef SATA_LED
+	//	set_gemini_gpio_io_mode(GPIO_SATA0_LED,1);	// Direction output
+	set_gemini_gpio_io_mode(GPIO_SATA0_LED_BLUE,1);    //vanghan,initial both blue and yellow led
+	set_gemini_gpio_io_mode(GPIO_SATA0_LED_YELLOW,1);  //vanghan
+	set_gemini_gpio_io_mode(GPIO_SATA0_LED_RED,1);  //vanghan
+		set_gemini_gpio_io_mode(GPIO_SATA1_LED,1);	// Direction output
+		set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_ACTIVE);
+		set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_ACTIVE);
+#endif	
 
 	if (!(hwif->dma_master))
 		BUG();

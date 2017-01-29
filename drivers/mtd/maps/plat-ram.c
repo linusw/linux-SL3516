@@ -6,7 +6,7 @@
  *
  * Generic platfrom device based RAM map
  *
- * $Id: plat-ram.c,v 1.7 2005/11/07 11:14:28 gleixner Exp $
+ * $Id: plat-ram.c,v 1.1.1.1 2007/08/03 05:46:19 johnson Exp $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

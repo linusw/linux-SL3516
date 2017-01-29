@@ -17,9 +17,9 @@
  USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/ftape/zftape/zftape-vtbl.c,v $
- * $Revision: 1.7.6.1 $
- * $Date: 1997/11/24 13:48:31 $
+ * $Source: /cvsroot/ShadowDancer/Image/src/linux/drivers/char/ftape/zftape/zftape-vtbl.c,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2007/08/03 05:45:34 $
  *
  *      This file defines a volume table as defined in various QIC
  *      standards.

@@ -1,7 +1,7 @@
 #
 # linux/drivers/maps/Makefile
 #
-# $Id: Makefile.common,v 1.34 2005/11/07 11:14:26 gleixner Exp $
+# $Id: Makefile,v 1.1.1.1 2007/08/03 05:46:18 johnson Exp $
 
 ifeq ($(CONFIG_MTD_COMPLEX_MAPPINGS),y)
 obj-$(CONFIG_MTD)		+= map_funcs.o
@@ -16,6 +16,12 @@ obj-$(CONFIG_MTD_CSTM_MIPS_IXX)	+= cstm_mips_ixx.o
 obj-$(CONFIG_MTD_DC21285)	+= dc21285.o
 obj-$(CONFIG_MTD_DILNETPC)	+= dilnetpc.o
 obj-$(CONFIG_MTD_EPXA10DB)	+= epxa10db-flash.o
+
+###### for Storlink Soc #######
+obj-$(CONFIG_MTD_SL2312_CFI) += sl2312-flash-cfi.o
+obj-$(CONFIG_MTD_SL2312_SERIAL_ATMEL) += sl2312-flash-atmel.o
+obj-$(CONFIG_MTD_SL2312_SERIAL_ST) += sl2312-flash-m25p80.o
+
 obj-$(CONFIG_MTD_IQ80310)	+= iq80310.o
 obj-$(CONFIG_MTD_L440GX)	+= l440gx.o
 obj-$(CONFIG_MTD_AMD76XROM)	+= amd76xrom.o

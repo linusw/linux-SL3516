@@ -5,7 +5,7 @@
  *	Authors:
  *	Lennert Buytenhek		<buytenh@gnu.org>
  *
- *	$Id: br_if.c,v 1.7 2001/12/24 00:59:55 davem Exp $
+ *	$Id: br_if.c,v 1.1.1.1 2007/08/03 05:49:40 johnson Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License
@@ -219,8 +219,16 @@ static struct net_bridge_port *new_nbp(struct net_bridge *br,
  	p->priority = 0x8000 >> BR_PORT_BITS;
 	dev->br_port = p;
 	p->port_no = index;
-	br_init_port(p);
-	p->state = BR_STATE_DISABLED;
+
+	//debug_Aaron on 2006/06/28, if stp disabled the deault state is forwarding
+        if (br->stp_enabled)
+	{
+		br_init_port(p);
+		p->state = BR_STATE_DISABLED;
+	}
+	else
+		 p->state = BR_STATE_FORWARDING;
+
 	kobject_init(&p->kobj);
 
 	return p;
@@ -367,9 +375,14 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
 		spin_lock_bh(&br->lock);
 		br_stp_recalculate_bridge_id(br);
 		br_features_recompute(br);
-		if ((br->dev->flags & IFF_UP) 
-		    && (dev->flags & IFF_UP) && netif_carrier_ok(dev))
-			br_stp_enable_port(p);
+
+		 //debug_Aaron on 06/28/2006, check whether stp is on or off
+                if (br->stp_enabled)
+                {
+			if ((br->dev->flags & IFF_UP) 
+		    		&& (dev->flags & IFF_UP) && netif_carrier_ok(dev))
+				br_stp_enable_port(p);
+		}
 		spin_unlock_bh(&br->lock);
 
 		dev_set_mtu(br->dev, br_min_mtu(br));

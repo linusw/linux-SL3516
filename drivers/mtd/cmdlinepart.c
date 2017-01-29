@@ -1,5 +1,5 @@
 /*
- * $Id: cmdlinepart.c,v 1.19 2005/11/07 11:14:19 gleixner Exp $
+ * $Id: cmdlinepart.c,v 1.1.1.1 2007/08/03 05:46:17 johnson Exp $
  *
  * Read flash partition table from command line
  *

@@ -9,7 +9,7 @@
  *
  * /proc interface for the dasd driver.
  *
- * $Revision: 1.33 $
+ * $Revision: 1.1.1.1 $
  */
 
 #include <linux/config.h>

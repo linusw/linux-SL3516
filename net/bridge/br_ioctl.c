@@ -5,7 +5,7 @@
  *	Authors:
  *	Lennert Buytenhek		<buytenh@gnu.org>
  *
- *	$Id: br_ioctl.c,v 1.4 2000/11/08 05:16:40 davem Exp $
+ *	$Id: br_ioctl.c,v 1.1.1.1 2007/08/03 05:49:40 johnson Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License
@@ -251,7 +251,8 @@ static int old_dev_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 		if (!capable(CAP_NET_ADMIN))
 			return -EPERM;
 
-		br->stp_enabled = args[1]?1:0;
+		//debug_Aaron on 06/28/2006, do not allow change stp state at runtime
+		//br->stp_enabled = args[1]?1:0;
 		return 0;
 
 	case BRCTL_SET_BRIDGE_PRIORITY:
@@ -259,7 +260,11 @@ static int old_dev_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 			return -EPERM;
 
 		spin_lock_bh(&br->lock);
-		br_stp_set_bridge_priority(br, args[1]);
+
+		//debug_Aaron on 06/28/2006, if stp off do not enable bridge
+                if (br->stp_enabled)
+			br_stp_set_bridge_priority(br, args[1]);
+
 		spin_unlock_bh(&br->lock);
 		return 0;
 
@@ -274,12 +279,16 @@ static int old_dev_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 		if (args[2] >= (1<<(16-BR_PORT_BITS)))
 			return -ERANGE;
 
-		spin_lock_bh(&br->lock);
-		if ((p = br_get_port(br, args[1])) == NULL) 
-			ret = -EINVAL;
-		else
-			br_stp_set_port_priority(p, args[2]);
-		spin_unlock_bh(&br->lock);
+		//debug_Aaron on 2006/06/28, if stp off do not enable bridge
+                if (br->stp_enabled)
+                {
+			spin_lock_bh(&br->lock);
+			if ((p = br_get_port(br, args[1])) == NULL) 
+				ret = -EINVAL;
+			else
+				br_stp_set_port_priority(p, args[2]);
+			spin_unlock_bh(&br->lock);
+		}
 		return ret;
 	}
 

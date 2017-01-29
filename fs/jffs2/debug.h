@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: debug.h,v 1.21 2005/11/07 11:14:39 gleixner Exp $
+ * $Id: debug.h,v 1.1.1.1 2007/08/03 05:48:01 johnson Exp $
  *
  */
 #ifndef _JFFS2_DEBUG_H_

@@ -1,4 +1,4 @@
-/* $Id: jffs2_fs_sb.h,v 1.54 2005/09/21 13:37:34 dedekind Exp $ */
+/* $Id: jffs2_fs_sb.h,v 1.1.1.1 2007/08/03 05:49:10 johnson Exp $ */
 
 #ifndef _JFFS2_FS_SB
 #define _JFFS2_FS_SB

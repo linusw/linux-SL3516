@@ -642,6 +642,8 @@ static inline u8 ata_wait_idle(struct ata_port *ap)
 static inline void ata_qc_set_polling(struct ata_queued_cmd *qc)
 {
 	qc->tf.ctl |= ATA_NIEN;
+	if((qc->ap->host_set->irq==4)||(qc->ap->host_set->irq==5))
+		writel(readl(0xf4800004)&(~(1<<qc->ap->host_set->irq)),0xf4800004);
 }
 
 static inline struct ata_queued_cmd *ata_qc_from_tag (struct ata_port *ap,
@@ -698,6 +700,10 @@ static inline u8 ata_irq_on(struct ata_port *ap)
 		writeb(ap->ctl, (void __iomem *) ioaddr->ctl_addr);
 	else
 		outb(ap->ctl, ioaddr->ctl_addr);
+	
+	if((ap->host_set->irq==4)||(ap->host_set->irq==5))
+		writel(readl(0xf4800004)|(1<<ap->host_set->irq),0xf4800004);
+	
 	tmp = ata_wait_idle(ap);
 
 	ap->ops->irq_clear(ap);

@@ -15,7 +15,7 @@
  *                           features support
  */
 
-/* $Id: uda1341.h,v 1.6 2004/05/03 17:36:50 tiwai Exp $ */
+/* $Id: uda1341.h,v 1.1.1.1 2007/08/03 05:49:30 johnson Exp $ */
 
 #define UDA1341_ALSA_NAME "snd-uda1341"
 

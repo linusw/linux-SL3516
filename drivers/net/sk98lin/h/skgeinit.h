@@ -2,8 +2,8 @@
  *
  * Name:	skgeinit.h
  * Project:	Gigabit Ethernet Adapters, Common Modules
- * Version:	$Revision: 1.83 $
- * Date:	$Date: 2003/09/16 14:07:37 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2007/08/03 05:46:36 $
  * Purpose:	Structures and prototypes for the GE Init Module
  *
  ******************************************************************************/

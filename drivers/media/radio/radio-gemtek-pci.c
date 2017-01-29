@@ -85,7 +85,7 @@ struct gemtek_pci_card {
 	u8  mute;
 };
 
-static const char rcsid[] = "$Id: radio-gemtek-pci.c,v 1.1 2001/07/23 08:08:16 ted Exp ted $";
+static const char rcsid[] = "$Id: radio-gemtek-pci.c,v 1.1.1.1 2007/08/03 05:46:09 johnson Exp $";
 
 static int nr_radio = -1;
 

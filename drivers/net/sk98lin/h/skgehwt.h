@@ -2,8 +2,8 @@
  *
  * Name:	skhwt.h
  * Project:	Gigabit Ethernet Adapters, Event Scheduler Module
- * Version:	$Revision: 1.7 $
- * Date:	$Date: 2003/09/16 12:55:08 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2007/08/03 05:46:36 $
  * Purpose:	Defines for the hardware timer functions
  *
  ******************************************************************************/

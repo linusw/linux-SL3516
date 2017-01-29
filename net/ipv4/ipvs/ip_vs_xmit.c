@@ -1,7 +1,7 @@
 /*
  * ip_vs_xmit.c: various packet transmitters for IPVS
  *
- * Version:     $Id: ip_vs_xmit.c,v 1.2 2002/11/30 01:50:35 wensong Exp $
+ * Version:     $Id: ip_vs_xmit.c,v 1.1.1.1 2007/08/03 05:49:45 johnson Exp $
  *
  * Authors:     Wensong Zhang <wensong@linuxvirtualserver.org>
  *              Julian Anastasov <ja@ssi.bg>

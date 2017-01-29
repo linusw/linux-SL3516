@@ -20,9 +20,9 @@
  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/include/linux/ftape.h,v $
- * $Revision: 1.17.6.4 $
- * $Date: 1997/11/25 01:52:54 $
+ * $Source: /cvsroot/ShadowDancer/Image/src/linux/include/linux/ftape.h,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2007/08/03 05:49:07 $
  *
  *      This file contains global definitions, typedefs and macro's
  *      for the QIC-40/80/3010/3020 floppy-tape driver for Linux.

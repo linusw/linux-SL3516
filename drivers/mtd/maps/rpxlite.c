@@ -1,5 +1,5 @@
 /*
- * $Id: rpxlite.c,v 1.22 2004/11/04 13:24:15 gleixner Exp $
+ * $Id: rpxlite.c,v 1.1.1.1 2007/08/03 05:46:19 johnson Exp $
  *
  * Handle mapping of the flash on the RPX Lite and CLLF boards
  */

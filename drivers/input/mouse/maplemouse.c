@@ -1,5 +1,5 @@
 /*
- *	$Id: maplemouse.c,v 1.2 2004/03/22 01:18:15 lethal Exp $
+ *	$Id: maplemouse.c,v 1.1.1.1 2007/08/03 05:45:52 johnson Exp $
  *	SEGA Dreamcast mouse driver
  *	Based on drivers/usb/usbmouse.c
  */

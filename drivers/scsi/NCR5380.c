@@ -28,6 +28,12 @@
 
 /*
  * $Log: NCR5380.c,v $
+ * Revision 1.1.1.1  2007/08/03 05:46:57  johnson
+ * init
+ *
+ * Revision 1.1.1.1  2006/04/03 08:40:58  amos_lee
+ * initial
+ *
 
  * Revision 1.10 1998/9/2	Alan Cox
  *				(alan@redhat.com)

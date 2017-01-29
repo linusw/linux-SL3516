@@ -5,7 +5,7 @@
  *
  *		PF_INET protocol family socket handler.
  *
- * Version:	$Id: af_inet.c,v 1.137 2002/02/01 22:01:03 davem Exp $
+ * Version:	$Id: af_inet.c,v 1.1.1.1 2007/08/03 05:49:43 johnson Exp $
  *
  * Authors:	Ross Biro
  *		Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
@@ -677,6 +677,18 @@ static ssize_t inet_sendpage(struct socket *sock, struct page *page, int offset,
 	return sock_no_sendpage(sock, page, offset, size, flags);
 }
 
+#ifdef CONFIG_SL2312_TSO
+ssize_t inet_send_mpages(struct socket *sock, struct page_chain* chain, int offset, size_t size, int flags)
+{
+	struct sock *sk = sock->sk;
+	if (!inet_sk(sk)->num && inet_autobind(sk))
+		return -EAGAIN;
+	if (sk->sk_prot->send_mpages)
+		sk->sk_prot->send_mpages(sk, chain, offset, size, flags);
+	// we need to go through all the pages in the chain acturally.
+	return sock_no_sendpage(sock, chain->page, offset, size, flags);
+}
+#endif
 
 int inet_shutdown(struct socket *sock, int how)
 {
@@ -802,7 +814,17 @@ struct proto_ops inet_stream_ops = {
 	.sendmsg =	inet_sendmsg,
 	.recvmsg =	sock_common_recvmsg,
 	.mmap =		sock_no_mmap,
-	.sendpage =	tcp_sendpage
+	.sendpage =	tcp_sendpage,
+#ifdef CONFIG_SL2312_TSO
+	.send_mpages = tcp_send_mpages,
+#endif
+#ifdef CONFIG_SL2312_RECVFILE
+	.recvpage =	tcp_recvpage,
+#endif
+#if defined(CONFIG_SL2312_RECVFILE) && defined(CONFIG_SL2312_MPAGE)
+	.recv_mpages = tcp_recv_mpages
+#endif
+
 };
 
 struct proto_ops inet_dgram_ops = {
@@ -824,6 +846,10 @@ struct proto_ops inet_dgram_ops = {
 	.recvmsg =	sock_common_recvmsg,
 	.mmap =		sock_no_mmap,
 	.sendpage =	inet_sendpage,
+#ifdef CONFIG_SL2312_RECVFILE
+	.recvpage = 	NULL,
+#endif
+	
 };
 
 /*
@@ -849,6 +875,10 @@ static struct proto_ops inet_sockraw_ops = {
 	.recvmsg =	sock_common_recvmsg,
 	.mmap =		sock_no_mmap,
 	.sendpage =	inet_sendpage,
+#ifdef CONFIG_SL2312_RECVFILE
+	.recvpage = 	NULL,
+#endif
+	
 };
 
 static struct net_proto_family inet_family_ops = {

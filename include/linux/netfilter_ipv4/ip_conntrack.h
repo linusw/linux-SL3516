@@ -2,6 +2,7 @@
 #define _IP_CONNTRACK_H
 
 #include <linux/netfilter/nf_conntrack_common.h>
+#include <asm/arch/sl351x_nat_cfg.h>
 
 #ifdef __KERNEL__
 #include <linux/config.h>
@@ -29,6 +30,7 @@ union ip_conntrack_expect_proto {
 };
 
 /* Add protocol helper include file here */
+#include <linux/netfilter_ipv4/ip_conntrack_h323.h>
 #include <linux/netfilter_ipv4/ip_conntrack_pptp.h>
 #include <linux/netfilter_ipv4/ip_conntrack_amanda.h>
 #include <linux/netfilter_ipv4/ip_conntrack_ftp.h>
@@ -37,6 +39,7 @@ union ip_conntrack_expect_proto {
 /* per conntrack: application helper private data */
 union ip_conntrack_help {
 	/* insert conntrack helper private data (master) here */
+	struct ip_ct_h323_master ct_h323_info;
 	struct ip_ct_pptp_master ct_pptp_info;
 	struct ip_ct_ftp_master ct_ftp_info;
 	struct ip_ct_irc_master ct_irc_info;
@@ -104,6 +107,14 @@ struct ip_conntrack
 
 	union ip_conntrack_help help;
 
+#ifdef CONFIG_SL351x_NAT
+	u16		lan2wan_hash_index;	// 0: not available, 1 : hash index 0
+	u16		wan2lan_hash_index;	// 0: not available, 1 : hash index 0
+	u16		lan2wan_collision;	// 1: collision for hash entry
+	u16		wan2lan_collision;	// 1: collision for hash entry
+	unsigned int hw_nat;
+#endif
+
 #ifdef CONFIG_IP_NF_NAT_NEEDED
 	struct {
 		struct ip_nat_info info;
@@ -152,6 +163,7 @@ struct ip_conntrack_expect
 	unsigned int flags;
 
 #ifdef CONFIG_IP_NF_NAT_NEEDED
+	u_int32_t saved_ip;
 	/* This is the original per-proto part, used to map the
 	 * expected connection the way the recipient expects. */
 	union ip_conntrack_manip_proto saved_proto;

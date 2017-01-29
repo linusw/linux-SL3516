@@ -297,6 +297,6 @@ EXPORT_SYMBOL(ether_setup);
 
 struct net_device *alloc_etherdev(int sizeof_priv)
 {
-	return alloc_netdev(sizeof_priv, "eth%d", ether_setup);
+	return alloc_netdev(sizeof_priv, "egiga%d", ether_setup);
 }
 EXPORT_SYMBOL(alloc_etherdev);

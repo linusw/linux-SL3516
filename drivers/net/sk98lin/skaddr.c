@@ -2,8 +2,8 @@
  *
  * Name:	skaddr.c
  * Project:	Gigabit Ethernet Adapters, ADDR-Module
- * Version:	$Revision: 1.52 $
- * Date:	$Date: 2003/06/02 13:46:15 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2007/08/03 05:46:35 $
  * Purpose:	Manage Addresses (Multicast and Unicast) and Promiscuous Mode.
  *
  ******************************************************************************/
@@ -44,7 +44,7 @@
 
 #if (defined(DEBUG) || ((!defined(LINT)) && (!defined(SK_SLIM))))
 static const char SysKonnectFileId[] =
-	"@(#) $Id: skaddr.c,v 1.52 2003/06/02 13:46:15 tschilli Exp $ (C) Marvell.";
+	"@(#) $Id: skaddr.c,v 1.1.1.1 2007/08/03 05:46:35 johnson Exp $ (C) Marvell.";
 #endif /* DEBUG ||!LINT || !SK_SLIM */
 
 #define __SKADDR_C

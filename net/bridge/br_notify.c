@@ -5,7 +5,7 @@
  *	Authors:
  *	Lennert Buytenhek		<buytenh@gnu.org>
  *
- *	$Id: br_notify.c,v 1.2 2000/02/21 15:51:34 davem Exp $
+ *	$Id: br_notify.c,v 1.1.1.1 2007/08/03 05:49:40 johnson Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License
@@ -49,19 +49,26 @@ static int br_device_event(struct notifier_block *unused, unsigned long event, v
 
 	case NETDEV_CHANGEADDR:
 		br_fdb_changeaddr(p, dev->dev_addr);
-		br_stp_recalculate_bridge_id(br);
+
+		//debug_Aaron on 2006/06/28, if stp off do not care events of STP
+                if (p->br->stp_enabled)
+			br_stp_recalculate_bridge_id(br);
 		break;
 
 	case NETDEV_CHANGE:	/* device is up but carrier changed */
 		if (!(br->dev->flags & IFF_UP))
 			break;
 
-		if (netif_carrier_ok(dev)) {
-			if (p->state == BR_STATE_DISABLED)
-				br_stp_enable_port(p);
-		} else {
-			if (p->state != BR_STATE_DISABLED)
-				br_stp_disable_port(p);
+		 //debug_Aaron on 2006/06/28, if stp off do not care events of STP
+                if (p->br->stp_enabled)
+		{
+			if (netif_carrier_ok(dev)) {
+				if (p->state == BR_STATE_DISABLED)
+					br_stp_enable_port(p);
+			} else {
+				if (p->state != BR_STATE_DISABLED)
+					br_stp_disable_port(p);
+			}
 		}
 		break;
 
@@ -75,13 +82,21 @@ static int br_device_event(struct notifier_block *unused, unsigned long event, v
 		break;
 
 	case NETDEV_DOWN:
-		if (br->dev->flags & IFF_UP)
-			br_stp_disable_port(p);
+		 //debug_Aaron on 2006/06/28, if stp off do not care events of STP
+                if (p->br->stp_enabled)
+                {
+			if (br->dev->flags & IFF_UP)
+				br_stp_disable_port(p);
+		}
 		break;
 
 	case NETDEV_UP:
-		if (netif_carrier_ok(dev) && (br->dev->flags & IFF_UP)) 
-			br_stp_enable_port(p);
+		 //debug_Aaron on 2006/06/28, if stp off do not care events of STP
+                if (p->br->stp_enabled)
+                {
+			if (netif_carrier_ok(dev) && (br->dev->flags & IFF_UP)) 
+				br_stp_enable_port(p);
+		}
 		break;
 
 	case NETDEV_UNREGISTER:

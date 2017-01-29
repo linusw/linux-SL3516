@@ -2,7 +2,7 @@
  * amd76xrom.c
  *
  * Normal mappings of chips in physical memory
- * $Id: amd76xrom.c,v 1.21 2005/11/07 11:14:26 gleixner Exp $
+ * $Id: amd76xrom.c,v 1.1.1.1 2007/08/03 05:46:18 johnson Exp $
  */
 
 #include <linux/module.h>

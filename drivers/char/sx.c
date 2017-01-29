@@ -33,6 +33,12 @@
  *
  * Revision history:
  * $Log: sx.c,v $
+ * Revision 1.1.1.1  2007/08/03 05:45:28  johnson
+ * init
+ *
+ * Revision 1.1.1.1  2006/04/03 08:40:46  amos_lee
+ * initial
+ *
  * Revision 1.33  2000/03/09 10:00:00  pvdl,wolff
  * - Fixed module and port counting
  * - Fixed signal handling
@@ -200,8 +206,8 @@
  * */
 
 
-#define RCS_ID "$Id: sx.c,v 1.33 2000/03/08 10:01:02 wolff, pvdl Exp $"
-#define RCS_REV "$Revision: 1.33 $"
+#define RCS_ID "$Id: sx.c,v 1.1.1.1 2007/08/03 05:45:28 johnson Exp $"
+#define RCS_REV "$Revision: 1.1.1.1 $"
 
 
 #include <linux/module.h>

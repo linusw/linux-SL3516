@@ -1,4 +1,4 @@
-/* $Id: hscx.h,v 1.8.2.2 2004/01/12 22:52:26 keil Exp $
+/* $Id: hscx.h,v 1.1.1.1 2007/08/03 05:45:58 johnson Exp $
  *
  * HSCX specific defines
  *

@@ -32,7 +32,7 @@
 #ifndef ZFCP_EXT_H
 #define ZFCP_EXT_H
 
-#define ZFCP_EXT_REVISION "$Revision: 1.62 $"
+#define ZFCP_EXT_REVISION "$Revision: 1.1.1.1 $"
 
 #include "zfcp_def.h"
 

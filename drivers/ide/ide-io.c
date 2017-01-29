@@ -55,6 +55,14 @@
 #include <asm/io.h>
 #include <asm/bitops.h>
 
+#ifdef CONFIG_SL2312_SHARE_PIN
+extern struct wait_queue_head_t *wq;
+extern int share_pin_flag;
+extern int check_sleep_flag;
+int check_and_wait_flash_idle(int);
+extern unsigned int ide0_base;
+#endif
+
 int __ide_end_request(ide_drive_t *drive, struct request *rq, int uptodate,
 		      int nr_sectors)
 {
@@ -380,6 +388,13 @@ void ide_end_drive_cmd (ide_drive_t *drive, u8 stat, u8 err)
 	HWGROUP(drive)->rq = NULL;
 	rq->errors = err;
 	end_that_request_last(rq);
+#ifdef  CONFIG_SL2312_SHARE_PIN
+    if(hwif->io_ports[0]==ide0_base){
+    	clear_bit(IDE_CMD_SHARE_BIT,&share_pin_flag);
+    	check_sleep_flag &= ~0x00000002;
+//    	wake_up_interruptible(&wq);
+    }
+#endif
 	spin_unlock_irqrestore(&ide_lock, flags);
 }
 
@@ -615,6 +630,10 @@ static void ide_cmd (ide_drive_t *drive, u8 cmd, u8 nsect,
 		hwif->OUTB(drive->ctl,IDE_CONTROL_REG);	/* clear nIEN */
 	SELECT_MASK(drive,0);
 	hwif->OUTB(nsect,IDE_NSECTOR_REG);
+#ifdef CONFIG_SL2312_SHARE_PIN
+	if(drive->hwif->io_ports[0]==ide0_base)
+	check_and_wait_flash_idle(IDE_CMD_SHARE_BIT);
+#endif
 	ide_execute_command(drive, cmd, handler, WAIT_CMD, NULL);
 }
 
@@ -808,6 +827,10 @@ static ide_startstop_t execute_drive_cmd (ide_drive_t *drive,
 
 		if (args->tf_out_flags.all != 0) 
 			return flagged_taskfile(drive, args);
+#ifdef  CONFIG_SL2312_SHARE_PIN
+	if(drive->hwif->io_ports[0]==ide0_base)
+		check_and_wait_flash_idle(IDE_CMD_SHARE_BIT);
+#endif
 		return do_rw_taskfile(drive, args);
 	} else if (rq->flags & REQ_DRIVE_TASK) {
 		u8 *args = rq->buffer;
@@ -1237,6 +1260,10 @@ static void ide_do_request (ide_hwgroup_t *hwgroup, int masked_irq)
 void do_ide_request(request_queue_t *q)
 {
 	ide_drive_t *drive = q->queuedata;
+#ifdef CONFIG_SL2312_SHARE_PIN
+	if(drive->hwif->io_ports[0]==ide0_base)
+		check_and_wait_flash_idle(IDE_RW_SHARE_BIT);
+#endif
 
 	ide_do_request(HWGROUP(drive), IDE_NO_IRQ);
 }
@@ -1568,6 +1595,7 @@ irqreturn_t ide_intr (int irq, void *dev_id, struct pt_regs *regs)
 		local_irq_enable();
 	/* service this interrupt, may set handler for next interrupt */
 	startstop = handler(drive);
+	
 	spin_lock_irq(&ide_lock);
 
 	/*
@@ -1642,6 +1670,11 @@ int ide_do_drive_cmd (ide_drive_t *drive, struct request *rq, ide_action_t actio
 	DECLARE_COMPLETION(wait);
 	int where = ELEVATOR_INSERT_BACK, err;
 	int must_wait = (action == ide_wait || action == ide_head_wait);
+
+#ifdef  CONFIG_SL2312_SHARE_PIN
+	if(drive->hwif->io_ports[0]==ide0_base)
+		check_and_wait_flash_idle(IDE_CMD_SHARE_BIT);
+#endif
 
 	rq->errors = 0;
 	rq->rq_status = RQ_ACTIVE;

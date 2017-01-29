@@ -27,6 +27,7 @@
 #include <linux/swap.h>
 #include <linux/writeback.h>
 #include <linux/blkdev.h>
+#include <linux/ide.h>
 
 /*
  * for max sense size
@@ -36,6 +37,16 @@
 static void blk_unplug_work(void *data);
 static void blk_unplug_timeout(unsigned long data);
 static void drive_stat_acct(struct request *rq, int nr_sectors, int new_io);
+
+#ifdef CONFIG_SL2312_SHARE_PIN
+DECLARE_WAIT_QUEUE_HEAD(flash_wait);
+extern struct wait_queue_head_t *wq;
+extern unsigned int share_pin_flag;
+extern unsigned int check_sleep_flag;
+int check_and_wait_flash_idle(int);
+unsigned int ide0_base;
+extern unsigned int flash_req;
+#endif
 
 /*
  * For the allocated request tables
@@ -72,6 +83,48 @@ EXPORT_SYMBOL(blk_max_pfn);
 
 /* Number of requests a "batching" process may submit */
 #define BLK_BATCH_REQ	32
+
+#ifdef CONFIG_SL2312_SHARE_PIN
+int check_and_wait_flash_idle(int bit)
+{
+	unsigned int flag;
+		
+      if(test_bit(FLASH_SHARE_BIT, &share_pin_flag)||flash_req)
+      {	      
+         DECLARE_WAITQUEUE(wait, current);
+ 	
+ 	wake_up_interruptible(&wq);
+        
+        add_wait_queue(&flash_wait, &wait);
+         local_save_flags(flag);
+         do
+         {
+            set_current_state(TASK_INTERRUPTIBLE);
+            if(!test_bit(FLASH_SHARE_BIT, &share_pin_flag)&&(flash_req==0))
+            {
+            	   set_bit(bit ,&share_pin_flag);
+//            	   printk("IDE running\n");
+            	   local_irq_restore(flag|0x80);
+                   break;
+            }      
+            check_sleep_flag |= 0x00000002; 
+            //printk("IDE yield\n");
+			local_irq_restore(flag&(~0x80));
+            yield();
+         } while (1);
+         check_sleep_flag &= ~0x00000002; 
+         current->state = TASK_RUNNING;
+         remove_wait_queue(&flash_wait, &wait);
+         return 0;
+     }
+     else {
+	local_save_flags(flag);
+	set_bit(bit ,&share_pin_flag);
+	check_sleep_flag &= ~0x00000002; 
+	local_irq_restore(flag);
+     } 	 
+}	
+#endif
 
 /*
  * Return the threshold (number of used requests) at which the queue is
@@ -2755,6 +2808,16 @@ get_rq:
 	req->ioprio = prio;
 	req->rq_disk = bio->bi_bdev->bd_disk;
 	req->start_time = jiffies;
+#ifdef CONFIG_SL2312_SHARE_PIN
+	unsigned char *ptmp=req->q->queuedata;
+	if((ptmp[0]=='h')&&(ptmp[1]=='d')){
+		ide_drive_t *drive = req->rq_disk->queue->queuedata;
+		if(drive){
+			if(drive->hwif->io_ports[0]==ide0_base)
+			check_and_wait_flash_idle(IDE_RW_SHARE_BIT);
+		}
+	}
+#endif
 
 	spin_lock_irq(q->queue_lock);
 	if (elv_queue_empty(q))
@@ -2834,7 +2897,8 @@ void generic_make_request(struct bio *bio)
 	request_queue_t *q;
 	sector_t maxsector;
 	int ret, nr_sectors = bio_sectors(bio);
-
+	
+	
 	might_sleep();
 	/* Test device or partition size, when known. */
 	maxsector = bio->bi_bdev->bd_inode->i_size >> 9;
@@ -3010,7 +3074,13 @@ static int __end_that_request_first(struct request *req, int uptodate,
 {
 	int total_bytes, bio_nbytes, error, next_idx = 0;
 	struct bio *bio;
-
+#ifdef CONFIG_SL2312_SHARE_PIN
+	unsigned char *ptmp=req->q->queuedata;
+	ide_drive_t *drive;
+	if((ptmp[0]=='h')&&(ptmp[1]=='d')){
+		drive= req->q->queuedata;
+	}
+#endif
 	/*
 	 * extend uptodate bool to allow < 0 value to be direct io error
 	 */
@@ -3041,6 +3111,18 @@ static int __end_that_request_first(struct request *req, int uptodate,
 	total_bytes = bio_nbytes = 0;
 	while ((bio = req->bio) != NULL) {
 		int nbytes;
+
+#if 0 // CONFIG_SL2312_SHARE_PIN
+	 if(drive->hwif->io_ports[0]==ide0_base){
+		clear_bit(IDE_RW_SHARE_BIT,&share_pin_flag);
+		check_sleep_flag &= ~0x00000002;
+		if(check_sleep_flag & 0x00000001)
+		{
+			check_sleep_flag &= ~(0x00000001);
+			wake_up_interruptible(&wq);
+		}
+	}
+#endif
 
 		if (nr_bytes >= bio->bi_size) {
 			req->bio = bio->bi_next;
@@ -3089,6 +3171,20 @@ static int __end_that_request_first(struct request *req, int uptodate,
 				break;
 		}
 	}
+
+#ifdef CONFIG_SL2312_SHARE_PIN
+	if((ptmp[0]=='h')&&(ptmp[1]=='d')){
+		if(drive->hwif->io_ports[0]==ide0_base){
+			clear_bit(IDE_RW_SHARE_BIT,&share_pin_flag);
+			check_sleep_flag &= ~0x00000002;
+			if(check_sleep_flag & 0x00000001)
+			{
+				check_sleep_flag &= ~(0x00000001);
+				//			wake_up_interruptible(&wq);
+			}
+		}
+	}
+#endif
 
 	/*
 	 * completely done

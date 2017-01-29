@@ -22,7 +22,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- *  $Id: clps711x.c,v 1.42 2002/07/28 10:03:28 rmk Exp $
+ *  $Id: clps711x.c,v 1.1.1.1 2007/08/03 05:47:12 johnson Exp $
  *
  */
 #include <linux/config.h>
@@ -562,7 +562,7 @@ static int __init clps711xuart_init(void)
 {
 	int ret, i;
 
-	printk(KERN_INFO "Serial: CLPS711x driver $Revision: 1.42 $\n");
+	printk(KERN_INFO "Serial: CLPS711x driver $Revision: 1.1.1.1 $\n");
 
 	ret = uart_register_driver(&clps711x_reg);
 	if (ret)
@@ -588,6 +588,6 @@ module_init(clps711xuart_init);
 module_exit(clps711xuart_exit);
 
 MODULE_AUTHOR("Deep Blue Solutions Ltd");
-MODULE_DESCRIPTION("CLPS-711x generic serial driver $Revision: 1.42 $");
+MODULE_DESCRIPTION("CLPS-711x generic serial driver $Revision: 1.1.1.1 $");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS_CHARDEV(SERIAL_CLPS711X_MAJOR, SERIAL_CLPS711X_MINOR);

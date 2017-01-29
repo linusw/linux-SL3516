@@ -1,7 +1,7 @@
 /*
    Common Flash Interface probe code.
    (C) 2000 Red Hat. GPL'd.
-   $Id: jedec_probe.c,v 1.66 2005/11/07 11:14:23 gleixner Exp $
+   $Id: jedec_probe.c,v 1.2 2007/08/08 06:27:57 johnson Exp $
    See JEDEC (http://www.jedec.org/) standard JESD21C (section 3.5)
    for the standard this probe goes back to.
 
@@ -38,6 +38,7 @@
 #define MANUFACTURER_ST		0x0020
 #define MANUFACTURER_TOSHIBA	0x0098
 #define MANUFACTURER_WINBOND	0x00da
+#define MANUFACTURER_EON        0x001C  //micle ++ 20090227 by benson's advise for EN29LV400A
 
 
 /* AMD */
@@ -59,6 +60,12 @@
 #define AM29LV040B	0x004F
 #define AM29F032B	0x0041
 #define AM29F002T	0x00B0
+#define S29AL004DB 0x22BA
+#define S29AL004DT 0x22B9
+#define S29GL128N  0x227E
+
+/* EON */
+#define EN29LV400AB 0x22BA  //micle ++ 20090227 by benson's advise for EN29LV400A
 
 /* Atmel */
 #define AT49BV512	0x0003
@@ -166,6 +173,9 @@
 /* Winbond */
 #define W49V002A	0x00b0
 
+unsigned int FIND_EN29LV400A = 0;//micle ++ 20090320  for EN29LV400A
+EXPORT_SYMBOL(FIND_EN29LV400A);//micle ++ 20090320  for EN29LV400A
+
 
 /*
  * Unlock address sets for AMD command sets.
@@ -270,7 +280,72 @@ struct amd_flash_info {
  * slow, linear search isn't so bad.
  */
 static const struct amd_flash_info jedec_table[] = {
-	{
+        {
+                  .mfr_id  = MANUFACTURER_AMD,////middle 
+                  .dev_id  = S29GL128N,
+                  .name  = "S29GL128N",
+                  .uaddr  = {
+                   [0] = MTD_UADDR_0x0AAA_0x0555,  /* x8 */
+                   [1] = MTD_UADDR_0x0555_0x02AA,  /* x16 */
+                  },
+                  .DevSize = SIZE_8MiB,
+                  .CmdSet  = P_ID_AMD_STD,
+                  .NumEraseRegions= 1,
+                  .regions = {
+                   ERASEINFO(0x10000,128)
+                  }
+            }, {
+                  .mfr_id  = MANUFACTURER_AMD,////middle 
+                  .dev_id  = S29AL004DB,
+                  .name  = "S29AL004DB",
+                  .uaddr  = {
+                   [0] = MTD_UADDR_0x0AAA_0x0555,  /* x8 */
+                   [1] = MTD_UADDR_0x0555_0x02AA,  /* x16 */
+                  },
+                  .DevSize = SIZE_512KiB,
+                  .CmdSet  = P_ID_AMD_STD,
+                  .NumEraseRegions= 4,
+                  .regions = {
+                   ERASEINFO(0x04000,1),
+                   ERASEINFO(0x02000,2),
+                   ERASEINFO(0x08000,1),
+                   ERASEINFO(0x10000,7)
+                  }
+         }, {
+                  .mfr_id  = MANUFACTURER_AMD,/////middle
+                  .dev_id  = S29AL004DT,
+                  .name  = "S29AL004DT",
+                  .uaddr  = {
+                   [0] = MTD_UADDR_0x0AAA_0x0555,  /* x8 */
+                   [1] = MTD_UADDR_0x0555_0x02AA,  /* x16 */
+                  },
+                  .DevSize = SIZE_512KiB,
+                  .CmdSet  = P_ID_AMD_STD,
+                  .NumEraseRegions= 4,
+                  .regions = {
+                   ERASEINFO(0x10000,7),
+                   ERASEINFO(0x08000,1),
+                   ERASEINFO(0x02000,2),
+                   ERASEINFO(0x04000,1)
+                  }
+            }, {//micle ++ 20090207 by benson's advise for EN29LV400A begin
+                  .mfr_id  = MANUFACTURER_EON,/////add by Benson
+                  .dev_id  = EN29LV400AB,
+                  .name  = "EN29LV400AB",
+                  .uaddr  = {
+                   [0] = MTD_UADDR_0x0AAA_0x0555,  /* x8 */
+                   [1] = MTD_UADDR_0x0555_0x02AA,  /* x16 */
+                  },
+                  .DevSize = SIZE_512KiB,
+                  .CmdSet  = P_ID_AMD_STD,
+                  .NumEraseRegions= 4,
+                  .regions = {
+                   ERASEINFO(0x04000,1),
+                   ERASEINFO(0x02000,2),
+                   ERASEINFO(0x08000,1),
+                   ERASEINFO(0x10000,7)
+                  }//micle ++ 20090207 by benson's advise for EN29LV400A end
+            }, {
 		.mfr_id		= MANUFACTURER_AMD,
 		.dev_id		= AM29F032B,
 		.name		= "AMD AM29F032B",
@@ -1724,7 +1799,11 @@ static inline u32 jedec_read_mfr(struct map_info *map, __u32 base,
 {
 	map_word result;
 	unsigned long mask;
-	u32 ofs = cfi_build_cmd_addr(0, cfi_interleave(cfi), cfi->device_type);
+	//micle ++ 20090207 by Andge's advise for EN29LV400A
+//Andge  This fix is not good enough. MFR_Addr, ID_Addr may not be the same
+//       in different flash vendor. This fix is for spansion and EON only.
+//Andge	u32 ofs = cfi_build_cmd_addr(0, cfi_interleave(cfi), cfi->device_type);
+	u32 ofs = cfi_build_cmd_addr(0x100, cfi_interleave(cfi), cfi->device_type);
 	mask = (1 << (cfi->device_type * 8)) -1;
 	result = map_read(map, base + ofs);
 	return result.x[0] & mask;
@@ -1788,7 +1867,7 @@ static inline __u8 finfo_uaddr(const struct amd_flash_info *finfo, int device_ty
 
 	uaddr = finfo->uaddr[uaddr_idx];
 
-	if (uaddr != MTD_UADDR_NOT_SUPPORTED ) {
+	if (uaddr == MTD_UADDR_NOT_SUPPORTED ) {
 		/* ASSERT("The unlock addresses for non-8-bit mode
 		   are bollocks. We don't really need an array."); */
 		uaddr = finfo->uaddr[0];
@@ -2032,7 +2111,16 @@ static int jedec_probe_chip(struct map_info *map, __u32 base,
 
 		cfi->mfr = jedec_read_mfr(map, base, cfi);
 		cfi->id = jedec_read_id(map, base, cfi);
-		DEBUG(MTD_DEBUG_LEVEL3,
+		//micle 20090320 ++ for EN29LV400A
+		if (cfi->mfr == MANUFACTURER_EON && cfi->id == EN29LV400AB)
+			FIND_EN29LV400A = 1;
+		if (FIND_EN29LV400A) 
+			printk("Find EN29LV400A.\n");
+		else 
+			printk("Not find EN29LV400A.\n");
+		//micle 20090227 modify DEBUG to printk for EN29LV400A
+	//		DEBUG(MTD_DEBUG_LEVEL3,
+	printk(
 		      "Search for id:(%02x %02x) interleave(%d) type(%d)\n",
 			cfi->mfr, cfi->id, cfi_interleave(cfi), cfi->device_type);
 		for (i=0; i<sizeof(jedec_table)/sizeof(jedec_table[0]); i++) {

@@ -17,9 +17,9 @@
  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/ftape/lowlevel/ftape-read.c,v $
- * $Revision: 1.6 $
- * $Date: 1997/10/21 14:39:22 $
+ * $Source: /cvsroot/ShadowDancer/Image/src/linux/drivers/char/ftape/lowlevel/ftape-read.c,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2007/08/03 05:45:34 $
  *
  *      This file contains the reading code
  *      for the QIC-117 floppy-tape driver for Linux.

@@ -1,4 +1,4 @@
-/* $Id: asuscom.c,v 1.14.2.4 2004/01/13 23:48:39 keil Exp $
+/* $Id: asuscom.c,v 1.1.1.1 2007/08/03 05:45:57 johnson Exp $
  *
  * low level stuff for ASUSCOM NETWORK INC. ISDNLink cards
  *
@@ -22,7 +22,7 @@
 
 extern const char *CardType[];
 
-static const char *Asuscom_revision = "$Revision: 1.14.2.4 $";
+static const char *Asuscom_revision = "$Revision: 1.1.1.1 $";
 
 #define byteout(addr,val) outb(val,addr)
 #define bytein(addr) inb(addr)

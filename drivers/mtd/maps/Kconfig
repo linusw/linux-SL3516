@@ -1,5 +1,5 @@
 # drivers/mtd/maps/Kconfig
-# $Id: Kconfig,v 1.61 2005/11/07 11:14:26 gleixner Exp $
+# $Id: Kconfig,v 1.1.1.1 2007/08/03 05:46:18 johnson Exp $
 
 menu "Mapping drivers for chip access"
 	depends on MTD!=n
@@ -638,6 +638,31 @@ config MTD_PLATRAM
 	  system.
 
 	  This selection automatically selects the map_ram driver.
+
+#***************************************************************************************
+# Storlink parallel/Serial Flash configuration
+#***************************************************************************************
+config MTD_SL2312_CFI
+        tristate "CFI Flash device mapped on SL2312"
+        depends on MTD_CFI
+        help
+          Map driver for SL2312 demo board.
+
+config MTD_SL2312_SERIAL_ATMEL
+        tristate "ATMEL Serial Flash device mapped on SL2312"
+        depends on MTD_PARTITIONS && ARCH_SL2312
+        help
+          Map driver for SL2312 demo board.
+
+config MTD_SL2312_SERIAL_ST
+        tristate "ST Serial Flash device mapped on SL2312"
+        depends on MTD_PARTITIONS && ARCH_SL2312
+        help
+          Map driver for SL2312 demo board.          
+
+config SL2312_SHARE_PIN
+        tristate "Parallel Flash share pin on SL2312 ASIC"
+        depends on SL3516_ASIC
 
 endmenu
 

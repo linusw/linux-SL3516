@@ -11,7 +11,7 @@
  *
  * (C) 2000 Nicolas Pitre <nico@cam.org>
  *
- * $Id: ceiva.c,v 1.11 2004/09/16 23:27:12 gleixner Exp $
+ * $Id: ceiva.c,v 1.1.1.1 2007/08/03 05:46:18 johnson Exp $
  */
 
 #include <linux/config.h>

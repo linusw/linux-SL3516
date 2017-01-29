@@ -8,7 +8,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: summary.h,v 1.2 2005/09/26 11:37:21 havasi Exp $
+ * $Id: summary.h,v 1.1.1.1 2007/08/03 05:48:02 johnson Exp $
  *
  */
 

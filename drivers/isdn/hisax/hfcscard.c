@@ -1,4 +1,4 @@
-/* $Id: hfcscard.c,v 1.10.2.4 2004/01/14 16:04:48 keil Exp $
+/* $Id: hfcscard.c,v 1.1.1.1 2007/08/03 05:45:57 johnson Exp $
  *
  * low level stuff for hfcs based cards (Teles3c, ACER P10)
  *
@@ -18,7 +18,7 @@
 
 extern const char *CardType[];
 
-static const char *hfcs_revision = "$Revision: 1.10.2.4 $";
+static const char *hfcs_revision = "$Revision: 1.1.1.1 $";
 
 static irqreturn_t
 hfcs_interrupt(int intno, void *dev_id, struct pt_regs *regs)

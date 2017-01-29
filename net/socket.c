@@ -97,6 +97,10 @@
 #include <net/sock.h>
 #include <linux/netfilter.h>
 
+#ifdef CONFIG_SL2312_TSO
+#include <linux/fs.h>
+#endif
+
 static int sock_no_open(struct inode *irrelevant, struct file *dontcare);
 static ssize_t sock_aio_read(struct kiocb *iocb, char __user *buf,
 			 size_t size, loff_t pos);
@@ -116,6 +120,19 @@ static ssize_t sock_writev(struct file *file, const struct iovec *vector,
 			  unsigned long count, loff_t *ppos);
 static ssize_t sock_sendpage(struct file *file, struct page *page,
 			     int offset, size_t size, loff_t *ppos, int more);
+#ifdef CONFIG_SL2312_TSO
+static ssize_t sock_send_mpages(struct file *file, struct page_chain* chain,
+			int offset, size_t size, loff_t *ppos, int more);
+#endif
+
+#ifdef CONFIG_SL2312_RECVFILE
+static int sock_recvpage(struct file *file, char* buf,
+			     size_t size, loff_t *ppos, int more);
+static int sock_recv_mpages(struct file* file, struct page_chain* chain,
+           //int offset, size_t size, loff_t *ppos, int more);
+           int offset, size_t size, loff_t *ppos, int more, int *ftpFinFlag);  // Zachary
+#endif
+
 
 
 /*
@@ -136,7 +153,15 @@ static struct file_operations socket_file_ops = {
 	.fasync =	sock_fasync,
 	.readv =	sock_readv,
 	.writev =	sock_writev,
-	.sendpage =	sock_sendpage
+	.sendpage =	sock_sendpage,
+#ifdef CONFIG_SL2312_TSO
+	.send_mpages =	sock_send_mpages,
+#endif
+#ifdef CONFIG_SL2312_RECVFILE
+	.recvpage =	sock_recvpage,
+	.recv_mpages = sock_recv_mpages
+#endif
+
 };
 
 /*
@@ -740,6 +765,57 @@ static ssize_t sock_sendpage(struct file *file, struct page *page,
 
 	return sock->ops->sendpage(sock, page, offset, size, flags);
 }
+
+#ifdef CONFIG_SL2312_TSO
+ssize_t sock_send_mpages(struct file* file, struct page_chain *chain,
+			int offset, size_t size, loff_t *ppos, int more)
+{
+	struct socket* sock;
+	int flags;
+
+	sock = SOCKET_I(file->f_dentry->d_inode);
+	flags = !(file->f_flags & O_NONBLOCK) ? 0 : MSG_DONTWAIT;
+	if (more)
+		flags |= MSG_MORE;
+	return sock->ops->send_mpages(sock, chain, offset, size, flags); /* tcp_send_mpages() */ 
+}
+#endif
+
+#ifdef CONFIG_SL2312_RECVFILE
+int sock_recvpage(struct file* file, char* buf,
+			size_t size, loff_t *ppos, int more)
+{
+	struct socket *sock;
+	int flags;
+
+	sock = SOCKET_I(file->f_dentry->d_inode);
+	flags = !(file->f_flags & O_NONBLOCK) ? 0 : MSG_DONTWAIT;
+	if (more)
+		flags |= MSG_MORE;
+
+	return sock->ops->recvpage(sock, buf, size, file->f_flags & O_NONBLOCK, flags);
+}
+#endif
+
+#if defined(CONFIG_SL2312_RECVFILE) && defined(CONFIG_SL2312_MPAGE)
+int sock_recv_mpages(struct file* file, struct page_chain* chain,
+                    //int offset, size_t size, loff_t *ppos, int more)
+                    int offset, size_t size, loff_t *ppos, int more, int *ftpFinFlag) // Zachary
+{
+	struct socket* sock;
+	int flags;
+
+	sock = SOCKET_I(file->f_dentry->d_inode);
+	flags = !(file->f_flags & O_NONBLOCK) ? 0 : MSG_DONTWAIT;
+	if (more)
+		flags |= MSG_MORE;
+	//return sock->ops->recv_mpages(sock, chain, offset, size, flags, flags);
+	return sock->ops->recv_mpages(sock, chain, offset, size,
+		file->f_flags & O_NONBLOCK, flags, ftpFinFlag);  // Zachary
+}
+#endif
+
+
 
 static int sock_readv_writev(int type,
 			     struct file * file, const struct iovec * iov,

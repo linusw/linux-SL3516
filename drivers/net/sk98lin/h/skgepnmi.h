@@ -2,8 +2,8 @@
  *
  * Name:	skgepnmi.h
  * Project:	GEnesis, PCI Gigabit Ethernet Adapter
- * Version:	$Revision: 1.62 $
- * Date:	$Date: 2003/08/15 12:31:52 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2007/08/03 05:46:36 $
  * Purpose:	Defines for Private Network Management Interface
  *
  ****************************************************************************/

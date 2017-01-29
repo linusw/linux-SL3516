@@ -1,7 +1,7 @@
 /*
  * ip_vs_est.c: simple rate estimator for IPVS
  *
- * Version:     $Id: ip_vs_est.c,v 1.4 2002/11/30 01:50:35 wensong Exp $
+ * Version:     $Id: ip_vs_est.c,v 1.1.1.1 2007/08/03 05:49:45 johnson Exp $
  *
  * Authors:     Wensong Zhang <wensong@linuxvirtualserver.org>
  *

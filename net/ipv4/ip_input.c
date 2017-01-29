@@ -5,7 +5,7 @@
  *
  *		The Internet Protocol (IP) module.
  *
- * Version:	$Id: ip_input.c,v 1.55 2002/01/12 07:39:45 davem Exp $
+ * Version:	$Id: ip_input.c,v 1.1.1.1 2007/08/03 05:49:44 johnson Exp $
  *
  * Authors:	Ross Biro
  *		Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
@@ -415,9 +415,11 @@ int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt, 
 
 	iph = skb->nh.iph;
 
+	if(skb->ip_summed == CHECKSUM_UNNECESSARY)
+		goto CSUM_SKIP;
 	if (unlikely(ip_fast_csum((u8 *)iph, iph->ihl)))
 		goto inhdr_error;
-
+CSUM_SKIP:
 	len = ntohs(iph->tot_len);
 	if (skb->len < len || len < (iph->ihl*4))
 		goto inhdr_error;

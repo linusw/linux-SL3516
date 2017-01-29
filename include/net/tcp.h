@@ -41,6 +41,10 @@
 
 #include <linux/seq_file.h>
 
+#ifdef CONFIG_SL2312_TSO
+struct page_chain;
+#endif
+
 extern struct inet_hashinfo tcp_hashinfo;
 
 extern atomic_t tcp_orphan_count;
@@ -317,6 +321,17 @@ extern int		    	tcp_v4_tw_remember_stamp(struct inet_timewait_sock *tw);
 extern int			tcp_sendmsg(struct kiocb *iocb, struct sock *sk,
 					    struct msghdr *msg, size_t size);
 extern ssize_t			tcp_sendpage(struct socket *sock, struct page *page, int offset, size_t size, int flags);
+#ifdef CONFIG_SL2312_TSO
+extern ssize_t		tcp_send_mpages(struct socket *sock, struct page_chain *chain, int offset, size_t size, int flags);
+#endif
+#ifdef CONFIG_SL2312_RECVFILE
+extern int			tcp_recvpage(struct socket *sock, char* buf, size_t size, int nonblock, int flags, int *ftpFinFlag);
+#endif
+#if defined(CONFIG_SL2312_RECVFILE) && defined(CONFIG_SL2312_MPAGE)
+//extern int			tcp_recv_mpages(struct socket *sock, struct page_chain* chain, int offset, size_t size, int nonblock, int flags);  
+extern int			tcp_recv_mpages(struct socket *sock, struct page_chain* chain, int offset, size_t size, int nonblock, int flags, int *ftpFinFlag);  // Zachary
+extern int			sk_backlog_data_len(struct socket* sk);
+#endif
 
 extern int			tcp_ioctl(struct sock *sk, 
 					  int cmd, 

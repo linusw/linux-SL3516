@@ -30,7 +30,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: ib_user_cm.h 2576 2005-06-09 17:00:30Z libor $
+ * $Id: ib_user_cm.h,v 1.1.1.1 2007/08/03 05:49:28 johnson Exp $
  */
 
 #ifndef IB_USER_CM_H

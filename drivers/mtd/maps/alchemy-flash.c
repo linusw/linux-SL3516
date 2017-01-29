@@ -1,7 +1,7 @@
 /*
  * Flash memory access on AMD Alchemy evaluation boards
  *
- * $Id: alchemy-flash.c,v 1.2 2005/11/07 11:14:26 gleixner Exp $
+ * $Id: alchemy-flash.c,v 1.1.1.1 2007/08/03 05:46:18 johnson Exp $
  *
  * (C) 2003, 2004 Pete Popov <ppopov@embeddedalley.com>
  *

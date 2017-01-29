@@ -1,7 +1,7 @@
 /*
  * IPVS:        Shortest Expected Delay scheduling module
  *
- * Version:     $Id: ip_vs_sed.c,v 1.1 2003/05/10 03:06:08 wensong Exp $
+ * Version:     $Id: ip_vs_sed.c,v 1.1.1.1 2007/08/03 05:49:45 johnson Exp $
  *
  * Authors:     Wensong Zhang <wensong@linuxvirtualserver.org>
  *

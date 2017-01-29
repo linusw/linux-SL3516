@@ -1,5 +1,5 @@
 /*
- * $Id: ctctty.h,v 1.4 2003/09/18 08:01:10 mschwide Exp $
+ * $Id: ctctty.h,v 1.1.1.1 2007/08/03 05:46:55 johnson Exp $
  *
  * CTC / ESCON network driver, tty interface.
  *

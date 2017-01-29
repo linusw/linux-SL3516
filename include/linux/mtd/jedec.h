@@ -7,7 +7,7 @@
  *
  * See the AMD flash databook for information on how to operate the interface.
  *
- * $Id: jedec.h,v 1.4 2005/11/07 11:14:54 gleixner Exp $
+ * $Id: jedec.h,v 1.1.1.1 2007/08/03 05:49:20 johnson Exp $
  */
 
 #ifndef __LINUX_MTD_JEDEC_H__

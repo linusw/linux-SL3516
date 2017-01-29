@@ -4,7 +4,7 @@
  * Author: Fabrice Bellard (fabrice.bellard@netgem.com)
  * Copyright (C) 2000 Netgem S.A.
  *
- * $Id: nftlmount.c,v 1.41 2005/11/07 11:14:21 gleixner Exp $
+ * $Id: nftlmount.c,v 1.1.1.1 2007/08/03 05:46:17 johnson Exp $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 
 #define SECTORSIZE 512
 
-char nftlmountrev[]="$Revision: 1.41 $";
+char nftlmountrev[]="$Revision: 1.1.1.1 $";
 
 /* find_boot_record: Find the NFTL Media Header and its Spare copy which contains the
  *	various device information of the NFTL partition and Bad Unit Table. Update

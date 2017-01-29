@@ -20,9 +20,9 @@
  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/ftape/lowlevel/ftape-rw.h,v $
- * $Revision: 1.2 $
- * $Date: 1997/10/05 19:18:25 $
+ * $Source: /cvsroot/ShadowDancer/Image/src/linux/drivers/char/ftape/lowlevel/ftape-rw.h,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2007/08/03 05:45:34 $
  *
  *      This file contains the definitions for the read and write
  *      functions for the QIC-117 floppy-tape driver for Linux.

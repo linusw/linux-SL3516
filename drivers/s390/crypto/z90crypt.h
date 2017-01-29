@@ -29,7 +29,7 @@
 
 #include <linux/ioctl.h>
 
-#define VERSION_Z90CRYPT_H "$Revision: 1.11 $"
+#define VERSION_Z90CRYPT_H "$Revision: 1.1.1.1 $"
 
 #define z90crypt_VERSION 1
 #define z90crypt_RELEASE 3	// 2 = PCIXCC, 3 = rewrite for coding standards

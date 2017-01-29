@@ -43,9 +43,9 @@
    or kernel and let the user specify the options as command line arguments.
 
  *
- * $Source: /homes/cvs/ftape-stacked/ftape/lowlevel/fc-10.c,v $
- * $Revision: 1.2 $
- * $Date: 1997/10/05 19:18:04 $
+ * $Source: /cvsroot/ShadowDancer/Image/src/linux/drivers/char/ftape/lowlevel/fc-10.c,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2007/08/03 05:45:33 $
  *
  *      This file contains code for the CMS FC-10/FC-20 card.
  */

@@ -29,7 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: ib_srp.h 3932 2005-11-01 17:19:29Z roland $
+ * $Id: ib_srp.h,v 1.1.1.1 2007/08/03 05:45:50 johnson Exp $
  */
 
 #ifndef IB_SRP_H

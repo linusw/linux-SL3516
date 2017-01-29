@@ -3,7 +3,7 @@
  *
  * Copyright (C) 1995 - 1999 Gadi Oxman <gadio@netvision.net.il>
  *
- * $Header$
+ * $Header: /cvsroot/ShadowDancer/Image/src/linux/drivers/ide/ide-tape.c,v 1.1.1.1 2007/08/03 05:45:44 johnson Exp $
  *
  * This driver was constructed as a student project in the software laboratory
  * of the faculty of electrical engineering in the Technion - Israel's

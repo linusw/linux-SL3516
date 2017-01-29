@@ -20,4 +20,11 @@ config CRYPTO_DEV_PADLOCK_AES
 	help
 	  Use VIA PadLock for AES algorithm.
 
+config SL2312_IPSEC
+	tristate "Storlink H/W IPSec Acceleration Engine"
+	depends on CRYPTO
+	help
+	    Storlink H/W crypto engine include MD5,SHA1,HMAC-MD5,HMAC-SHA1,
+	    DES,3DES and AES.
+
 endmenu

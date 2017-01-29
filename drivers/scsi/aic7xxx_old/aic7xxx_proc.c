@@ -26,7 +26,7 @@
  *
  *  Dean W. Gehnert, deang@teleport.com, 05/01/96
  *
- *  $Id: aic7xxx_proc.c,v 4.1 1997/06/97 08:23:42 deang Exp $
+ *  $Id: aic7xxx_proc.c,v 1.1.1.1 2007/08/03 05:47:09 johnson Exp $
  *-M*************************************************************************/
 
 #include <linux/config.h>

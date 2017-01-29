@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: ib_cm.h 2730 2005-06-28 16:43:03Z sean.hefty $
+ * $Id: ib_cm.h,v 1.1.1.1 2007/08/03 05:49:28 johnson Exp $
  */
 #if !defined(IB_CM_H)
 #define IB_CM_H

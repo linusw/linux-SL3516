@@ -1,4 +1,4 @@
-/* $Id: lmc_media.c,v 1.13 2000/04/11 05:25:26 asj Exp $ */
+/* $Id: lmc_media.c,v 1.1.1.1 2007/08/03 05:46:42 johnson Exp $ */
 
 #include <linux/config.h>
 #include <linux/kernel.h>

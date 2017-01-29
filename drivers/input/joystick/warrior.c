@@ -1,5 +1,5 @@
 /*
- * $Id: warrior.c,v 1.14 2002/01/22 20:32:10 vojtech Exp $
+ * $Id: warrior.c,v 1.1.1.1 2007/08/03 05:45:51 johnson Exp $
  *
  *  Copyright (c) 1999-2001 Vojtech Pavlik
  */

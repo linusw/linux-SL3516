@@ -1,4 +1,4 @@
-/* $Id: parport_ieee1284.c,v 1.4 1997/10/19 21:37:21 philip Exp $
+/* $Id: ieee1284.c,v 1.1.1.1 2007/08/03 05:46:46 johnson Exp $
  * IEEE-1284 implementation for parport.
  *
  * Authors: Phil Blundell <philb@gnu.org>

@@ -1,5 +1,5 @@
 /*
- * $Id: beech-mtd.c,v 1.11 2005/11/07 11:14:26 gleixner Exp $
+ * $Id: beech-mtd.c,v 1.1.1.1 2007/08/03 05:46:18 johnson Exp $
  *
  * drivers/mtd/maps/beech-mtd.c MTD mappings and partition tables for
  *                              IBM 405LP Beech boards.

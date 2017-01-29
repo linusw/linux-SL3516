@@ -1,5 +1,5 @@
 /*
- * $Id: hd64465_ss.c,v 1.7 2003/07/06 14:42:50 lethal Exp $
+ * $Id: hd64465_ss.c,v 1.1.1.1 2007/08/03 05:46:50 johnson Exp $
  *
  * Device driver for the PCMCIA controller module of the
  * Hitachi HD64465 handheld companion chip.

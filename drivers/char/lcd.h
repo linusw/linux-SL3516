@@ -184,3 +184,37 @@ struct lcd_display {
 #define kClassB			6
 #define kClassC			7
 
+
+
+struct lcd_ioctl_data {
+        unsigned int action;    // sword struct
+        unsigned int line;     //LCD line line1,line2
+        unsigned int pos;      //LCD line's pos line1,line2
+        unsigned char *data;    // print the system's data to LCD constroler
+};
+
+#define LCD_Display_On_Cursor_On_Blink_On                           0xA2
+#define LCD_Display_On_Cursor_On_Blink_Off                          0xA4
+#define LCD_Display_On_Cursor_Off_Blink_On                           0x92
+#define LCD_Display_On_Cursor_Off_Blink_Off                          0x94
+#define LCD_Display_Off_Cursor_On_Blink_On                           0x82
+#define LCD_Display_Off_Cursor_On_Blink_Off                          0x84
+#define LCD_Display_Off_Cursor_Off_Blink_On                           0x72
+#define LCD_Display_Off_Cursor_Off_Blink_Off                          0x74
+#define LCD_Reset                        0xA6
+#define LCD_Clear                        0xA8
+#define LCD_Cursor_Left                  0xB2
+#define LCD_Cursor_Right                 0xB4
+#define LCD_Get_Cursor                   0xC4
+#define LCD_Set_Cursor                   0xC6
+#define LCD_Disp_Left                    0xC8
+#define LCD_Disp_Right                   0xE2
+#define LCD_Home                         0xE4
+#define LCD_Write                        0xE6
+#define LCD_Dram_Increase_Shift_Right    0xF2
+#define LCD_Dram_Increase_Shift_Left     0xF4
+#define LCD_Dram_Decrease_Shift_Right    0xF6
+#define LCD_Dram_Decrease_Shift_Left     0xF8
+#define LCD_Set_Line1_Dram_Address       0xA0
+#define LCD_Set_Line2_Dram_Address       0xB0
+

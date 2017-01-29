@@ -18,6 +18,14 @@
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
 
+#ifdef CONFIG_SL2312_TSO
+#include <linux/sysctl_storlink.h>
+#endif
+
+#ifdef CONFIG_SL2312_RECVFILE
+#include <linux/pagemap.h> /* for PAGE_CACHE_SIZE */
+#endif
+
 struct file_operations generic_ro_fops = {
 	.llseek		= generic_file_llseek,
 	.read		= generic_file_read,
@@ -623,13 +631,17 @@ sys_writev(unsigned long fd, const struct iovec __user *vec, unsigned long vlen)
 }
 
 static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
-			   size_t count, loff_t max)
+			   size_t count, loff_t max, int ftpFlag)
 {
 	struct file * in_file, * out_file;
 	struct inode * in_inode, * out_inode;
 	loff_t pos;
 	ssize_t retval;
 	int fput_needed_in, fput_needed_out;
+#ifdef CONFIG_SL2312_RECVFILE
+	int recvfile=0;
+#endif
+
 
 	/*
 	 * Get input file, and verify that it is ok..
@@ -644,6 +656,97 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
 	in_inode = in_file->f_dentry->d_inode;
 	if (!in_inode)
 		goto fput_in;
+
+#ifdef CONFIG_SL2312_RECVFILE
+if (S_ISSOCK(in_inode->i_mode))
+{
+	recvfile = 1;
+}/*recv*/
+
+if (recvfile)
+{
+
+		/* now out_fd is file descriptor, in_fd is sock descriptor. */
+		retval = rw_verify_area(READ, in_file, &in_file->f_pos, count);
+		if (retval) {
+			printk("do_recvfile, locks_verify_area sock, return err %d\n", retval);
+			goto fput_in;
+		}
+		retval = security_file_permission(in_file, MAY_READ);
+		if (retval) {
+			printk("do_recvfile. check sock read permission return err %d\n", retval);
+			goto fput_in;
+		}
+		
+		/* now check output file */
+		retval = -EBADF;
+		out_file = fget_light(out_fd, &fput_needed_out);
+		if (!out_file) {
+			printk("do_recvfile, cannot file write file descriptor %d\n", out_fd);
+			goto fput_in;
+		}
+		if (!(out_file->f_mode & FMODE_WRITE)) {
+			printk("do_recvfile, cannot write to file %d\n", out_fd);
+			goto fput_out;
+		}
+		retval = -EINVAL;
+
+#if 0		
+		if (!out_file->f_op || !out_file->f_op->write) {
+			printk("do_recvfile. file %d has not write function!\n", out_fd);
+			goto fput_out;
+		}
+#endif
+
+		out_inode = out_file->f_dentry->d_inode;
+		if (!ppos)
+			ppos = &out_file->f_pos;
+		else
+			if (!(out_file->f_mode & FMODE_PWRITE))
+				goto fput_out;
+
+		retval = rw_verify_area(WRITE, out_file, ppos, count);
+		
+		if (retval) {
+			printk("do_recvfile, locks_verify_area return err %d\n", retval);
+			goto fput_out;
+		}
+
+		retval = security_file_permission(out_file, MAY_WRITE);
+		if (retval) {
+			printk("do_recvfile, security_file_permission return err %d\n", retval);
+			goto fput_out;
+		}
+
+		if (!max)
+			max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
+		pos = *ppos;
+		retval = -EINVAL;
+		if (unlikely(pos < 0)) {
+			printk("do_recvfile, pos %d < 0\n", (int)pos);
+			goto fput_out;
+		}
+		if (unlikely(pos+count > max)) {
+			retval = -EOVERFLOW;
+			if (pos >= max) {
+				printk("do_recvfile, pos %d, count %d, max %d. overflow!\n",
+					(int) pos, (int)count, (int)max);
+				goto fput_out;
+			}
+			count = max - pos;
+		}
+		
+		retval = generic_recvfile_write(out_file, in_file, ppos, count, ftpFlag);
+		//printk("do_sendfile. recvfile_write count %d ret %d, pos %x\n", count, retval, *ppos);
+		if (*ppos > max)
+			retval = -EOVERFLOW;
+
+}
+else
+#endif
+
+{
+	
 	if (!in_file->f_op || !in_file->f_op->sendfile)
 		goto fput_in;
 	retval = -ESPIPE;
@@ -695,7 +798,12 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
 		count = max - pos;
 	}
 
-	retval = in_file->f_op->sendfile(in_file, ppos, count, file_send_actor, out_file);
+#ifdef CONFIG_SL2312_TSO
+	if (storlink_ctl.sendfile && storlink_ctl.mpages)
+		retval = in_file->f_op->sendfile(in_file, ppos, count, file_mpage_send_actor, out_file);
+	else 
+#endif
+		retval = in_file->f_op->sendfile(in_file, ppos, count, file_send_actor, out_file);
 
 	if (retval > 0) {
 		current->rchar += retval;
@@ -706,6 +814,8 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
 
 	if (*ppos > max)
 		retval = -EOVERFLOW;
+
+}/**/
 
 fput_out:
 	fput_light(out_file, fput_needed_out);
@@ -720,33 +830,51 @@ asmlinkage ssize_t sys_sendfile(int out_fd, int in_fd, off_t __user *offset, siz
 	loff_t pos;
 	off_t off;
 	ssize_t ret;
+	int ftpFlag=0;
+
+#ifdef CONFIG_SL2312_RECVFILE
+	if (count == -1)
+	{
+		ftpFlag=1;
+		count = PAGE_CACHE_SIZE *8;
+	}/*if*/
+#endif
 
 	if (offset) {
 		if (unlikely(get_user(off, offset)))
 			return -EFAULT;
 		pos = off;
-		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS);
+		ret = do_sendfile(out_fd, in_fd, &pos, count, MAX_NON_LFS, ftpFlag);
 		if (unlikely(put_user(pos, offset)))
 			return -EFAULT;
 		return ret;
 	}
 
-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+	return do_sendfile(out_fd, in_fd, NULL, count, 0, ftpFlag);
 }
 
 asmlinkage ssize_t sys_sendfile64(int out_fd, int in_fd, loff_t __user *offset, size_t count)
 {
 	loff_t pos;
 	ssize_t ret;
+	int ftpFlag=0;
+
+#ifdef CONFIG_SL2312_RECVFILE
+	if (count == -1)
+	{
+		ftpFlag=1;
+		count = PAGE_CACHE_SIZE *8;
+	}/*if*/
+#endif
 
 	if (offset) {
 		if (unlikely(copy_from_user(&pos, offset, sizeof(loff_t))))
 			return -EFAULT;
-		ret = do_sendfile(out_fd, in_fd, &pos, count, 0);
+		ret = do_sendfile(out_fd, in_fd, &pos, count, 0, ftpFlag);
 		if (unlikely(put_user(pos, offset)))
 			return -EFAULT;
 		return ret;
 	}
 
-	return do_sendfile(out_fd, in_fd, NULL, count, 0);
+	return do_sendfile(out_fd, in_fd, NULL, count, 0, ftpFlag);
 }

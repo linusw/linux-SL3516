@@ -33,7 +33,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: mthca_cq.c 1369 2004-12-20 16:17:07Z roland $
+ * $Id: mthca_cq.c,v 1.1.1.1 2007/08/03 05:45:49 johnson Exp $
  */
 
 #include <linux/init.h>

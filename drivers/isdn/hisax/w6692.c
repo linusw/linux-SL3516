@@ -1,4 +1,4 @@
-/* $Id: w6692.c,v 1.18.2.4 2004/02/11 13:21:34 keil Exp $
+/* $Id: w6692.c,v 1.1.1.1 2007/08/03 05:45:59 johnson Exp $
  *
  * Winbond W6692 specific routines
  *
@@ -41,7 +41,7 @@ static const PCI_ENTRY id_list[] =
 
 extern const char *CardType[];
 
-static const char *w6692_revision = "$Revision: 1.18.2.4 $";
+static const char *w6692_revision = "$Revision: 1.1.1.1 $";
 
 #define DBUSY_TIMER_VALUE 80
 

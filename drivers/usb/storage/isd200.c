@@ -1,6 +1,6 @@
 /* Transport & Protocol Driver for In-System Design, Inc. ISD200 ASIC
  *
- * $Id: isd200.c,v 1.16 2002/04/22 03:39:43 mdharm Exp $
+ * $Id: isd200.c,v 1.1.1.1 2007/08/28 03:41:47 johnson Exp $
  *
  * Current development and maintenance:
  *   (C) 2001-2002 Björn Stenberg (bjorn@haxx.se)

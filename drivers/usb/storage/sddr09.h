@@ -1,7 +1,7 @@
 /* Driver for SanDisk SDDR-09 SmartMedia reader
  * Header File
  *
- * $Id: sddr09.h,v 1.5 2000/08/25 00:13:51 mdharm Exp $
+ * $Id: sddr09.h,v 1.1.1.1 2007/08/28 03:41:47 johnson Exp $
  *
  * Current development and maintenance by:
  *   (c) 2000 Robert Baruch (autophile@dol.net)

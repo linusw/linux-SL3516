@@ -33,7 +33,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: ib_smi.h 1389 2004-12-27 22:56:47Z roland $
+ * $Id: ib_smi.h,v 1.1.1.1 2007/08/03 05:49:28 johnson Exp $
  */
 
 #if !defined( IB_SMI_H )

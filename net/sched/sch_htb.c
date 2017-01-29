@@ -25,7 +25,7 @@
  *			fixed requeue routine
  *		and many others. thanks.
  *
- * $Id: sch_htb.c,v 1.25 2003/12/07 11:08:25 devik Exp devik $
+ * $Id: sch_htb.c,v 1.1.1.1 2007/08/03 05:49:55 johnson Exp $
  */
 #include <linux/config.h>
 #include <linux/module.h>

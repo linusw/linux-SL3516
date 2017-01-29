@@ -22,7 +22,7 @@
    This is access code for flashes using ARM's flash partitioning
    standards.
 
-   $Id: integrator-flash.c,v 1.20 2005/11/07 11:14:27 gleixner Exp $
+   $Id: integrator-flash.c,v 1.1.1.1 2007/08/03 05:46:19 johnson Exp $
 
 ======================================================================*/
 
