@@ -9,7 +9,7 @@
  *
  * Adaption to the kernel by Thomas Gleixner (tglx@linutronix.de)
  *
- * $Id: decode_rs.c,v 1.7 2005/11/07 11:14:59 gleixner Exp $
+ * $Id: decode_rs.c,v 1.1.1.1 2006/04/03 08:41:28 amos_lee Exp $
  *
  */
 

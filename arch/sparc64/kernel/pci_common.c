@@ -1,4 +1,4 @@
-/* $Id: pci_common.c,v 1.29 2002/02/01 00:56:03 davem Exp $
+/* $Id: pci_common.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * pci_common.c: PCI controller common support.
  *
  * Copyright (C) 1999 David S. Miller (davem@redhat.com)

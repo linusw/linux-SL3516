@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: file.c,v 1.104 2005/10/18 23:29:35 tpoynor Exp $
+ * $Id: file.c,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $
  *
  */
 

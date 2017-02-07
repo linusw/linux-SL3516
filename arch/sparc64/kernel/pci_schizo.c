@@ -1,4 +1,4 @@
-/* $Id: pci_schizo.c,v 1.24 2002/01/23 11:27:32 davem Exp $
+/* $Id: pci_schizo.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * pci_schizo.c: SCHIZO/TOMATILLO specific PCI controller support.
  *
  * Copyright (C) 2001, 2002, 2003 David S. Miller (davem@redhat.com)

@@ -1,7 +1,7 @@
 #ifndef _ASM_M32R_TERMBITS_H
 #define _ASM_M32R_TERMBITS_H
 
-/* $Id$ */
+/* $Id: termbits.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $ */
 
 #include <linux/posix_types.h>
 

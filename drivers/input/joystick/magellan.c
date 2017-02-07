@@ -1,5 +1,5 @@
 /*
- * $Id: magellan.c,v 1.16 2002/01/22 20:28:39 vojtech Exp $
+ * $Id: magellan.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  *
  *  Copyright (c) 1999-2001 Vojtech Pavlik
  */

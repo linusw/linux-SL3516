@@ -3,7 +3,7 @@
  *
  * Copyright (C) 1995 - 1999 Gadi Oxman <gadio@netvision.net.il>
  *
- * $Header$
+ * $Header: /home/cvs/gemini-2.6.15/drivers/ide/ide-tape.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  *
  * This driver was constructed as a student project in the software laboratory
  * of the faculty of electrical engineering in the Technion - Israel's

@@ -1,7 +1,7 @@
 #
 # Makefile for the memory technology device drivers.
 #
-# $Id: Makefile.common,v 1.7 2005/07/11 10:39:27 gleixner Exp $
+# $Id: Makefile,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
 
 # Core functionality.
 mtd-y				:= mtdcore.o

@@ -1,7 +1,7 @@
 #
 # Makefile for the Linux Journalling Flash File System v2 (JFFS2)
 #
-# $Id: Makefile.common,v 1.11 2005/09/07 08:34:53 havasi Exp $
+# $Id: Makefile,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $
 #
 
 obj-$(CONFIG_JFFS2_FS) += jffs2.o

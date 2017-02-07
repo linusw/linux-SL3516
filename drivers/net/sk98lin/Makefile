@@ -1,6 +1,65 @@
+#******************************************************************************
 #
-# Makefile for the SysKonnect SK-98xx device driver.
+# Name:         skge.c
+# Project:      GEnesis, PCI Gigabit Ethernet Adapter
+# Version:      $Revision: 1.3 $
+# Date:         $Date: 2008/03/25 09:52:24 $
+# Purpose:      The main driver source module
 #
+#******************************************************************************
+
+#******************************************************************************
+#
+#	(C)Copyright 1998-2002 SysKonnect GmbH.
+#	(C)Copyright 2002-2005 Marvell.
+#
+#	Makefile for Marvell Yukon chipset and SysKonnect Gigabit Ethernet 
+#	Server Adapter driver. (Kernel 2.6)
+#
+#	Author: Mirko Lindner (mlindner@syskonnect.de)
+#		Ralph Roesler (rroesler@syskonnect.de)
+#
+#	Address all question to: linux@syskonnect.de
+#
+#	This program is free software; you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation; either version 2 of the License, or
+#	(at your option) any later version.
+#
+#	The information in this file is provided "AS IS" without warranty.
+# 
+#******************************************************************************
+
+#******************************************************************************
+#
+# History:
+#
+#	$Log: Makefile,v $
+#	Revision 1.3  2008/03/25 09:52:24  jason
+#	new driver
+#	
+#	Revision 1.1.1.1  2007/06/15 06:58:17  jason
+#	just for develop,no release
+#	
+#	Revision 1.9.2.1  2005/04/11 09:01:18  mlindner
+#	Fix: Copyright year changed
+#	
+#	Revision 1.9  2004/07/13 15:54:50  rroesler
+#	Add: file skethtool.c
+#	Fix: corrected header regarding copyright
+#	Fix: minor typos corrected
+#	
+#	Revision 1.8  2004/06/08 08:39:38  mlindner
+#	Fix: Add CONFIG_SK98LIN_ZEROCOPY as default
+#	
+#	Revision 1.7  2004/06/03 16:06:56  mlindner
+#	Fix: Added compile flag SK_DIAG_SUPPORT
+#	
+#	Revision 1.6  2004/06/02 08:02:59  mlindner
+#	Add: Changed header information and inserted a GPL statement
+#	
+#
+#******************************************************************************
 
 
 #
@@ -13,21 +72,24 @@
 obj-$(CONFIG_SK98LIN) += sk98lin.o
 sk98lin-objs    :=	\
 		skge.o		\
+		sky2.o		\
 		skethtool.o	\
+		sky2le.o	\
 		skdim.o		\
 		skaddr.o	\
 		skgehwt.o	\
 		skgeinit.o	\
 		skgepnmi.o	\
 		skgesirq.o	\
-		ski2c.o		\
+		sktwsi.o		\
 		sklm80.o	\
 		skqueue.o	\
 		skrlmt.o	\
 		sktimer.o	\
 		skvpd.o		\
 		skxmac2.o	\
-		skproc.o
+		skproc.o	\
+		skcsum.o
 
 # DBGDEF =  \
 # -DDEBUG
@@ -76,13 +138,11 @@ endif
 # SK_DBGCAT_DRV_INT_SRC         0x04000000      interrupts sources
 # SK_DBGCAT_DRV_EVENT           0x08000000      driver events
 
-EXTRA_CFLAGS += -Idrivers/net/sk98lin -DSK_DIAG_SUPPORT -DGENESIS -DYUKON $(DBGDEF) $(SKPARAM)
+EXTRA_CFLAGS += -Idrivers/net/sk98lin -DSK_USE_CSUM -DSK_DIAG_SUPPORT \
+		-DGENESIS -DYUKON -DYUK2 -DCONFIG_SK98LIN_ZEROCOPY \
+		$(DBGDEF) $(SKPARAM)
 
 clean:
 	rm -f core *.o *.a *.s
-
-
-
-
 
 

@@ -1,4 +1,4 @@
-/* $Id: estate.h,v 1.1 2001/03/28 10:56:34 davem Exp $ */
+/* $Id: estate.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $ */
 #ifndef _SPARC64_ESTATE_H
 #define _SPARC64_ESTATE_H
 

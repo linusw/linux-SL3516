@@ -31,7 +31,7 @@
 
 #define ZFCP_LOG_AREA			ZFCP_LOG_AREA_SCSI
 
-#define ZFCP_SCSI_REVISION "$Revision: 1.74 $"
+#define ZFCP_SCSI_REVISION "$Revision: 1.1.1.1 $"
 
 #include "zfcp_ext.h"
 

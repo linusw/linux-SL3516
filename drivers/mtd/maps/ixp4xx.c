@@ -1,5 +1,5 @@
 /*
- * $Id: ixp4xx.c,v 1.13 2005/11/16 16:23:21 dvrabel Exp $
+ * $Id: ixp4xx.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  * drivers/mtd/maps/ixp4xx.c
  *

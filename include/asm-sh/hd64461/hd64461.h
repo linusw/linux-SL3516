@@ -1,7 +1,7 @@
 #ifndef __ASM_SH_HD64461
 #define __ASM_SH_HD64461
 /*
- *	$Id: hd64461.h,v 1.5 2004/03/16 00:07:51 lethal Exp $
+ *	$Id: hd64461.h,v 1.1.1.1 2006/04/03 08:41:15 amos_lee Exp $
  *	Copyright (C) 2000 YAEGASHI Takeshi
  *	Hitachi HD64461 companion chip support
  */

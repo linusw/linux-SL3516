@@ -6,7 +6,7 @@
  *  Copyright (C) 2000 Karsten Keil <kkeil@suse.de>
  *  Copyright (C) 2001,2002 Andi Kleen <ak@suse.de>
  *
- *  $Id: head.S,v 1.49 2002/03/19 17:39:25 ak Exp $
+ *  $Id: head.S,v 1.1.1.1 2006/04/03 08:40:44 amos_lee Exp $
  */
 
 

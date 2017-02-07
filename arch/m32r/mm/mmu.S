@@ -4,7 +4,7 @@
  *  Copyright (C) 2001 by Hiroyuki Kondo
  */
 
-/* $Id: mmu.S,v 1.15 2004/03/16 02:56:27 takata Exp $ */
+/* $Id: mmu.S,v 1.1.1.1 2006/04/03 08:40:34 amos_lee Exp $ */
 
 #include <linux/config.h>	/* CONFIG_MMU */
 #include <linux/linkage.h>

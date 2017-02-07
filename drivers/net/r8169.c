@@ -69,6 +69,11 @@ VERSION 2.2LK	<2005/01/25>
 #include <asm/io.h>
 #include <asm/irq.h>
 
+#ifdef CONFIG_SL351x_FAST_NET
+#include <asm/arch/sl351x_fast_net.h>
+#include <linux/sysctl_storlink.h>
+#endif
+
 #ifdef CONFIG_R8169_NAPI
 #define NAPI_SUFFIX	"-NAPI"
 #else
@@ -132,8 +137,8 @@ static int multicast_filter_limit = 32;
 
 #define R8169_REGS_SIZE		256
 #define R8169_NAPI_WEIGHT	64
-#define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
-#define NUM_RX_DESC	256	/* Number of Rx descriptor registers */
+#define NUM_TX_DESC	512	/* Number of Tx descriptor registers */
+#define NUM_RX_DESC	64	/* Number of Rx descriptor registers */
 #define RX_BUF_SIZE	1536	/* Rx Buffer size */
 #define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
 #define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
@@ -2290,7 +2295,11 @@ rtl8169_tx_interrupt(struct net_device *dev, struct rtl8169_private *tp,
 		rtl8169_unmap_tx_skb(tp->pci_dev, tx_skb, tp->TxDescArray + entry);
 
 		if (status & LastFrag) {
-			dev_kfree_skb_irq(tx_skb->skb);
+			if (tx_skb->skb->destructor)
+				dev_kfree_skb(tx_skb->skb);
+			else
+				dev_kfree_skb_any(tx_skb->skb);
+			//dev_kfree_skb_irq(tx_skb->skb);
 			tx_skb->skb = NULL;
 		}
 		dirty_tx++;
@@ -2417,11 +2426,19 @@ rtl8169_rx_interrupt(struct net_device *dev, struct rtl8169_private *tp,
 
 			skb->dev = dev;
 			skb_put(skb, pkt_size);
+			
+#ifdef CONFIG_SL351x_FAST_NET
+			if (storlink_ctl.fast_net && likely(sl_fast_net(skb))) {
+				goto skb_handled;
+			}
+#endif
 			skb->protocol = eth_type_trans(skb, dev);
-
+			
 			if (rtl8169_rx_vlan_skb(tp, desc, skb) < 0)
 				rtl8169_rx_skb(skb);
-
+#ifdef CONFIG_SL351x_FAST_NET
+skb_handled:
+#endif
 			dev->last_rx = jiffies;
 			tp->stats.rx_bytes += pkt_size;
 			tp->stats.rx_packets++;

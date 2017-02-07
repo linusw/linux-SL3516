@@ -31,7 +31,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: ipoib_main.c 1377 2004-12-23 19:57:12Z roland $
+ * $Id: ipoib_main.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 
 #include "ipoib.h"

@@ -12,7 +12,7 @@
  *        ret: r0
  *
  */
-/* $Id$ */
+/* $Id: memset.S,v 1.1.1.1 2006/04/03 08:40:34 amos_lee Exp $ */
 
 #include <linux/config.h>
 

@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: read.c,v 1.42 2005/11/07 11:14:41 gleixner Exp $
+ * $Id: read.c,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $
  *
  */
 

@@ -5,7 +5,7 @@
  *
  * This code is GPL
  *
- * $Id: concat.h,v 1.1 2002/03/08 16:34:36 rkaiser Exp $
+ * $Id: concat.h,v 1.1.1.1 2006/04/03 08:41:20 amos_lee Exp $
  */
 
 #ifndef MTD_CONCAT_H

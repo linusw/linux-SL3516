@@ -1,7 +1,7 @@
 /*
    Common Flash Interface probe code.
    (C) 2000 Red Hat. GPL'd.
-   $Id: jedec_probe.c,v 1.66 2005/11/07 11:14:23 gleixner Exp $
+   $Id: jedec_probe.c,v 1.2 2007/08/06 12:44:53 middle Exp $
    See JEDEC (http://www.jedec.org/) standard JESD21C (section 3.5)
    for the standard this probe goes back to.
 
@@ -59,6 +59,10 @@
 #define AM29LV040B	0x004F
 #define AM29F032B	0x0041
 #define AM29F002T	0x00B0
+
+#define S29AL004DB	0x22BA
+#define S29AL004DT	0x22B9
+#define S29GL128N 	0x227E
 
 /* Atmel */
 #define AT49BV512	0x0003
@@ -262,7 +266,7 @@ struct amd_flash_info {
 #define SIZE_2MiB   21
 #define SIZE_4MiB   22
 #define SIZE_8MiB   23
-
+#define SIZE_16MiB   24
 
 /*
  * Please keep this list ordered by manufacturer!
@@ -350,8 +354,56 @@ static const struct amd_flash_info jedec_table[] = {
 			ERASEINFO(0x08000,1),
 			ERASEINFO(0x02000,2),
 			ERASEINFO(0x04000,1)
+		} 
+	}, {
+		.mfr_id		= MANUFACTURER_AMD,////middle 
+		.dev_id		= S29GL128N,
+		.name		= "S29GL128N",
+		.uaddr		= {
+			[0] = MTD_UADDR_0x0AAA_0x0555,  /* x8 */
+			[1] = MTD_UADDR_0x0555_0x02AA,  /* x16 */
+		},
+		.DevSize	= SIZE_8MiB,
+		.CmdSet		= P_ID_AMD_STD,
+		.NumEraseRegions= 1,
+		.regions	= {
+			ERASEINFO(0x10000,128)
 		}
 	}, {
+		.mfr_id		= MANUFACTURER_AMD,////middle S29GL128N
+		.dev_id		= S29AL004DB,
+		.name		= "S29AL004DB",
+		.uaddr		= {
+			[0] = MTD_UADDR_0x0AAA_0x0555,  /* x8 */
+			[1] = MTD_UADDR_0x0555_0x02AA,  /* x16 */
+		},
+		.DevSize	= SIZE_512KiB,
+		.CmdSet		= P_ID_AMD_STD,
+		.NumEraseRegions= 4,
+		.regions	= {
+			ERASEINFO(0x04000,1),
+			ERASEINFO(0x02000,2),
+			ERASEINFO(0x08000,1),
+			ERASEINFO(0x10000,7)
+		}
+	}, {
+		.mfr_id		= MANUFACTURER_AMD,/////middle
+		.dev_id		= S29AL004DT,
+		.name		= "S29AL004DT",
+		.uaddr		= {
+			[0] = MTD_UADDR_0x0AAA_0x0555,  /* x8 */
+			[1] = MTD_UADDR_0x0555_0x02AA,  /* x16 */
+		},
+		.DevSize	= SIZE_512KiB,
+		.CmdSet		= P_ID_AMD_STD,
+		.NumEraseRegions= 4,
+		.regions	= {
+			ERASEINFO(0x10000,7),
+			ERASEINFO(0x08000,1),
+			ERASEINFO(0x02000,2),
+			ERASEINFO(0x04000,1)
+		}
+	},{
 		.mfr_id		= MANUFACTURER_AMD,
 		.dev_id		= AM29LV800BB,
 		.name		= "AMD AM29LV800BB",
@@ -1788,7 +1840,8 @@ static inline __u8 finfo_uaddr(const struct amd_flash_info *finfo, int device_ty
 
 	uaddr = finfo->uaddr[uaddr_idx];
 
-	if (uaddr != MTD_UADDR_NOT_SUPPORTED ) {
+	//if (uaddr != MTD_UADDR_NOT_SUPPORTED ) {
+	if (uaddr == MTD_UADDR_NOT_SUPPORTED ) {
 		/* ASSERT("The unlock addresses for non-8-bit mode
 		   are bollocks. We don't really need an array."); */
 		uaddr = finfo->uaddr[0];

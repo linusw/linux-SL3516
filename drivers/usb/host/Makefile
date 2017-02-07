@@ -11,3 +11,5 @@ obj-$(CONFIG_USB_UHCI_HCD)	+= uhci-hcd.o
 obj-$(CONFIG_USB_SL811_HCD)	+= sl811-hcd.o
 obj-$(CONFIG_USB_SL811_CS)	+= sl811_cs.o
 obj-$(CONFIG_ETRAX_ARCH_V10)	+= hc_crisv10.o
+obj-$(CONFIG_USB_SL2312)        += ehci-hcd-FOTG2XX.o 
+obj-$(CONFIG_USB_SL2312_1)      += ehci-hcd-FOTG2XX-1.o

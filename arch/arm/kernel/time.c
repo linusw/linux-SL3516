@@ -495,6 +495,7 @@ static int __init timer_init_sysfs(void)
 
 device_initcall(timer_init_sysfs);
 
+
 void __init time_init(void)
 {
 	if (system_timer->offset == NULL)

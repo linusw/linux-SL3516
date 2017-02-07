@@ -1,4 +1,4 @@
-/* $Id: semaphore.c,v 1.7 2001/04/18 21:06:05 davem Exp $ */
+/* $Id: semaphore.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $ */
 
 /* sparc32 semaphore implementation, based on i386 version */
 

@@ -104,6 +104,9 @@
  
 /*
  * $Log: t128.c,v $
+ * Revision 1.1.1.1  2006/04/03 08:40:59  amos_lee
+ * initial
+ *
  */
 
 #include <asm/system.h>

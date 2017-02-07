@@ -29,7 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: mthca_wqe.h 3047 2005-08-10 03:59:35Z roland $
+ * $Id: mthca_wqe.h,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 
 #ifndef MTHCA_WQE_H

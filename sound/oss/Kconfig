@@ -1004,6 +1004,12 @@ config SOUND_AEDSP16
 	  <file:Documentation/sound/oss/AudioExcelDSP16> to get more information
 	  about this driver and its configuration.
 
+config SOUND_STORM_SSP
+	tristate "STORM SSP OSS PCM"
+	depends on SOUND_PRIME!=n && SOUND!=n && ARCH_SL2312
+	---help---
+	  Storm ssp(i2s) driver.
+
 config SC6600
 	bool "SC-6600 based audio cards (new Audio Excel DSP 16)"
 	depends on SOUND_AEDSP16

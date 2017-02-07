@@ -871,10 +871,11 @@ restart:
 			 */
 			write_unlock_bh(&policy->lock);
 
-			xfrm_pol_put(policy);
+//			xfrm_pol_put(policy);
 			if (dst)
 				dst_free(dst);
-			goto restart;
+			err = -EHOSTUNREACH;
+			goto error;
 		}
 		dst->next = policy->bundles;
 		policy->bundles = dst;

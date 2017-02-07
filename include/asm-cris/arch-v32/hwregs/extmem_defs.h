@@ -8,7 +8,7 @@
  *     last modfied: Tue Mar 30 22:26:21 2004
  *
  *   by /n/asic/design/tools/rdesc/src/rdes2c --outfile extmem_defs.h ../../inst/ext_mem/mod/extmem_regs.r
- *      id: $Id: extmem_defs.h,v 1.5 2004/06/04 07:15:33 starvik Exp $
+ *      id: $Id: extmem_defs.h,v 1.1.1.1 2006/04/03 08:41:10 amos_lee Exp $
  * Any changes here will be lost.
  *
  * -*- buffer-read-only: t -*-

@@ -1,6 +1,6 @@
 /*
  *
- * linux/drivers/s390/net/qeth_eddp.c ($Revision: 1.13 $)
+ * linux/drivers/s390/net/qeth_eddp.c ($Revision: 1.1.1.1 $)
  *
  * Enhanced Device Driver Packing (EDDP) support for the qeth driver.
  *
@@ -8,7 +8,7 @@
  *
  *    Author(s): Thomas Spatzier <tspat@de.ibm.com>
  *
- *    $Revision: 1.13 $	 $Date: 2005/05/04 20:19:18 $
+ *    $Revision: 1.1.1.1 $	 $Date: 2006/04/03 08:40:57 $
  *
  */
 #include <linux/config.h>

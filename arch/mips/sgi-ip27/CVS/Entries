@@ -1,0 +1,19 @@
+/Kconfig/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/Makefile/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/TODO/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-berr.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-console.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-dbgio.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-hubio.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-init.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-irq-glue.S/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-irq.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-klconfig.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-klnuma.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-memory.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-nmi.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-reset.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-smp.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-timer.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+/ip27-xtalk.c/1.1.1.1/Mon Apr  3 08:40:39 2006//
+D

@@ -1,4 +1,4 @@
-/* $Id: xdi_adapter.h,v 1.7 2004/03/21 17:26:01 armin Exp $ */
+/* $Id: xdi_adapter.h,v 1.1.1.1 2006/04/03 08:40:49 amos_lee Exp $ */
 
 #ifndef __DIVA_OS_XDI_ADAPTER_H__
 #define __DIVA_OS_XDI_ADAPTER_H__

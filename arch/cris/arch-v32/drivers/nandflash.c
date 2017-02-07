@@ -6,7 +6,7 @@
  *  Derived from drivers/mtd/nand/spia.c
  * 	  Copyright (C) 2000 Steven J. Hill (sjhill@realitydiluted.com)
  *
- * $Id: nandflash.c,v 1.3 2005/06/01 10:57:12 starvik Exp $
+ * $Id: nandflash.c,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

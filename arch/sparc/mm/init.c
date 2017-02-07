@@ -1,4 +1,4 @@
-/*  $Id: init.c,v 1.103 2001/11/19 19:03:08 davem Exp $
+/*  $Id: init.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  *  linux/arch/sparc/mm/init.c
  *
  *  Copyright (C) 1995 David S. Miller (davem@caip.rutgers.edu)

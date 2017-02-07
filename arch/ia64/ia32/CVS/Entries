@@ -1,0 +1,12 @@
+/Makefile/1.1.1.1/Mon Apr  3 08:40:34 2006//
+/binfmt_elf32.c/1.1.1.1/Mon Apr  3 08:40:34 2006//
+/elfcore32.h/1.1.1.1/Mon Apr  3 08:40:34 2006//
+/ia32_entry.S/1.1.1.1/Mon Apr  3 08:40:34 2006//
+/ia32_ioctl.c/1.1.1.1/Mon Apr  3 08:40:34 2006//
+/ia32_ldt.c/1.1.1.1/Mon Apr  3 08:40:34 2006//
+/ia32_signal.c/1.1.1.1/Mon Apr  3 08:40:34 2006//
+/ia32_support.c/1.1.1.1/Mon Apr  3 08:40:34 2006//
+/ia32_traps.c/1.1.1.1/Mon Apr  3 08:40:34 2006//
+/ia32priv.h/1.1.1.1/Mon Apr  3 08:40:34 2006//
+/sys_ia32.c/1.1.1.1/Mon Apr  3 08:40:34 2006//
+D

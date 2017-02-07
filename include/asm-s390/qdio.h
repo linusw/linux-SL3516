@@ -11,7 +11,7 @@
 #ifndef __QDIO_H__
 #define __QDIO_H__
 
-#define VERSION_QDIO_H "$Revision: 1.57 $"
+#define VERSION_QDIO_H "$Revision: 1.1.1.1 $"
 
 /* note, that most of the typedef's are from ingo. */
 

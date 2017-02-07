@@ -587,8 +587,8 @@ struct super_type  {
 static int super_90_load(mdk_rdev_t *rdev, mdk_rdev_t *refdev, int minor_version)
 {
 	char b[BDEVNAME_SIZE], b2[BDEVNAME_SIZE];
-	mdp_super_t *sb;
 	int ret;
+	mdp_super_t *sb;
 	sector_t sb_offset;
 
 	/*
@@ -599,7 +599,6 @@ static int super_90_load(mdk_rdev_t *rdev, mdk_rdev_t *refdev, int minor_version
 	 */
 	sb_offset = calc_dev_sboffset(rdev->bdev);
 	rdev->sb_offset = sb_offset;
-
 	ret = read_disk_sb(rdev, MD_SB_BYTES);
 	if (ret) return ret;
 
@@ -797,7 +796,12 @@ static void super_90_sync(mddev_t *mddev, mdk_rdev_t *rdev)
 
 	sb->ctime = mddev->ctime;
 	sb->level = mddev->level;
-	sb->size  = mddev->size;
+	//sb->size  = mddev->size;
+	if((sb->level == 1)||(sb->level==LEVEL_LINEAR))
+		sb->size  = mddev->array_size;	// for stormsemi(total sizeof of raid))
+	else
+		sb->size  = mddev->size;
+	sb->rdev_size  = rdev->size;	// add for stormsemi(size of this partition))
 	sb->raid_disks = mddev->raid_disks;
 	sb->md_minor = mddev->md_minor;
 	sb->not_persistent = !mddev->persistent;
@@ -1666,7 +1670,7 @@ abort_free:
  */
 
 
-static void analyze_sbs(mddev_t * mddev)
+void analyze_sbs(mddev_t * mddev)
 {
 	int i;
 	struct list_head *tmp;
@@ -2088,7 +2092,7 @@ static int do_md_run(mddev_t * mddev)
 	set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
 	md_wakeup_thread(mddev->thread);
 	
-	if (mddev->sb_dirty)
+	//if (mddev->sb_dirty)
 		md_update_sb(mddev);
 
 	set_capacity(disk, mddev->array_size<<1);
@@ -2145,6 +2149,13 @@ static int restart_array(mddev_t *mddev)
 out:
 	return err;
 }
+
+#ifdef CONFIG_SL2312_SHARE_PIN
+extern struct wait_queue_head_t *wq;
+extern int share_pin_flag;
+extern int check_sleep_flag;
+int check_and_wait_flash_idle(int);
+#endif
 
 static int do_md_stop(mddev_t * mddev, int ro)
 {
@@ -2221,7 +2232,18 @@ static int do_md_stop(mddev_t * mddev, int ro)
 			}
 
 		export_array(mddev);
-
+#ifdef CONFIG_SL2312_SHARE_PIN
+		/* ugly, not sure why share_pin_flag not clear in raid0/1 application
+		*  force clear when stop raid, and we can perform firmware upgrade
+		*/
+		clear_bit(IDE_RW_SHARE_BIT,&share_pin_flag);
+		check_sleep_flag &= ~0x00000002;
+		if(check_sleep_flag & 0x00000001)
+		{
+			check_sleep_flag &= ~(0x00000001);
+			wake_up_interruptible(&wq);
+		}
+#endif
 		mddev->array_size = 0;
 		disk = mddev->gendisk;
 		if (disk)

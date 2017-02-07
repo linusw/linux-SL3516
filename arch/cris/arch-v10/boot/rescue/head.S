@@ -1,4 +1,4 @@
-/* $Id: head.S,v 1.7 2005/03/07 12:11:06 starvik Exp $
+/* $Id: head.S,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $
  * 
  * Rescue code, made to reside at the beginning of the
  * flash-memory. when it starts, it checks a partition

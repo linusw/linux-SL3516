@@ -124,6 +124,10 @@
 /* Hilscher netx */
 #define PORT_NETX	71
 
+/* Storlink Soc */
+#define PORT_SL2312     72
+#define PORT_IT8712     73
+
 #ifdef __KERNEL__
 
 #include <linux/config.h>

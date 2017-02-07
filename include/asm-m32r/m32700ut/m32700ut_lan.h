@@ -9,7 +9,7 @@
  * Public License.  See the file "COPYING" in the main directory of
  * this archive for more details.
  *
- * $Id$
+ * $Id: m32700ut_lan.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $
  */
 
 #ifndef _M32700UT_M32700UT_LAN_H

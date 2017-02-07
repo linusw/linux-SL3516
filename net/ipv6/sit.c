@@ -6,7 +6,7 @@
  *	Pedro Roque		<roque@di.fc.ul.pt>	
  *	Alexey Kuznetsov	<kuznet@ms2.inr.ac.ru>
  *
- *	$Id: sit.c,v 1.53 2001/09/25 05:09:53 davem Exp $
+ *	$Id: sit.c,v 1.1.1.1 2006/04/03 08:41:30 amos_lee Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU General Public License

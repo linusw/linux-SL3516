@@ -1,4 +1,4 @@
-/* $Id: atomic.S,v 1.4 2001/11/18 00:12:56 davem Exp $
+/* $Id: atomic.S,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * atomic.S: These things are too big to do inline.
  *
  * Copyright (C) 1999 David S. Miller (davem@redhat.com)

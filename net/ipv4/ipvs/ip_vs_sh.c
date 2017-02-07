@@ -1,7 +1,7 @@
 /*
  * IPVS:        Source Hashing scheduling module
  *
- * Version:     $Id: ip_vs_sh.c,v 1.5 2002/09/15 08:14:08 wensong Exp $
+ * Version:     $Id: ip_vs_sh.c,v 1.1.1.1 2006/04/03 08:41:30 amos_lee Exp $
  *
  * Authors:     Wensong Zhang <wensong@gnuchina.org>
  *

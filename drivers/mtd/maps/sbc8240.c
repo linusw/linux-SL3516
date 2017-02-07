@@ -5,7 +5,7 @@
  *
  * This code is GPLed
  *
- * $Id: sbc8240.c,v 1.5 2005/11/07 11:14:28 gleixner Exp $
+ * $Id: sbc8240.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  */
 

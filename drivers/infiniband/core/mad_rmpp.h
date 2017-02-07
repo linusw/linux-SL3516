@@ -29,7 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: mad_rmpp.h 1921 2005-02-25 22:58:44Z sean.hefty $
+ * $Id: mad_rmpp.h,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 
 #ifndef __MAD_RMPP_H__

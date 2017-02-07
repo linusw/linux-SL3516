@@ -1,4 +1,4 @@
-/* $Id: errtbls.c,v 1.2 1995/11/25 00:57:55 davem Exp $
+/* $Id: errtbls.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * errtbls.c: Error number conversion tables between various syscall
  *            OS semantics.
  *

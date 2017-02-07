@@ -1,0 +1,24 @@
+/.gitignore/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/Kconfig/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/Makefile/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/access.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/bus.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/hotplug.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/msi.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/msi.h/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/pci-acpi.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/pci-driver.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/pci-sysfs.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/pci.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/pci.h/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/probe.c/1.2/Mon May 14 02:52:42 2007//
+/proc.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/quirks.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/remove.c/1.1.1.1/Mon Apr  3 08:40:56 2006//
+/rom.c/1.1.1.1/Mon Apr  3 08:40:57 2006//
+/search.c/1.1.1.1/Mon Apr  3 08:40:57 2006//
+/setup-bus.c/1.1.1.1/Mon Apr  3 08:40:57 2006//
+/setup-irq.c/1.1.1.1/Mon Apr  3 08:40:57 2006//
+/setup-res.c/1.1.1.1/Mon Apr  3 08:40:57 2006//
+/syscall.c/1.1.1.1/Mon Apr  3 08:40:57 2006//
+D

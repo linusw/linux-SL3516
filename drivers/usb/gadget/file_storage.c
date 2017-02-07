@@ -245,6 +245,8 @@
 
 #include "gadget_chips.h"
 
+#define FOTG2XX_AVOID_REDEFINE //For OTG
+#include <linux/usb.h>
 
 /*-------------------------------------------------------------------------*/
 
@@ -263,8 +265,11 @@ MODULE_LICENSE("Dual BSD/GPL");
  *
  * DO NOT REUSE THESE IDs with any other driver!!  Ever!!
  * Instead:  allocate your own, using normal USB-IF procedures. */
-#define DRIVER_VENDOR_ID	0x0525	// NetChip
-#define DRIVER_PRODUCT_ID	0xa4a5	// Linux-USB File-backed Storage Gadget
+//#define DRIVER_VENDOR_ID	0x0525	// NetChip
+//#define DRIVER_PRODUCT_ID	0xa4a5	// Linux-USB File-backed Storage Gadget
+
+#define DRIVER_VENDOR_ID	0x2310	//Faraday
+#define DRIVER_PRODUCT_ID	0x6688	// Linux-USB File-backed Storage Gadget
 
 
 /*
@@ -328,6 +333,24 @@ MODULE_LICENSE("Dual BSD/GPL");
 	printk(KERN_INFO DRIVER_NAME ": " fmt , ## args)
 
 
+//FOTG200;;02212005;;Start;;Bruce;;Modify
+#ifdef	CONFIG_USB_GADGET_SL2312
+#define CHIP			"FOTG200-Peripheral"
+#define DRIVER_VERSION_NUM	0x0218
+static const char EP_BULK_IN_NAME[] = "ep1-bulkin";
+#define EP_BULK_IN_NUM		1
+#define FS_BULK_IN_MAXPACKET	64
+static const char EP_BULK_OUT_NAME[] = "ep2-bulkout";
+#define EP_BULK_OUT_NUM		2
+#define FS_BULK_OUT_MAXPACKET	64
+static const char EP_INTR_IN_NAME[] = "ep3-intin";
+#define EP_INTR_IN_NUM		5
+#define CONFIG_USB_GADGET_DUALSPEED 1
+static const char driver_name [] = "FTC_udc";
+#define NO_BULK_STALL 
+#endif
+//FOTG200;;02212005;;End;;Bruce;;Modify
+
 /*-------------------------------------------------------------------------*/
 
 /* Encapsulate the module parameter settings */
@@ -335,8 +358,11 @@ MODULE_LICENSE("Dual BSD/GPL");
 #define MAX_LUNS	8
 
 	/* Arggh!  There should be a module_param_array_named macro! */
-static char		*file[MAX_LUNS] = {NULL, };
-static int		ro[MAX_LUNS] = {0, };
+//static char		*file[MAX_LUNS] = {NULL, };
+static char		*file[MAX_LUNS] = {"/lib/modules/ram.img",NULL, };//Bruce;;Modify
+//static int		ro[MAX_LUNS] = {0, };
+static int		ro[MAX_LUNS] = {0,0, };//Bruce;;Modify
+
 
 static struct {
 	int		num_filenames;
@@ -361,12 +387,15 @@ static struct {
 } mod_data = {					// Default values
 	.transport_parm		= "BBB",
 	.protocol_parm		= "SCSI",
-	.removable		= 0,
+//	.removable		= 0,
+ 	.removable		= 1,
 	.can_stall		= 1,
 	.vendor			= DRIVER_VENDOR_ID,
 	.product		= DRIVER_PRODUCT_ID,
-	.release		= 0xffff,	// Use controller chip type
-	.buflen			= 16384,
+//  	.release		= 0xffff,	// Use controller chip type
+  	.release		= DRIVER_VERSION_NUM,	// Use controller chip type
+//	.buflen			= 16384,
+  	.buflen			= 1,
 	};
 
 
@@ -1124,7 +1153,7 @@ static int ep0_queue(struct fsg_dev *fsg)
 	if (rc != 0 && rc != -ESHUTDOWN) {
 
 		/* We can't do much more than wait for a reset */
-		WARN(fsg, "error in submission: %s --> %d\n",
+		printk("error in submission: %s --> %d\n",
 				fsg->ep0->name, rc);
 	}
 	return rc;
@@ -1257,7 +1286,7 @@ static void received_cbi_adsc(struct fsg_dev *fsg, struct fsg_buffhd *bh)
 
 	/* Save the command for later */
 	if (fsg->cbbuf_cmnd_size)
-		WARN(fsg, "CB[I] overwriting previous command\n");
+		printk("CB[I] overwriting previous command\n");
 	fsg->cbbuf_cmnd_size = req->actual;
 	memcpy(fsg->cbbuf_cmnd, req->buf, fsg->cbbuf_cmnd_size);
 
@@ -1536,7 +1565,7 @@ static void start_transfer(struct fsg_dev *fsg, struct usb_ep *ep,
 		 * submissions if DMA is enabled. */
 		if (rc != -ESHUTDOWN && !(rc == -EOPNOTSUPP &&
 						req->length == 0))
-			WARN(fsg, "error in submission: %s --> %d\n",
+			printk("error in submission: %s --> %d\n",
 					ep->name, rc);
 	}
 }
@@ -2302,7 +2331,7 @@ static int halt_bulk_in_endpoint(struct fsg_dev *fsg)
 		VDBG(fsg, "delayed bulk-in endpoint halt\n");
 	while (rc != 0) {
 		if (rc != -EAGAIN) {
-			WARN(fsg, "usb_ep_set_halt -> %d\n", rc);
+			printk("usb_ep_set_halt -> %d\n", rc);
 			rc = 0;
 			break;
 		}
@@ -3060,7 +3089,7 @@ static int enable_endpoint(struct fsg_dev *fsg, struct usb_ep *ep,
 	ep->driver_data = fsg;
 	rc = usb_ep_enable(ep, d);
 	if (rc)
-		ERROR(fsg, "can't enable %s, result %d\n", ep->name, rc);
+		printk("can't enable %s, result %d\n", ep->name, rc);
 	return rc;
 }
 
@@ -3070,7 +3099,7 @@ static int alloc_request(struct fsg_dev *fsg, struct usb_ep *ep,
 	*preq = usb_ep_alloc_request(ep, GFP_ATOMIC);
 	if (*preq)
 		return 0;
-	ERROR(fsg, "can't allocate request for %s\n", ep->name);
+	printk("can't allocate request for %s\n", ep->name);
 	return -ENOMEM;
 }
 
@@ -3206,7 +3235,7 @@ static int do_set_config(struct fsg_dev *fsg, u8 new_config)
 			case USB_SPEED_HIGH:	speed = "high";	break;
 			default: 		speed = "?";	break;
 			}
-			INFO(fsg, "%s speed config #%d\n", speed, fsg->config);
+			printk("%s speed config #%d\n", speed, fsg->config);
 		}
 	}
 	return rc;
@@ -3260,7 +3289,8 @@ static void handle_exception(struct fsg_dev *fsg)
 			bh = &fsg->buffhds[i];
 			num_active += bh->inreq_busy + bh->outreq_busy;
 		}
-		if (num_active == 0)
+		if ((num_active == 0)||(fsg->state == FSG_STATE_EXIT) ||      // YPING fix bug
+       (fsg->state == FSG_STATE_TERMINATED))  // YPING fix bug
 			break;
 		if (sleep_thread(fsg))
 			return;
@@ -3725,7 +3755,7 @@ static int __init check_parameters(struct fsg_dev *fsg)
 		if (gcnum >= 0)
 			mod_data.release = 0x0300 + gcnum;
 		else {
-			WARN(fsg, "controller '%s' not recognized\n",
+			printk("controller '%s' not recognized\n",
 				fsg->gadget->name);
 			mod_data.release = 0x0399;
 		}
@@ -3743,7 +3773,7 @@ static int __init check_parameters(struct fsg_dev *fsg)
 		mod_data.transport_type = USB_PR_CBI;
 		mod_data.transport_name = "Control-Bulk-Interrupt";
 	} else {
-		ERROR(fsg, "invalid transport: %s\n", mod_data.transport_parm);
+		printk("invalid transport: %s\n", mod_data.transport_parm);
 		return -EINVAL;
 	}
 
@@ -3772,13 +3802,13 @@ static int __init check_parameters(struct fsg_dev *fsg)
 		mod_data.protocol_type = USB_SC_8070;
 		mod_data.protocol_name = "8070i";
 	} else {
-		ERROR(fsg, "invalid protocol: %s\n", mod_data.protocol_parm);
+		printk("invalid protocol: %s\n", mod_data.protocol_parm);
 		return -EINVAL;
 	}
 
 	mod_data.buflen &= PAGE_CACHE_MASK;
 	if (mod_data.buflen <= 0) {
-		ERROR(fsg, "invalid buflen\n");
+		printk("invalid buflen\n");
 		return -ETOOSMALL;
 	}
 #endif /* CONFIG_USB_FILE_STORAGE_TEST */
@@ -3816,7 +3846,7 @@ static int __init fsg_bind(struct usb_gadget *gadget)
 	if (i == 0)
 		i = max(mod_data.num_filenames, 1);
 	if (i > MAX_LUNS) {
-		ERROR(fsg, "invalid number of LUNs: %d\n", i);
+		printk("invalid number of LUNs: %d\n", i);
 		rc = -EINVAL;
 		goto out;
 	}
@@ -3835,31 +3865,31 @@ static int __init fsg_bind(struct usb_gadget *gadget)
 		curlun->ro = ro[i];
 		curlun->dev.parent = &gadget->dev;
 		curlun->dev.driver = &fsg_driver.driver;
-		dev_set_drvdata(&curlun->dev, fsg);
+//		dev_set_drvdata(&curlun->dev, fsg); 2.6.15
 		snprintf(curlun->dev.bus_id, BUS_ID_SIZE,
 				"%s-lun%d", gadget->dev.bus_id, i);
 
-		if ((rc = device_register(&curlun->dev)) != 0)
-			INFO(fsg, "failed to register LUN%d: %d\n", i, rc);
+/*		if ((rc = device_register(&curlun->dev)) != 0)
+			printk("failed to register LUN%d: %d\n", i, rc);
 		else {
 			curlun->registered = 1;
 			curlun->dev.release = lun_release;
 			device_create_file(&curlun->dev, &dev_attr_ro);
 			device_create_file(&curlun->dev, &dev_attr_file);
 		}
-
+*/
 		if (file[i] && *file[i]) {
 			if ((rc = open_backing_file(curlun, file[i])) != 0)
 				goto out;
 		} else if (!mod_data.removable) {
-			ERROR(fsg, "no file given for LUN%d\n", i);
+			printk("no file given for LUN%d\n", i);
 			rc = -EINVAL;
 			goto out;
 		}
 	}
 
 	/* Find all the endpoints we will use */
-	usb_ep_autoconfig_reset(gadget);
+/*	usb_ep_autoconfig_reset(gadget);
 	ep = usb_ep_autoconfig(gadget, &fs_bulk_in_desc);
 	if (!ep)
 		goto autoconf_fail;
@@ -3879,7 +3909,7 @@ static int __init fsg_bind(struct usb_gadget *gadget)
 		ep->driver_data = fsg;		// claim the endpoint
 		fsg->intr_in = ep;
 	}
-
+*/
 	/* Fix up the descriptors */
 	device_desc.bMaxPacketSize0 = fsg->ep0->maxpacket;
 	device_desc.idVendor = cpu_to_le16(mod_data.vendor);
@@ -3892,17 +3922,63 @@ static int __init fsg_bind(struct usb_gadget *gadget)
 	intf_desc.bInterfaceProtocol = mod_data.transport_type;
 	fs_function[i + FS_FUNCTION_PRE_EP_ENTRIES] = NULL;
 
-#ifdef CONFIG_USB_GADGET_DUALSPEED
-	hs_function[i + HS_FUNCTION_PRE_EP_ENTRIES] = NULL;
+//#ifdef CONFIG_USB_GADGET_DUALSPEED
+//	hs_function[i + HS_FUNCTION_PRE_EP_ENTRIES] = NULL;
 
 	/* Assume ep0 uses the same maxpacket value for both speeds */
-	dev_qualifier.bMaxPacketSize0 = fsg->ep0->maxpacket;
+//	dev_qualifier.bMaxPacketSize0 = fsg->ep0->maxpacket;
 
 	/* Assume that all endpoint addresses are the same for both speeds */
-	hs_bulk_in_desc.bEndpointAddress = fs_bulk_in_desc.bEndpointAddress;
-	hs_bulk_out_desc.bEndpointAddress = fs_bulk_out_desc.bEndpointAddress;
-	hs_intr_in_desc.bEndpointAddress = fs_intr_in_desc.bEndpointAddress;
-#endif
+//	hs_bulk_in_desc.bEndpointAddress = fs_bulk_in_desc.bEndpointAddress;
+//	hs_bulk_out_desc.bEndpointAddress = fs_bulk_out_desc.bEndpointAddress;
+//	hs_intr_in_desc.bEndpointAddress = fs_intr_in_desc.bEndpointAddress;
+//#endif
+
+//For OTG
+    
+    config_desc.wTotalLength +=3;
+
+//For OTG
+
+//    printk( "fsg_bind=>Find all the endpoints we will use \n");//Bruce
+printk("******gadget %x\n",gadget);
+	/* Find all the endpoints we will use */
+	i=0;
+	gadget_for_each_ep(ep, gadget) {
+    printk( "fsg_bind=>gadget_for_each_ep (ep->name=%s) \n",ep->name);//Bruce
+    i++;
+		if (strcmp(ep->name, EP_BULK_IN_NAME) == 0)
+			{fsg->bulk_in = ep;
+             printk( "fsg_bind=> Found BULK_IN ED \n");//Bruce
+ 
+			}
+		else if (strcmp(ep->name, EP_BULK_OUT_NAME) == 0)
+			{fsg->bulk_out = ep;
+             printk("fsg_bind=> Found BULK_OUT ED \n");//Bruce
+			}
+		else if (strcmp(ep->name, EP_INTR_IN_NAME) == 0)
+			{fsg->intr_in = ep;
+             printk( "fsg_bind=> Found INTR_IN ED \n");//Bruce
+			}
+	if (i>5)  //Bruce;;Modify
+	   break; //Bruce;;Modify	 
+	}
+	
+   printk("fsg_bind=>Check the ed type \n");//Bruce
+
+	if (!fsg->bulk_in || !fsg->bulk_out ||
+			(transport_is_cbi() && !fsg->intr_in)) {
+		printk("unable to find all endpoints\n");	
+		printk("fsg->bulk_in %x fsg->bulk_out %x fsg->intr_in %x \n",fsg->bulk_in,fsg->bulk_out,fsg->intr_in);
+		DBG(fsg, "unable to find all endpoints\n");
+		rc = -ENOTSUPP;
+		goto out;
+	}
+	fsg->bulk_out_maxpacket = (gadget->speed == USB_SPEED_HIGH ? 512 :
+			FS_BULK_OUT_MAXPACKET);
+
+	rc = -ENOMEM;
+   printk( "Allocate the request and buffer for endpoint 0  \n");//Bruce
 
 	if (gadget->is_otg) {
 		otg_desc.bmAttributes |= USB_OTG_HNP,
@@ -3957,8 +4033,8 @@ static int __init fsg_bind(struct usb_gadget *gadget)
 		goto out;
 	}
 
-	INFO(fsg, DRIVER_DESC ", version: " DRIVER_VERSION "\n");
-	INFO(fsg, "Number of LUNs=%d\n", fsg->nluns);
+	printk(DRIVER_DESC ", version: " DRIVER_VERSION "\n");
+	printk("Number of LUNs=%d\n", fsg->nluns);
 
 	pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
 	for (i = 0; i < fsg->nluns; ++i) {
@@ -3996,7 +4072,7 @@ static int __init fsg_bind(struct usb_gadget *gadget)
 	return 0;
 
 autoconf_fail:
-	ERROR(fsg, "unable to autoconfigure all endpoints\n");
+	printk("unable to autoconfigure all endpoints\n");
 	rc = -ENOTSUPP;
 
 out:
@@ -4075,17 +4151,20 @@ static void fsg_free(struct fsg_dev *fsg)
 	kfree(fsg);
 }
 
-
+//extern int usb_gadget_register_driver(struct usb_gadget_driver *driver);
 static int __init fsg_init(void)
 {
 	int		rc;
 	struct fsg_dev	*fsg;
-
+        printk("1\n");
 	if ((rc = fsg_alloc()) != 0)
 		return rc;
+	printk("2\n");
 	fsg = the_fsg;
-	if ((rc = usb_gadget_register_driver(&fsg_driver)) != 0)
+//	if ((rc = usb_gadget_register_driver(&fsg_driver)) != 0)
+        if ((rc = usb_gadget_register_driver_1(&fsg_driver)) != 0)
 		fsg_free(fsg);
+	printk("3\n");
 	return rc;
 }
 module_init(fsg_init);

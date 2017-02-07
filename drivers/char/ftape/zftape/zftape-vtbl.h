@@ -20,9 +20,9 @@
  USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/ftape/zftape/zftape-vtbl.h,v $
- * $Revision: 1.3 $
- * $Date: 1997/10/28 14:30:09 $
+ * $Source: /home/cvs/gemini-2.6.15/drivers/char/ftape/zftape/zftape-vtbl.h,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2006/04/03 08:40:46 $
  *
  *      This file defines a volume table as defined in the QIC-80
  *      development standards.

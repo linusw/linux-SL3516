@@ -1,0 +1,19 @@
+/Kconfig/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/Makefile/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/core.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_conntrack_core.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_conntrack_ftp.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_conntrack_l3proto_generic.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_conntrack_proto_generic.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_conntrack_proto_sctp.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_conntrack_proto_tcp.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_conntrack_proto_udp.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_conntrack_standalone.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_internals.h/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_log.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_queue.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nf_sockopt.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nfnetlink.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nfnetlink_log.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+/nfnetlink_queue.c/1.1.1.1/Mon Apr  3 08:41:31 2006//
+D

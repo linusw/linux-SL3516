@@ -25,6 +25,10 @@ ifeq ($(CONFIG_ARCH_CAMELOT),y)
 OBJS		+= head-epxa10db.o
 endif
 
+ifeq ($(CONFIG_ARCH_SL2312),y)
+OBJS		+= head-sl2312.o
+endif
+
 ifeq ($(CONFIG_ARCH_L7200),y)
 OBJS		+= head-l7200.o
 endif

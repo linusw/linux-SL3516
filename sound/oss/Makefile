@@ -5,8 +5,10 @@
 
 # Each configuration option enables a list of files.
 
-obj-$(CONFIG_SOUND_OSS)		+= sound.o
+obj-$(CONFIG_SOUND_OSS)		+= sound.o 
 obj-$(CONFIG_SOUND_CS4232)	+= cs4232.o ad1848.o 
+
+obj-$(CONFIG_SOUND_STORM_SSP)	+= Storm_ssp.o
 
 # Please leave it as is, cause the link order is significant !
 
@@ -90,6 +92,8 @@ endif
 obj-$(CONFIG_SOUND_EMU10K1)	+= emu10k1/
 obj-$(CONFIG_SOUND_CS4281)	+= cs4281/
 obj-$(CONFIG_DMASOUND)		+= dmasound/
+
+
 
 # Declare multi-part drivers.
 

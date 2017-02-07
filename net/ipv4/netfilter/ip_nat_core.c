@@ -352,7 +352,10 @@ ip_nat_setup_info(struct ip_conntrack *conntrack,
 EXPORT_SYMBOL(ip_nat_setup_info);
 
 /* Returns true if succeeded. */
-static int
+#ifndef CONFIG_SL351x_FAST_NET
+static
+#endif
+int
 manip_pkt(u_int16_t proto,
 	  struct sk_buff **pskb,
 	  unsigned int iphdroff,

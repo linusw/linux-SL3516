@@ -299,9 +299,11 @@ cmd_link_multi-m = $(LD) $(ld_flags) $(LDFLAGS_MODULE) -o $@ $(link_multi_deps)
 $(multi-used-y) : %.o: $(multi-objs-y) FORCE
 	$(call if_changed,link_multi-y)
 
+##debug_Aaron on 03/17/2006 STRIP the *.o
 $(multi-used-m) : %.o: $(multi-objs-m) FORCE
 	$(call if_changed,link_multi-m)
 	@{ echo $(@:.o=.ko); echo $(link_multi_deps); } > $(MODVERDIR)/$(@F:.o=.mod)
+	$(STRIP) -g -S -d -X $@
 
 targets += $(multi-used-y) $(multi-used-m)
 

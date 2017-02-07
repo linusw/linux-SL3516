@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: erase.c,v 1.85 2005/09/20 14:53:15 dedekind Exp $
+ * $Id: erase.c,v 1.2 2007/08/01 09:59:48 aaron Exp $
  *
  */
 
@@ -75,7 +75,17 @@ static void jffs2_erase_block(struct jffs2_sb_info *c,
 	((struct erase_priv_struct *)instr->priv)->jeb = jeb;
 	((struct erase_priv_struct *)instr->priv)->c = c;
 
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif
 	ret = c->mtd->erase(c->mtd, instr);
+
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif
+
 	if (!ret)
 		return;
 

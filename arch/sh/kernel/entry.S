@@ -1,4 +1,4 @@
-/* $Id: entry.S,v 1.37 2004/06/11 13:02:46 doyu Exp $
+/* $Id: entry.S,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  *
  *  linux/arch/sh/entry.S
  *

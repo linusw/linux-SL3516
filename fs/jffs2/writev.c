@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: writev.c,v 1.8 2005/09/09 15:11:58 havasi Exp $
+ * $Id: writev.c,v 1.2 2007/08/01 10:00:57 aaron Exp $
  *
  */
 
@@ -28,7 +28,18 @@ static inline int mtd_fake_writev(struct mtd_info *mtd, const struct kvec *vecs,
 	for (i=0; i<count; i++) {
 		if (!vecs[i].iov_len)
 			continue;
+
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif
+
 		ret = mtd->write(mtd, to, vecs[i].iov_len, &thislen, vecs[i].iov_base);
+
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif
 		totlen += thislen;
 		if (ret || thislen != vecs[i].iov_len)
 			break;
@@ -52,8 +63,23 @@ int jffs2_flash_direct_writev(struct jffs2_sb_info *c, const struct kvec *vecs,
 		}
 	}
 
+
 	if (c->mtd->writev)
-		return c->mtd->writev(c->mtd, vecs, count, to, retlen);
+	{
+		int ret;
+
+		//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif
+		ret=c->mtd->writev(c->mtd, vecs, count, to, retlen);
+
+	//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif
+		return ret;
+	}
 	else {
 		return mtd_fake_writev(c->mtd, vecs, count, to, retlen);
 	}
@@ -63,7 +89,18 @@ int jffs2_flash_direct_write(struct jffs2_sb_info *c, loff_t ofs, size_t len,
 			size_t *retlen, const u_char *buf)
 {
 	int ret;
+
+    //debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif          
+
 	ret = c->mtd->write(c->mtd, ofs, len, retlen, buf);
+
+    //debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif          
 
 	if (jffs2_sum_active()) {
 		struct kvec vecs[1];

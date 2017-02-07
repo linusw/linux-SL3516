@@ -13,7 +13,7 @@
  *
  *	hacked by Andi Kleen for x86-64.
  * 
- *  $Id: hw_irq.h,v 1.24 2001/09/14 20:55:03 vojtech Exp $
+ *  $Id: hw_irq.h,v 1.1.1.1 2006/04/03 08:41:17 amos_lee Exp $
  */
 
 #ifndef __ASSEMBLY__

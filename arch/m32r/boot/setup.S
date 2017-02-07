@@ -5,7 +5,7 @@
  *  and Hitoshi Yamamoto
  *
  */
-/* $Id$ */
+/* $Id: setup.S,v 1.1.1.1 2006/04/03 08:40:34 amos_lee Exp $ */
 
 #include <linux/linkage.h>
 #include <asm/segment.h>

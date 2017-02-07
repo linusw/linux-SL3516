@@ -49,9 +49,12 @@ static struct ehci_qtd *ehci_qtd_alloc (struct ehci_hcd *ehci, gfp_t flags)
 {
 	struct ehci_qtd		*qtd;
 	dma_addr_t		dma;
-
+        int                     flags1;
+        flags1 = flags;
+//        printk("flags1 %x flags %x\n",flags1,flags);
 	qtd = dma_pool_alloc (ehci->qtd_pool, flags, &dma);
-	if (qtd != NULL) {
+//	printk("ehci_qtd_alloc qtd %x flags %x\n",qtd,flags);
+	if (qtd != 0) {
 		ehci_qtd_init (qtd, dma);
 	}
 	return qtd;
@@ -70,7 +73,7 @@ static void qh_destroy (struct kref *kref)
 
 	/* clean qtds first, and know this is not linked */
 	if (!list_empty (&qh->qtd_list) || qh->qh_next.ptr) {
-		ehci_dbg (ehci, "unused qh not empty!\n");
+//		ehci_dbg (ehci, "unused qh not empty!\n");
 		BUG ();
 	}
 	if (qh->dummy)
@@ -86,6 +89,7 @@ static struct ehci_qh *ehci_qh_alloc (struct ehci_hcd *ehci, gfp_t flags)
 
 	qh = (struct ehci_qh *)
 		dma_pool_alloc (ehci->qh_pool, flags, &dma);
+//	printk("ehci_qh_alloc qh %x flags %x \n",qh,flags);
 	if (!qh)
 		return qh;
 
@@ -98,8 +102,9 @@ static struct ehci_qh *ehci_qh_alloc (struct ehci_hcd *ehci, gfp_t flags)
 
 	/* dummy td enables safe urb queuing */
 	qh->dummy = ehci_qtd_alloc (ehci, flags);
-	if (qh->dummy == NULL) {
-		ehci_dbg (ehci, "no dummy td\n");
+//	printk("ehci_qh_alloc qh->dummy %x\n",qh->dummy);
+	if (qh->dummy == 0) {
+//		ehci_dbg (ehci, "no dummy td\n");
 		dma_pool_free (ehci->qh_pool, qh, qh->qh_dma);
 		qh = NULL;
 	}
@@ -150,7 +155,7 @@ static void ehci_mem_cleanup (struct ehci_hcd *ehci)
 	ehci->sitd_pool = NULL;
 
 	if (ehci->periodic)
-		dma_free_coherent (ehci_to_hcd(ehci)->self.controller,
+		dma_free_coherent (ehci->hcd.self.controller,
 			ehci->periodic_size * sizeof (u32),
 			ehci->periodic, ehci->periodic_dma);
 	ehci->periodic = NULL;
@@ -167,7 +172,7 @@ static int ehci_mem_init (struct ehci_hcd *ehci, gfp_t flags)
 
 	/* QTDs for control/bulk/intr transfers */
 	ehci->qtd_pool = dma_pool_create ("ehci_qtd", 
-			ehci_to_hcd(ehci)->self.controller,
+			ehci->hcd.self.controller,
 			sizeof (struct ehci_qtd),
 			32 /* byte alignment (for hw parts) */,
 			4096 /* can't cross 4K */);
@@ -177,7 +182,7 @@ static int ehci_mem_init (struct ehci_hcd *ehci, gfp_t flags)
 
 	/* QHs for control/bulk/intr transfers */
 	ehci->qh_pool = dma_pool_create ("ehci_qh", 
-			ehci_to_hcd(ehci)->self.controller,
+			ehci->hcd.self.controller,
 			sizeof (struct ehci_qh),
 			32 /* byte alignment (for hw parts) */,
 			4096 /* can't cross 4K */);
@@ -191,7 +196,7 @@ static int ehci_mem_init (struct ehci_hcd *ehci, gfp_t flags)
 
 	/* ITD for high speed ISO transfers */
 	ehci->itd_pool = dma_pool_create ("ehci_itd", 
-			ehci_to_hcd(ehci)->self.controller,
+			ehci->hcd.self.controller,
 			sizeof (struct ehci_itd),
 			32 /* byte alignment (for hw parts) */,
 			4096 /* can't cross 4K */);
@@ -201,7 +206,7 @@ static int ehci_mem_init (struct ehci_hcd *ehci, gfp_t flags)
 
 	/* SITD for full/low speed split ISO transfers */
 	ehci->sitd_pool = dma_pool_create ("ehci_sitd", 
-			ehci_to_hcd(ehci)->self.controller,
+			ehci->hcd.self.controller,
 			sizeof (struct ehci_sitd),
 			32 /* byte alignment (for hw parts) */,
 			4096 /* can't cross 4K */);
@@ -211,7 +216,7 @@ static int ehci_mem_init (struct ehci_hcd *ehci, gfp_t flags)
 
 	/* Hardware periodic table */
 	ehci->periodic = (__le32 *)
-		dma_alloc_coherent (ehci_to_hcd(ehci)->self.controller,
+		dma_alloc_coherent (ehci->hcd.self.controller,
 			ehci->periodic_size * sizeof(__le32),
 			&ehci->periodic_dma, 0);
 	if (ehci->periodic == NULL) {
@@ -230,7 +235,7 @@ static int ehci_mem_init (struct ehci_hcd *ehci, gfp_t flags)
 	return 0;
 
 fail:
-	ehci_dbg (ehci, "couldn't init memory\n");
+//	ehci_dbg (ehci, "couldn't init memory\n");
 	ehci_mem_cleanup (ehci);
 	return -ENOMEM;
 }

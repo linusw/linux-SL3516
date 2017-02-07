@@ -1,5 +1,5 @@
 /*
- * linux/drivers/s390/net/qeth_eddp.c ($Revision: 1.5 $)
+ * linux/drivers/s390/net/qeth_eddp.c ($Revision: 1.1.1.1 $)
  *
  * Header file for qeth enhanced device driver pakcing.
  *
@@ -7,7 +7,7 @@
  *
  *    Author(s): Thomas Spatzier <tspat@de.ibm.com>
  *
- *    $Revision: 1.5 $	 $Date: 2005/03/24 09:04:18 $
+ *    $Revision: 1.1.1.1 $	 $Date: 2006/04/03 08:40:57 $
  *
  */
 #ifndef __QETH_EDDP_H__

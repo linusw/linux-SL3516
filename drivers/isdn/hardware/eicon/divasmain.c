@@ -1,4 +1,4 @@
-/* $Id: divasmain.c,v 1.55.4.6 2005/02/09 19:28:20 armin Exp $
+/* $Id: divasmain.c,v 1.1.1.1 2006/04/03 08:40:49 amos_lee Exp $
  *
  * Low level driver for Eicon DIVA Server ISDN cards.
  *
@@ -41,7 +41,7 @@
 #include "diva_dma.h"
 #include "diva_pci.h"
 
-static char *main_revision = "$Revision: 1.55.4.6 $";
+static char *main_revision = "$Revision: 1.1.1.1 $";
 
 static int major;
 

@@ -127,6 +127,12 @@ config MD_RAID5
 
 	  If unsure, say Y.
 
+config GEMINI_XOR_ACCE
+	bool "GEMINI XOR ACCELERATION SUPPORT"
+	depends on MD_RAID5
+	---help---
+		turn on Gemini H/W xor acceleration
+
 config MD_RAID6
 	tristate "RAID-6 mode"
 	depends on BLK_DEV_MD

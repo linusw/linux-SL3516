@@ -1,5 +1,5 @@
 /*
- * $Id: jffs2-user.h,v 1.1 2004/05/05 11:57:54 dwmw2 Exp $
+ * $Id: jffs2-user.h,v 1.1.1.1 2006/04/03 08:41:21 amos_lee Exp $
  *
  * JFFS2 definitions for use in user space only
  */

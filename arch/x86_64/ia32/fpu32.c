@@ -2,7 +2,7 @@
  * Copyright 2002 Andi Kleen, SuSE Labs.
  * FXSAVE<->i387 conversion support. Based on code by Gareth Hughes.
  * This is used for ptrace, signals and coredumps in 32bit emulation.
- * $Id: fpu32.c,v 1.1 2002/03/21 14:16:32 ak Exp $
+ * $Id: fpu32.c,v 1.1.1.1 2006/04/03 08:40:44 amos_lee Exp $
  */ 
 
 #include <linux/sched.h>

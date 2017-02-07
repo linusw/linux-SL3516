@@ -8,6 +8,20 @@
 #include <net/icmp.h>
 #include <asm/scatterlist.h>
 
+#ifdef CONFIG_SL2312_IPSEC
+#include <linux/time.h>
+extern unsigned long crypto_flags;
+//extern unsigned long crypto_go;
+extern  spinlock_t crypto_done_lock;
+extern  unsigned int crypto_done ;
+#endif
+
+#ifdef CONFIG_SL351X_IPSEC
+#include <asm/arch/sl351x_ipsec.h>
+extern	struct IPSEC_VPN_TUNNEL_CONFIG	ipsec_tunnel[MAX_IPSEC_TUNNEL];
+extern	void ipsec_vpn_tunnel_start(void);
+extern	int	disable_vpn_hash(struct IPSEC_VPN_TUNNEL_CONFIG *tunnel_ptr);
+#endif
 
 /* Clear mutable options and find final destination to substitute
  * into IP header for icv calculation. Options are already checked
@@ -97,7 +111,9 @@ static int ah_output(struct xfrm_state *x, struct sk_buff *skb)
 	ah->spi = x->id.spi;
 	ah->seq_no = htonl(++x->replay.oseq);
 	ahp->icv(ahp, skb, ah->auth_data);
-
+#ifdef CONFIG_SL2312_IPSEC			
+//		crypto_go = 1;
+#endif	
 	top_iph->tos = iph->tos;
 	top_iph->ttl = iph->ttl;
 	top_iph->frag_off = iph->frag_off;
@@ -163,7 +179,20 @@ static int ah_input(struct xfrm_state *x, struct xfrm_decap_state *decap, struct
 		
 		memcpy(auth_data, ah->auth_data, ahp->icv_trunc_len);
 		skb_push(skb, skb->data - skb->nh.raw);
+#ifdef CONFIG_SL2312_IPSEC		
+		//while (1) {
+		//if (crypto_go){
+		//	break;
+		//}
+		//schedule();
+		//};
+#endif
+		//printk("1\n");
 		ahp->icv(ahp, skb, ah->auth_data);
+		//printk("2\n");
+#ifdef CONFIG_SL2312_IPSEC			
+//		crypto_go = 1;
+#endif	
 		if (memcmp(ah->auth_data, auth_data, ahp->icv_trunc_len)) {
 			x->stats.integrity_failed++;
 			goto out;
@@ -204,6 +233,10 @@ static int ah_init_state(struct xfrm_state *x)
 {
 	struct ah_data *ahp = NULL;
 	struct xfrm_algo_desc *aalg_desc;
+#ifdef CONFIG_SL351X_IPSEC
+	int	i=0, curr=-1;
+	int sl351x_ipsec_able = 1;
+#endif
 
 	if (!x->aalg)
 		goto error;
@@ -258,6 +291,80 @@ static int ah_init_state(struct xfrm_state *x)
 	if (x->props.mode)
 		x->props.header_len += sizeof(struct iphdr);
 	x->data = ahp;
+#ifdef CONFIG_SL351X_IPSEC
+	if (x->props.mode == 0)		// if transport mode, disable hardware acceleration
+		sl351x_ipsec_able = 0;
+	
+	if (sl351x_ipsec_able)
+	{
+		for(i=0;i<MAX_IPSEC_TUNNEL;i++)
+		{
+			if(((ipsec_tunnel[i].src_WAN_IP==(ntohl((*(x)).props.saddr.a4)))
+				&& (ipsec_tunnel[i].dst_WAN_IP==(ntohl((*(x)).id.daddr.a4)))))
+			{
+				curr = i;
+				break;
+			}
+		}
+		if((curr==-1)&&(i==MAX_IPSEC_TUNNEL))
+		{
+			for(i=0;i<MAX_IPSEC_TUNNEL;i++)
+			{
+				if((ipsec_tunnel[i].src_WAN_IP==0)&&(ipsec_tunnel[i].dst_WAN_IP==0))
+				{
+					curr = i;
+					break;
+				}
+			}
+		}
+		printk("%s::spi:0x%02x%02x%02x%02x\n",__func__,(x->id.spi&0x000000ff),((x->id.spi&0x0000ff00)>>8),((x->id.spi&0x00ff0000)>>16),((x->id.spi&0xff000000)>>24));
+		printk("%s::src:%x, dst:%x\n",__func__,(*(x)).props.saddr.a4,(*(x)).id.daddr.a4);
+		ipsec_tunnel[curr].spi = x->id.spi;
+		ipsec_tunnel[curr].protocol = x->id.proto;
+		ipsec_tunnel[curr].src_WAN_IP = ntohl((*(x)).props.saddr.a4);
+		ipsec_tunnel[curr].dst_WAN_IP = ntohl((*(x)).id.daddr.a4);
+		ipsec_tunnel[curr].current_sequence = x->replay.oseq;
+
+		// setting up AH's key and key length
+		printk("%s:ahp->key(%x) -->key:",__func__,ahp->key_len);
+		for(i=0;i<ahp->key_len;i++)
+			printk("%02x",*(ahp->key+i));
+		printk("\n");
+		memcpy(&ipsec_tunnel[curr].auth_key, ahp->key, ahp->key_len);
+		ipsec_tunnel[curr].auth_key_len = ahp->key_len;
+		
+		ipsec_tunnel[curr].auth_alg = ipsec_get_auth_algorithm(x->aalg->alg_name,1);
+		printk("ahp->auth.tfm: %s, #: %x\n", x->aalg->alg_name,ipsec_tunnel[curr].auth_alg);
+		ipsec_tunnel[curr].icv_full_len = ahp->icv_full_len;
+		ipsec_tunnel[curr].icv_trunc_len = ahp->icv_trunc_len;
+
+		printk("ipsec_tunnel ipsec_tunnel[%x]:\n",curr);
+		printk("ipsec_tunnel :spi:0x%02x%02x%02x%02x\n",(ipsec_tunnel[curr].spi&0x000000ff),((ipsec_tunnel[curr].spi&0x0000ff00)>>8),((ipsec_tunnel[curr].spi&0x00ff0000)>>16),((ipsec_tunnel[curr].spi&0xff000000)>>24));		
+		printk("ipsec_tunnel :src: %x  dst:%x\n",ipsec_tunnel[curr].src_WAN_IP,ipsec_tunnel[curr].dst_WAN_IP);
+		printk("ipsec_tunnel :auth_key(%x) :",ipsec_tunnel[curr].auth_key_len);
+		for(i=0;i<ipsec_tunnel[curr].auth_key_len;i++)
+			printk("%02x",*(ipsec_tunnel[curr].auth_key+i));
+		printk("\n");
+		printk("ipsec_tunnel :auth_alg:%x\n",ipsec_tunnel[curr].auth_alg);
+		printk("ipsec_tunnel :protocol:%x\n",ipsec_tunnel[curr].protocol);
+		printk("ipsec_tunnel :sequence:%d\n",ipsec_tunnel[curr].current_sequence);
+		ipsec_tunnel[curr].enable = 1;
+		ipsec_tunnel[curr].xfrm = x;
+		ipsec_vpn_tunnel_start();
+	}
+
+	struct timeval t;
+	do_gettimeofday(&t);
+	unsigned long day;
+	unsigned int hour,minute,second;
+	second = t.tv_sec%60;
+	day = t.tv_sec/60;
+	minute = day % 60;
+	day = day/60;
+	hour = day % 24;
+	day = day/24;
+	printk("time: day:%d  %02d:%02d:%02d\n",day,hour,minute,second);
+#endif
 
 	return 0;
 
@@ -276,6 +383,21 @@ static void ah_destroy(struct xfrm_state *x)
 
 	if (!ahp)
 		return;
+#ifdef CONFIG_SL351X_IPSEC
+	int i=0,count=0;
+	for (i=0;i<MAX_IPSEC_TUNNEL;i++)
+	{
+		if((ipsec_tunnel[i].src_WAN_IP==(ntohl((*(x)).props.saddr.a4)))
+			&& (ipsec_tunnel[i].dst_WAN_IP==(ntohl((*(x)).id.daddr.a4)))
+			&& (ipsec_tunnel[i].spi == x->id.spi))
+		{
+			printk("%s::disabling ipsec_tunnel[%d]\n",__func__,i);
+			disable_vpn_hash(&ipsec_tunnel[i]);
+			memset(&ipsec_tunnel[i],0x0,sizeof(struct IPSEC_VPN_TUNNEL_CONFIG));
+			count++;
+		}
+	}
+#endif
 
 	kfree(ahp->work_icv);
 	ahp->work_icv = NULL;

@@ -1,5 +1,5 @@
 /*
- * $Id: tmdc.c,v 1.31 2002/01/22 20:29:52 vojtech Exp $
+ * $Id: tmdc.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  *
  *  Copyright (c) 1998-2001 Vojtech Pavlik
  *

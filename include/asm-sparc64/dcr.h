@@ -1,4 +1,4 @@
-/* $Id: dcr.h,v 1.4 2001/03/09 17:56:37 davem Exp $ */
+/* $Id: dcr.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $ */
 #ifndef _SPARC64_DCR_H
 #define _SPARC64_DCR_H
 

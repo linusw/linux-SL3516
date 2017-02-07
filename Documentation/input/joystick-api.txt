@@ -5,7 +5,7 @@
 
 			      7 Aug 1998
 
-	$Id: joystick-api.txt,v 1.2 2001/05/08 21:21:23 vojtech Exp $
+	$Id: joystick-api.txt,v 1.1.1.1 2006/04/03 08:40:30 amos_lee Exp $
 
 1. Initialization
 ~~~~~~~~~~~~~~~~~

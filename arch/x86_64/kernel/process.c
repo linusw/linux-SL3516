@@ -10,7 +10,7 @@
  *	Andi Kleen.
  *
  *	CPU hotplug support - ashok.raj@intel.com
- *  $Id: process.c,v 1.38 2002/01/15 10:08:03 ak Exp $
+ *  $Id: process.c,v 1.1.1.1 2006/04/03 08:40:44 amos_lee Exp $
  */
 
 /*
