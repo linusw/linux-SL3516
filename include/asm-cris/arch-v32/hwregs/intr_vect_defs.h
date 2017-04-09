@@ -8,7 +8,7 @@
  *     last modfied: Mon Apr 11 16:08:03 2005
  *
  *   by /n/asic/design/tools/rdesc/src/rdes2c --outfile intr_vect_defs.h ../../inst/intr_vect/rtl/guinness/ivmask.config.r
- *      id: $Id: intr_vect_defs.h,v 1.8 2005/04/24 18:30:58 starvik Exp $
+ *      id: $Id: intr_vect_defs.h,v 1.1.1.1 2006/04/03 08:41:10 amos_lee Exp $
  * Any changes here will be lost.
  *
  * -*- buffer-read-only: t -*-

@@ -270,7 +270,16 @@ struct usb_bus {
 	u8 otg_port;			/* 0, or number of OTG/HNP port */
 	unsigned is_b_host:1;		/* true during some HNP roleswitches */
 	unsigned b_hnp_enable:1;	/* OTG: did A-Host enable HNP? */
+#if defined  (CONFIG_USB_SL2312) || defined (CONFIG_USB_SL2312_MODULE)
+        unsigned A_Disable_Set_Feature_HNP:1;	
+	int (*hcd_isr)  (struct usb_bus	*bus);//For Faraday 
+#else
+#if defined  (CONFIG_USB_SL2312_1) || defined (CONFIG_USB_SL2312_1_MODULE)
+        unsigned A_Disable_Set_Feature_HNP:1;	
+	int (*hcd_isr)  (struct usb_bus	*bus);//For Faraday 
+#endif
 
+#endif
 	int devnum_next;		/* Next open device number in
 					 * round-robin allocation */
 
@@ -291,6 +300,15 @@ struct usb_bus {
 	int bandwidth_isoc_reqs;	/* number of Isoc. requests */
 
 	struct dentry *usbfs_dentry;	/* usbfs dentry entry for the bus */
+#if defined  (CONFIG_USB_SL2312) || defined (CONFIG_USB_SL2312_MODULE)
+       struct list_head inodes;
+       atomic_t refcnt;
+#else 
+#if defined  (CONFIG_USB_SL2312_1) || defined (CONFIG_USB_SL2312_1_MODULE)
+       struct list_head inodes;
+       atomic_t refcnt; 
+#endif
+#endif
 
 	struct class_device *class_dev;	/* class device for this bus */
 	struct kref kref;		/* reference counting for this bus */
@@ -328,7 +346,13 @@ struct usb_device {
 
 	struct usb_tt	*tt; 		/* low/full speed dev, highspeed hub */
 	int		ttport;		/* device port on that tt hub */
-
+#if defined  (CONFIG_USB_SL2312) || defined (CONFIG_USB_SL2312_MODULE)
+        atomic_t refcnt;  
+#else 
+#if defined  (CONFIG_USB_SL2312_1) || defined (CONFIG_USB_SL2312_1_MODULE)
+        atomic_t refcnt; 
+#endif
+#endif
 	struct semaphore serialize;
 
 	unsigned int toggle[2];		/* one bit for each endpoint
@@ -352,10 +376,21 @@ struct usb_device {
 	int have_langid;		/* whether string_langid is valid */
 	int string_langid;		/* language ID for strings */
 
+
 	/* static strings from the device */
 	char *product;			/* iProduct string, if present */
 	char *manufacturer;		/* iManufacturer string, if present */
 	char *serial;			/* iSerialNumber string, if present */
+#if defined  (CONFIG_USB_SL2312) || defined (CONFIG_USB_SL2312_MODULE)
+        void *hcpriv; 
+        struct list_head inodes;
+#else
+#if defined  (CONFIG_USB_SL2312_1) || defined (CONFIG_USB_SL2312_1_MODULE)
+        void *hcpriv; 
+        struct list_head inodes;
+#endif
+
+#endif
 
 	struct list_head filelist;
 	struct class_device *class_dev;
@@ -527,6 +562,29 @@ static inline int usb_make_path (struct usb_device *dev, char *buf,
 	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO, .bInterfaceClass = (cl), \
 	.bInterfaceSubClass = (sc), .bInterfaceProtocol = (pr)
 
+/*+++ Mark 2008/11/20 02:09pm port from linux 2.6.24 */
+/**
+ * USB_DEVICE_AND_INTERFACE_INFO - macro used to describe a specific usb device
+ *              with a class of usb interfaces
+ * @vend: the 16 bit USB Vendor ID
+ * @prod: the 16 bit USB Product ID
+ * @cl: bInterfaceClass value
+ * @sc: bInterfaceSubClass value
+ * @pr: bInterfaceProtocol value
+ *
+ * This macro is used to create a struct usb_device_id that matches a
+ * specific device with a specific class of interfaces.
+ *
+ * This is especially useful when explicitly matching devices that have
+ * vendor specific bDeviceClass values, but standards-compliant interfaces.
+ */
+#define USB_DEVICE_AND_INTERFACE_INFO(vend,prod,cl,sc,pr) \
+	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
+			| USB_DEVICE_ID_MATCH_DEVICE, \
+	.idVendor = (vend), .idProduct = (prod), \
+	.bInterfaceClass = (cl), \
+	.bInterfaceSubClass = (sc), .bInterfaceProtocol = (pr)
+/*--- Mark 2008/11/20 02:09pm */
 /* ----------------------------------------------------------------------- */
 
 /**

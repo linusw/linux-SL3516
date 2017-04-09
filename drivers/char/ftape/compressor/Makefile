@@ -15,9 +15,9 @@
 # along with this program; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-# $Source: /homes/cvs/ftape-stacked/ftape/compressor/Makefile,v $
-# $Revision: 1.1 $
-# $Date: 1997/10/05 19:12:28 $
+# $Source: /home/cvs/gemini-2.6.15/drivers/char/ftape/compressor/Makefile,v $
+# $Revision: 1.1.1.1 $
+# $Date: 2006/04/03 08:40:46 $
 #
 #      Makefile for the optional compressor for th zftape VFS
 #      interface to the QIC-40/80/3010/3020 floppy-tape driver for

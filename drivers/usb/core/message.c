@@ -17,6 +17,12 @@
 #include "hcd.h"	/* for usbcore internals */
 #include "usb.h"
 
+
+//marco 2009/2/17 11:15 a.m.
+//hendry modify 2009/4/1 
+//unless 3g card, we let all usb device to report to share port
+#define SHARE_PORT 1
+
 static void usb_api_blocking_completion(struct urb *urb, struct pt_regs *regs)
 {
 	complete((struct completion *)urb->context);
@@ -40,10 +46,11 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 	int			status;
 
 	init_completion(&done); 	
+//	printk("***done %x\n",&done);
 	urb->context = &done;
 	urb->actual_length = 0;
 	status = usb_submit_urb(urb, GFP_NOIO);
-
+//        printk("******status %x \n",status);
 	if (status == 0) {
 		if (timeout > 0) {
 			init_timer(&timer);
@@ -53,8 +60,11 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 			/* grr.  timeout _should_ include submit delays. */
 			add_timer(&timer);
 		}
+//		printk("wait_for_completion begin done %x\n",&done);
 		wait_for_completion(&done);
+//		printk("wait_for_completion end done %x\n",&done);
 		status = urb->status;
+//		printk("usb_start_wait_urb status %x timeout %x \n",status,timeout);
 		/* note:  HCDs return ETIMEDOUT for other reasons too */
 		if (status == -ECONNRESET) {
 			dev_dbg(&urb->dev->dev,
@@ -65,18 +75,19 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 				urb->actual_length,
 				urb->transfer_buffer_length
 				);
-			if (urb->actual_length > 0)
-				status = 0;
-			else
+//			if (urb->actual_length > 0)
+//				status = 0;
+//			else
 				status = -ETIMEDOUT;
 		}
 		if (timeout > 0)
 			del_timer_sync(&timer);
 	}
-
+//        printk("actual_length %x\n",actual_length); 
 	if (actual_length)
 		*actual_length = urb->actual_length;
 	usb_free_urb(urb);
+//	printk("******status %x end\n",status);
 	return status;
 }
 
@@ -139,7 +150,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request, __u
 	
 	if (!dr)
 		return -ENOMEM;
-
+//        printk("data %x\n",data);
 	dr->bRequestType= requesttype;
 	dr->bRequest = request;
 	dr->wValue = cpu_to_le16p(&value);
@@ -149,7 +160,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request, __u
 	//dbg("usb_control_msg");	
 
 	ret = usb_internal_control_msg(dev, pipe, dr, data, size, timeout);
-
+//        printk("data1 %x\n",data);
 	kfree(dr);
 
 	return ret;
@@ -957,19 +968,31 @@ void usb_disable_endpoint(struct usb_device *dev, unsigned int epaddr)
 {
 	unsigned int epnum = epaddr & USB_ENDPOINT_NUMBER_MASK;
 	struct usb_host_endpoint *ep;
-
+//        printk("1\n");
 	if (!dev)
 		return;
-
+//        printk("2\n");
 	if (usb_endpoint_out(epaddr)) {
+//        printk("3\n");
 		ep = dev->ep_out[epnum];
+//        printk("4\n");
 		dev->ep_out[epnum] = NULL;
+//printk("5\n");
 	} else {
+//printk("6\n");
 		ep = dev->ep_in[epnum];
+//printk("7\n");
 		dev->ep_in[epnum] = NULL;
+//printk("8\n");
 	}
+//printk("9\n");
 	if (ep && dev->bus && dev->bus->op && dev->bus->op->disable)
+	     {
+//printk("10\n");
 		dev->bus->op->disable(dev, ep);
+//printk("11\n");
+	      }	
+//printk("12\n");
 }
 
 /**
@@ -1006,12 +1029,17 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
 
 	dev_dbg(&dev->dev, "%s nuking %s URBs\n", __FUNCTION__,
 			skip_ep0 ? "non-ep0" : "all");
+	
 	for (i = skip_ep0; i < 16; ++i) {
+		
 		usb_disable_endpoint(dev, i);
+//		printk("1-2 dev %x i %x\n",dev,i);
 		usb_disable_endpoint(dev, i + USB_DIR_IN);
+		
 	}
+	
 	dev->toggle[0] = dev->toggle[1] = 0;
-
+         
 	/* getting rid of interfaces will disconnect
 	 * any drivers bound to them (a key side effect)
 	 */
@@ -1023,10 +1051,17 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
 			interface = dev->actconfig->interface[i];
 			if (!device_is_registered(&interface->dev))
 				continue;
+			
 			dev_dbg (&dev->dev, "unregistering interface %s\n",
 				interface->dev.bus_id);
 			usb_remove_sysfs_intf_files(interface);
+			
+			kfree(interface->cur_altsetting->string);
+			
+			interface->cur_altsetting->string = NULL;
+			
 			device_del (&interface->dev);
+			
 		}
 
 		/* Now that the interfaces are unbound, nobody should
@@ -1034,12 +1069,15 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
 		 */
 		for (i = 0; i < dev->actconfig->desc.bNumInterfaces; i++) {
 			put_device (&dev->actconfig->interface[i]->dev);
+			
 			dev->actconfig->interface[i] = NULL;
 		}
 		dev->actconfig = NULL;
 		if (dev->state == USB_STATE_CONFIGURED)
 			usb_set_device_state(dev, USB_STATE_ADDRESS);
+			
 	}
+	
 }
 
 
@@ -1292,6 +1330,110 @@ static void release_interface(struct device *dev)
 	kref_put(&intfc->ref, usb_release_interface_cache);
 	kfree(intf);
 }
+#ifdef SHARE_PORT
+int same_dev_type(int index,int total,struct usb_host_config *cp)
+{
+	int i;
+	for(i=0;i<total;i++)
+	{
+		if( (cp->interface[index]->cur_altsetting->desc.bInterfaceClass !=cp->interface[i]->cur_altsetting->desc.bInterfaceClass) &&(cp->interface[i]->cur_altsetting->desc.bInterfaceClass!=0xff) )
+			return 0;
+	}
+	return 1;
+}
+#endif
+
+#ifdef SHARE_PORT
+struct _table
+{
+	char *str;
+	__le16 vendorID;
+	__le16 productID;
+};
+struct _table threeG_table[] = 
+{
+	/*Description 		, VendorID		,	ProductID */
+	{ "D-link 3.5G HSDPA" 	, 0x1c9e		,	0xf000 },
+	{ "D-link Red"		 	, 0x07d1		,	0xA800 },
+	{ "BandRich, Inc" 		, 0x1a8d		,	0x1000 },
+	{ "Alpha" 				, 0x1e0e		,	0xf000 },
+	{ "Edge" 				, 0x0471		,	0x1210 },
+	{ NULL, 0, 0 }
+};
+#endif
+
+/*
+To determine whether it is 3g interface or not, need to check these cases : 
+case 1 : 	
+	3g card maybe can have more than one interface. If one interface is storage (0x8) and the others are
+	0xff class, than it is a 3g interface.
+	Example : Bandrich card
+			interface 1 : 	class 0xff	
+			interface 2 : 	class 0xff	
+			interface 3 :	class 0xff	
+			interface 4 : 	class 0x8		(storage)
+
+case 2 : 
+	3g ACM card use the specification of WMCDC (See : http://msdn.microsoft.com/en-us/library/aa476420.aspx)
+	The interface class used is : 0x02.
+			
+case 3 : 
+	3g card may also only have one interface, which is storage (0x8). So we need to check product and 
+	vendor id that our system supported. Check the threeG_table above.
+*/
+
+int is_3G_interface(struct usb_device *dev, struct usb_host_config *cp, int index, int nintf)
+{
+	struct _table *ptable = NULL;
+	int i = 0 ;
+	int total_ff_class = 0;	
+	
+	
+	printk("cur_altsetting->desc.bInterfaceClass : %x\n",cp->interface[index]->cur_altsetting->desc.bInterfaceClass );
+	printk("dev->descriptor.iProduct : %x\n",dev->descriptor.idProduct);
+	printk("dev->descriptor.idVendor : %x\n",dev->descriptor.idVendor);
+	
+	if(cp->interface[index]->cur_altsetting->desc.bInterfaceClass == 0xff)
+		return 0;
+	
+	/* case 1: if 3g card have more than interface */
+	if(nintf > 1)
+	{
+		if(cp->interface[index]->cur_altsetting->desc.bInterfaceClass == 0x8){
+			for (i = 0; i < nintf; ++i) {
+				//printk("cp->interface[i]->cur_altsetting->desc.bInterfaceClass : %x\n", cp->interface[i]->cur_altsetting->desc.bInterfaceClass);
+				if(cp->interface[i]->cur_altsetting->desc.bInterfaceClass == 0xff){
+					total_ff_class++;			
+				}
+			}
+			if(total_ff_class == (nintf-1))
+				return 1;	
+		}
+	}
+	
+	/* case 2: check if it is ACM 3g card */
+	for (i = 0; i < nintf; ++i) {
+		if(cp->interface[i]->cur_altsetting->desc.bInterfaceClass == 0x2)
+		{
+			printk("## ACM card detected..it is 3g card\n");
+			return 1;
+		}
+	}
+		
+	/* case 3: if 3g card is just the same as storage, we need to check vendor and product id */
+	if(cp->interface[index]->cur_altsetting->desc.bInterfaceClass == 0x8)	//storage
+	{
+		ptable = &threeG_table[0];
+		while((ptable->str)!=NULL && (ptable->vendorID)!= NULL && (ptable->productID)!= NULL)
+		{
+			printk("Searching ... %s, vendorID : %x,productID : %x\n", ptable->str, ptable->vendorID,ptable->productID );
+			if( (dev->descriptor.idVendor == ptable->vendorID) && (dev->descriptor.idProduct == ptable->productID) ) //found
+				return 1; // 3g card is found 
+			ptable++;
+		}
+	}
+	return 0;
+}
 
 /*
  * usb_set_configuration - Makes a particular device setting be current
@@ -1333,7 +1475,9 @@ int usb_set_configuration(struct usb_device *dev, int configuration)
 	struct usb_host_config *cp = NULL;
 	struct usb_interface **new_interfaces = NULL;
 	int n, nintf;
-
+#ifdef SHARE_PORT
+	char index[10];//marco
+#endif
 	for (i = 0; i < dev->descriptor.bNumConfigurations; i++) {
 		if (dev->config[i].desc.bConfigurationValue == configuration) {
 			cp = &dev->config[i];
@@ -1435,8 +1579,25 @@ free_interfaces:
 				 dev->bus->busnum, dev->devpath,
 				 configuration,
 				 alt->desc.bInterfaceNumber);
+	#ifdef SHARE_PORT 
+			/* remember the interface class for later skip */
+			index[i] = cp->interface[i]->cur_altsetting->desc.bInterfaceClass;
+#endif
 		}
 		kfree(new_interfaces);
+
+#ifdef SHARE_PORT
+		/* we only let 3G card to report to us, others we just skip it so they will report to share port */
+		for (i = 0; i < nintf; ++i)
+		{
+			if(is_3G_interface(dev,cp,i,nintf))
+			{
+				//do nothing
+			}
+			else
+				cp->interface[i]->cur_altsetting->desc.bInterfaceClass=0x7;	//skip device for share port
+		}
+#endif
 
 		if (cp->string == NULL)
 			cp->string = usb_cache_string(dev,
@@ -1463,6 +1624,9 @@ free_interfaces:
 					ret);
 				continue;
 			}
+#ifdef SHARE_PORT
+			cp->interface[i]->cur_altsetting->desc.bInterfaceClass=index[i];//after device added, chg it back to what it was
+#endif
 			usb_create_sysfs_intf_files (intf);
 		}
 	}

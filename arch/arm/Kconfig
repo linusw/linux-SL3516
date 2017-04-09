@@ -110,6 +110,9 @@ config ARCH_CAMELOT
 	  If you would like to build your kernel to run on one of these boards
 	  then you must say 'Y' here. Otherwise say 'N'
 
+config ARCH_SL2312
+    bool "SL2312"
+
 config ARCH_FOOTBRIDGE
 	bool "FootBridge"
 	select FOOTBRIDGE
@@ -223,6 +226,8 @@ source "arch/arm/mach-epxa10db/Kconfig"
 
 source "arch/arm/mach-footbridge/Kconfig"
 
+source "arch/arm/mach-sl2312/Kconfig"
+
 source "arch/arm/mach-integrator/Kconfig"
 
 source "arch/arm/mach-iop3xx/Kconfig"
@@ -309,6 +314,16 @@ config PCI
 	  <http://www.tldp.org/docs.html#howto>, contains valuable
 	  information about which PCI hardware does work under Linux and which
 	  doesn't.
+
+config SL2312_LPC
+    bool "LPC Host Support" 
+    depends on ARCH_SL2312
+    help
+
+config SL2312_LPC_IT8712
+    bool "IT8712 Support" 
+    depends on ARCH_SL2312 && SL2312_LPC
+    help    
 
 # Select the host bridge type
 config PCI_HOST_VIA82C505
@@ -694,6 +709,10 @@ if ALIGNMENT_TRAP
 source "drivers/mtd/Kconfig"
 endif
 
+if ARCH_SL2312
+source "drivers/telephony/Kconfig"
+endif
+
 source "drivers/parport/Kconfig"
 
 source "drivers/pnp/Kconfig"
@@ -704,7 +723,7 @@ source "drivers/acorn/block/Kconfig"
 
 if PCMCIA || ARCH_CLPS7500 || ARCH_IOP3XX || ARCH_IXP4XX \
 	|| ARCH_L7200 || ARCH_LH7A40X || ARCH_PXA || ARCH_RPC \
-	|| ARCH_S3C2410 || ARCH_SA1100 || ARCH_SHARK || FOOTBRIDGE
+	|| ARCH_S3C2410 || ARCH_SA1100 || ARCH_SHARK || FOOTBRIDGE || ARCH_SL2312
 source "drivers/ide/Kconfig"
 endif
 

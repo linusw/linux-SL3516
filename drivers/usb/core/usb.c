@@ -629,7 +629,13 @@ static int usb_hotplug (struct device *dev, char **envp, int num_envp,
 				alt->desc.bInterfaceSubClass,
 				alt->desc.bInterfaceProtocol))
 		return -ENOMEM;
-
+//+++Add by shiang for usb led  2005/03/01
+	if (add_hotplug_env_var(envp, num_envp, &i,
+				buffer, buffer_size, &length,
+				"DEVPATH=%s",
+				 dev->devpath))
+		return -ENOMEM;
+//---Add by shiang for usb led 2005/03/01
 	if (add_hotplug_env_var(envp, num_envp, &i,
 				buffer, buffer_size, &length,
 				"MODALIAS=usb:v%04Xp%04Xd%04Xdc%02Xdsc%02Xdp%02Xic%02Xisc%02Xip%02X",

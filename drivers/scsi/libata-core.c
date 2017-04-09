@@ -61,12 +61,23 @@
 
 #include "libata.h"
 
+#define SATA_LED
+
+#ifdef SATA_LED
+#define GPIO_SATA0_LED		11
+#define GPIO_SATA1_LED		18
+#define GPIO_SATA2_LED		06
+#define GPIO_SATA3_LED		05
+#define SATA_LED_ACTIVE		0
+#define SATA_LED_INACTIVE	1
+#endif
+
 static unsigned int ata_busy_sleep (struct ata_port *ap,
 				    unsigned long tmout_pat,
 			    	    unsigned long tmout);
 static void ata_dev_reread_id(struct ata_port *ap, struct ata_device *dev);
 static void ata_dev_init_params(struct ata_port *ap, struct ata_device *dev);
-static void ata_set_mode(struct ata_port *ap);
+//static void ata_set_mode(struct ata_port *ap);
 static void ata_dev_set_xfermode(struct ata_port *ap, struct ata_device *dev);
 static unsigned int ata_get_mode_mask(const struct ata_port *ap, int shift);
 static int fgb(u32 bitmap);
@@ -307,7 +318,7 @@ void ata_exec_command(struct ata_port *ap, const struct ata_taskfile *tf)
  *	spin_lock_irqsave(host_set lock)
  */
 
-static inline void ata_tf_to_host(struct ata_port *ap,
+void ata_tf_to_host(struct ata_port *ap,
 				  const struct ata_taskfile *tf)
 {
 	ap->ops->tf_load(ap, tf);
@@ -1071,7 +1082,7 @@ static int ata_qc_wait_err(struct ata_queued_cmd *qc,
 }
 
 /**
- *	ata_dev_identify - obtain IDENTIFY x DEVICE page
+ *	 - obtain IDENTIFY x DEVICE page
  *	@ap: port on which device we wish to probe resides
  *	@device: device bus address, starting at zero
  *
@@ -1092,7 +1103,7 @@ static int ata_qc_wait_err(struct ata_queued_cmd *qc,
  *	obtain the host_set lock.
  */
 
-static void ata_dev_identify(struct ata_port *ap, unsigned int device)
+void ata_dev_identify(struct ata_port *ap, unsigned int device)
 {
 	struct ata_device *dev = &ap->device[device];
 	unsigned int major_version;
@@ -1362,7 +1373,11 @@ void ata_dev_config(struct ata_port *ap, unsigned int i)
  *	Zero on success, non-zero on error.
  */
 
-static int ata_bus_probe(struct ata_port *ap)
+#ifdef CONFIG_ARCH_SL2312
+int ata_bus_probe(struct ata_port *ap, struct ata_probe_ent *ent, struct ata_host_set *host_set)
+#else
+int ata_bus_probe(struct ata_port *ap)
+#endif
 {
 	unsigned int i, found = 0;
 
@@ -1377,6 +1392,13 @@ static int ata_bus_probe(struct ata_port *ap)
 			ata_dev_config(ap,i);
 		}
 	}
+	
+#ifdef CONFIG_ARCH_SL2312
+	/* obtain irq, that is shared between channels */
+	if (request_irq(ent->irq, ent->port_ops->irq_handler, ent->irq_flags,
+			DRV_NAME, host_set))
+		goto err_out;
+#endif
 
 	if ((!found) || (ap->flags & ATA_FLAG_PORT_DISABLED))
 		goto err_out_disable;
@@ -1408,7 +1430,60 @@ void ata_port_probe(struct ata_port *ap)
 {
 	ap->flags &= ~ATA_FLAG_PORT_DISABLED;
 }
+/*marco add , reset sata buswhen receive abnormal status*/
+#ifdef OUR_SATA_PHY_RESET
+void __our_sata_phy_reset(struct ata_port *ap)
+{
+	u32 sstatus;
+	unsigned int sata_p0,reg;
+	unsigned long timeout = jiffies + (HZ * 5);
 
+	//if hd unplug by user withput pressing rm button
+	reg = readl(IO_ADDRESS(SL2312_SATA_BASE)+0x8);
+	sata_p0 = reg&0x1 ;
+	if(sata_p0==0)
+	{
+		if (ap->flags & ATA_FLAG_SATA_RESET) {
+			/* issue phy wake/reset */
+			scr_write_flush(ap, SCR_CONTROL, 0x301);
+			/* Couldn't find anything in SATA I/II specs, but
+			 * AHCI-1.1 10.4.2 says at least 1 ms. */
+			mdelay(1);
+		}
+		scr_write_flush(ap, SCR_CONTROL, 0x300); /* phy wake/clear reset */
+	
+		/* wait for phy to become ready, if necessary */
+		do {
+			msleep(200);
+			sstatus = scr_read(ap, SCR_STATUS);
+			if ((sstatus & 0xf) != 1)
+				break;
+		} while (time_before(jiffies, timeout));
+	
+		/* TODO: phy layer with polling, timeouts, etc. */
+		if (sata_dev_present(ap))
+			ata_port_probe(ap);
+		else {
+			sstatus = scr_read(ap, SCR_STATUS);
+			printk(KERN_INFO "ata%u: no device found (phy stat %08x)\n",
+			       ap->id, sstatus);
+			ata_port_disable(ap);
+		}
+	
+		if (ap->flags & ATA_FLAG_PORT_DISABLED)
+			return;
+//		ap->ops->port_disable(ap);
+	//	ap->ops->port_stop(ap);
+		ata_port_disable(ap);
+		writeb(0x35, (void __iomem *) ap->ioaddr.command_addr);
+		ata_pause(ap);
+		//ata_eng_timeout(ap);
+		//ata_scsi_release(ap->host);
+		return;
+	}
+	ap->cbl = ATA_CBL_SATA;
+}
+#endif
 /**
  *	__sata_phy_reset - Wake/reset a low-level SATA PHY
  *	@ap: SATA port associated with target SATA PHY.
@@ -1756,7 +1831,7 @@ static void ata_host_set_dma(struct ata_port *ap, u8 xfer_mode,
  *	PCI/etc. bus probe sem.
  *
  */
-static void ata_set_mode(struct ata_port *ap)
+void ata_set_mode(struct ata_port *ap)
 {
 	unsigned int xfer_shift;
 	u8 xfer_mode;
@@ -1888,6 +1963,49 @@ static void ata_bus_post_reset(struct ata_port *ap, unsigned int devmask)
 }
 
 /**
+ *	ata_device_reset - Issue DEVICE RESET command.
+ *	@ap: Port to reset 
+ *	@device: device to reset
+ *
+ *	Use the DEVICE RESET command to reset and
+ *	probe the device.  Not often used these days.
+ *
+ *	LOCKING:
+ *	PCI/etc. bus probe sem.
+ *	Obtains host_set lock.
+ *
+ */
+
+static unsigned int ata_device_reset(struct ata_port *ap,unsigned int device)
+{
+	struct ata_taskfile tf;
+	unsigned long flags;
+
+	ap->ops->dev_select(ap, device);
+
+	/* set up execute-device-reset taskfile */
+	/* also, take interrupts to a known state (disabled) */
+	DPRINTK("execute-device-reset\n");
+	ata_tf_init(ap, &tf, 0);
+	tf.ctl |= ATA_NIEN;
+	tf.command = 0x08;		// single device reset
+	tf.protocol = ATA_PROT_NODATA;
+
+	/* do device reset */
+	spin_lock_irqsave(&ap->host_set->lock, flags);
+	ata_tf_to_host(ap, &tf);
+	spin_unlock_irqrestore(&ap->host_set->lock, flags);
+
+	/* spec says at least 2ms.  but who knows with those
+	 * crazy ATAPI devices...
+	 */
+	msleep(150);
+
+	return ata_busy_sleep(ap, ATA_TMOUT_BOOT_QUICK, ATA_TMOUT_BOOT);
+}
+
+
+/**
  *	ata_bus_edd - Issue EXECUTE DEVICE DIAGNOSTIC command.
  *	@ap: Port to reset and probe
  *
@@ -1910,6 +2028,7 @@ static unsigned int ata_bus_edd(struct ata_port *ap)
 	DPRINTK("execute-device-diag\n");
 	ata_tf_init(ap, &tf, 0);
 	tf.ctl |= ATA_NIEN;
+	writel(readl(0xf4800004)&(~(1<<ap->host_set->irq)),0xf4800004);
 	tf.command = ATA_CMD_EDD;
 	tf.protocol = ATA_PROT_NODATA;
 
@@ -3342,7 +3461,7 @@ static void ata_qc_timeout(struct ata_queued_cmd *qc)
 
 		/* ack bmdma irq events */
 		ap->ops->irq_clear(ap);
-
+		printk("======%s %d \n===\n",__FUNCTION__,__LINE__);
 		printk(KERN_ERR "ata%u: command 0x%x timeout, stat 0x%x host_stat 0x%x\n",
 		       ap->id, qc->tf.command, drv_stat, host_stat);
 
@@ -3383,7 +3502,10 @@ void ata_eng_timeout(struct ata_port *ap)
 
 	qc = ata_qc_from_tag(ap, ap->active_tag);
 	if (qc)
+	{
+		printk("======%s %d \n===\n",__FUNCTION__,__LINE__);
 		ata_qc_timeout(qc);
+	}
 	else {
 		printk(KERN_ERR "ata%u: BUG: timeout without command\n",
 		       ap->id);
@@ -3798,6 +3920,21 @@ void ata_bmdma_start(struct ata_queued_cmd *qc)
 		ata_bmdma_start_mmio(qc);
 	else
 		ata_bmdma_start_pio(qc);
+	
+#ifdef SATA_LED
+	if(strcmp(qc->ap->host->hostt->name,"sata_lepus0")==0)
+		set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_ACTIVE);
+	else if(strcmp(qc->ap->host->hostt->name,"sata_lepus1")==0)
+		set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_ACTIVE);
+#ifdef CONFIG_SCSI_SATA_SIL
+	else if(strcmp(qc->ap->host->hostt->name,"sata_sil")==0){	// Silicon Image 3X12
+		if(qc->ap->port_no == 0)
+			set_gemini_gpio_pin_status(GPIO_SATA2_LED,SATA_LED_ACTIVE);
+		else if(qc->ap->port_no == 1)
+			set_gemini_gpio_pin_status(GPIO_SATA3_LED,SATA_LED_ACTIVE);
+	}
+#endif
+#endif	
 }
 
 
@@ -3898,7 +4035,20 @@ void ata_bmdma_stop(struct ata_queued_cmd *qc)
 		outb(inb(ap->ioaddr.bmdma_addr + ATA_DMA_CMD) & ~ATA_DMA_START,
 			ap->ioaddr.bmdma_addr + ATA_DMA_CMD);
 	}
-
+#ifdef SATA_LED
+	if(strcmp(qc->ap->host->hostt->name,"sata_lepus0")==0)
+		set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_INACTIVE);
+	else if(strcmp(qc->ap->host->hostt->name,"sata_lepus1")==0)
+		set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_INACTIVE);
+#ifdef CONFIG_SCSI_SATA_SIL
+	else if (strcmp(qc->ap->host->hostt->name,"sata_sil")==0){
+		if(qc->ap->port_no ==0)
+			set_gemini_gpio_pin_status(GPIO_SATA2_LED,SATA_LED_INACTIVE);
+		else if(qc->ap->port_no ==1)
+			set_gemini_gpio_pin_status(GPIO_SATA3_LED,SATA_LED_INACTIVE);
+	}
+#endif
+#endif	
 	/* one-PIO-cycle guaranteed wait, per spec, for HDMA1:0 transition */
 	ata_altstatus(ap);        /* dummy read */
 }
@@ -3938,7 +4088,10 @@ inline unsigned int ata_host_intr (struct ata_port *ap,
 			goto idle_irq;
 
 		/* before we do anything else, clear DMA-Start bit */
-		ap->ops->bmdma_stop(qc);
+		if(ap->ops->bmdma_stop!=NULL)
+			ap->ops->bmdma_stop(qc);
+		else
+			ata_bmdma_stop(qc);
 
 		/* fall through */
 
@@ -4282,6 +4435,7 @@ err_out:
 	return NULL;
 }
 
+
 /**
  *	ata_device_add - Register hardware device with ATA and SCSI layers
  *	@ent: Probe information describing hardware device to be registered
@@ -4322,6 +4476,11 @@ int ata_device_add(const struct ata_probe_ent *ent)
 	host_set->private_data = ent->private_data;
 	host_set->ops = ent->port_ops;
 
+#ifdef CONFIG_ARCH_SL2312	
+	if(!ent->sht->slave_destroy)
+		ent->sht->slave_destroy = &ata_scsi_slave_destroy;
+#endif
+
 	/* register each port bound to this device */
 	for (i = 0; i < ent->n_ports; i++) {
 		struct ata_port *ap;
@@ -4355,10 +4514,12 @@ int ata_device_add(const struct ata_probe_ent *ent)
 	if (!count)
 		goto err_free_ret;
 
+#ifndef CONFIG_ARCH_SL2312
 	/* obtain irq, that is shared between channels */
 	if (request_irq(ent->irq, ent->port_ops->irq_handler, ent->irq_flags,
 			DRV_NAME, host_set))
 		goto err_out;
+#endif
 
 	/* perform each probe synchronously */
 	DPRINTK("probe begin\n");
@@ -4369,7 +4530,11 @@ int ata_device_add(const struct ata_probe_ent *ent)
 		ap = host_set->ports[i];
 
 		DPRINTK("ata%u: probe begin\n", ap->id);
+#ifdef CONFIG_ARCH_SL2312
+		rc = ata_bus_probe(ap,ent,host_set);
+#else
 		rc = ata_bus_probe(ap);
+#endif		
 		DPRINTK("ata%u: probe end\n", ap->id);
 
 		if (rc) {
@@ -4869,6 +5034,21 @@ static int __init ata_init(void)
 	if (!ata_wq)
 		return -ENOMEM;
 
+#ifdef SATA_LED
+		set_gemini_gpio_io_mode(GPIO_SATA0_LED,1);	// Direction output
+		set_gemini_gpio_io_mode(GPIO_SATA1_LED,1);	// Direction output
+#ifdef CONFIG_SCSI_SATA_SIL
+		set_gemini_gpio_io_mode(GPIO_SATA2_LED,1);	// Direction output
+		set_gemini_gpio_io_mode(GPIO_SATA3_LED,1);	// Direction output
+#endif
+		set_gemini_gpio_pin_status(GPIO_SATA0_LED,SATA_LED_INACTIVE);
+		set_gemini_gpio_pin_status(GPIO_SATA1_LED,SATA_LED_INACTIVE);
+#ifdef CONFIG_SCSI_SATA_SIL
+		set_gemini_gpio_pin_status(GPIO_SATA2_LED,SATA_LED_INACTIVE);
+		set_gemini_gpio_pin_status(GPIO_SATA3_LED,SATA_LED_INACTIVE);
+#endif
+#endif	
+
 	printk(KERN_DEBUG "libata version " DRV_VERSION " loaded.\n");
 	return 0;
 }
@@ -4956,7 +5136,13 @@ EXPORT_SYMBOL_GPL(ata_scsi_simulate);
 
 EXPORT_SYMBOL_GPL(ata_timing_compute);
 EXPORT_SYMBOL_GPL(ata_timing_merge);
-
+#ifdef OUR_SATA_PHY_RESET
+EXPORT_SYMBOL_GPL(__our_sata_phy_reset);//marco
+#endif
+EXPORT_SYMBOL_GPL(ata_dev_identify);
+EXPORT_SYMBOL_GPL(ata_set_mode);
+EXPORT_SYMBOL_GPL(ata_device_reset);
+EXPORT_SYMBOL_GPL(ata_dev_try_classify);
 #ifdef CONFIG_PCI
 EXPORT_SYMBOL_GPL(pci_test_config_bits);
 EXPORT_SYMBOL_GPL(ata_pci_host_stop);

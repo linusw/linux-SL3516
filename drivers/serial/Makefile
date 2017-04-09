@@ -1,7 +1,7 @@
 #
 # Makefile for the kernel serial device drivers.
 #
-#  $Id: Makefile,v 1.8 2002/07/21 21:32:30 rmk Exp $
+#  $Id: Makefile,v 1.1.1.1 2006/04/03 08:41:00 amos_lee Exp $
 #
 
 serial-8250-y :=
@@ -57,3 +57,5 @@ obj-$(CONFIG_SERIAL_JSM) += jsm/
 obj-$(CONFIG_SERIAL_TXX9) += serial_txx9.o
 obj-$(CONFIG_SERIAL_VR41XX) += vr41xx_siu.o
 obj-$(CONFIG_SERIAL_SGI_IOC4) += ioc4_serial.o
+obj-$(CONFIG_SERIAL_IT8712) += it8712.o
+obj-$(CONFIG_SERIAL_SL2312) += serial_sl2312.o

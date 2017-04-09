@@ -104,7 +104,7 @@
 #include <asm/uaccess.h>
 
 static char version[] __initdata =
-	"$Id: dgrs.c,v 1.13 2000/06/06 04:07:00 rick Exp $";
+	"$Id: dgrs.c,v 1.1.1.1 2006/04/03 08:40:52 amos_lee Exp $";
 
 /*
  *	DGRS include files

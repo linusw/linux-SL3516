@@ -1,5 +1,5 @@
 /*
- *	$Id: scan_keyb.c,v 1.2 2000/07/04 06:24:42 yaegashi Exp $ 
+ *	$Id: scan_keyb.c,v 1.1.1.1 2006/04/03 08:40:46 amos_lee Exp $ 
  *	Copyright (C) 2000 YAEGASHI Takeshi
  *	Generic scan keyboard driver
  */

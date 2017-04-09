@@ -20,7 +20,7 @@
 #include <linux/nmi.h>
 #include <linux/kexec.h>
 
-int panic_timeout;
+int panic_timeout=3;
 int panic_on_oops;
 int tainted;
 

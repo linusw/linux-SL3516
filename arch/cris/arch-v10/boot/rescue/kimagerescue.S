@@ -1,4 +1,4 @@
-/* $Id: kimagerescue.S,v 1.1 2001/12/17 13:59:27 bjornw Exp $
+/* $Id: kimagerescue.S,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $
  * 
  * Rescue code to be prepended on a kimage and copied to the
  * rescue serial port.

@@ -1175,7 +1175,7 @@ static int __init cpm_uart_init(void)
 {
 	int ret, i;
 
-	printk(KERN_INFO "Serial: CPM driver $Revision: 0.01 $\n");
+	printk(KERN_INFO "Serial: CPM driver $Revision: 1.1.1.1 $\n");
 
 #ifndef CONFIG_SERIAL_CPM_CONSOLE
 	ret = cpm_uart_init_portdesc();
@@ -1215,6 +1215,6 @@ module_init(cpm_uart_init);
 module_exit(cpm_uart_exit);
 
 MODULE_AUTHOR("Kumar Gala/Antoniou Pantelis");
-MODULE_DESCRIPTION("CPM SCC/SMC port driver $Revision: 0.01 $");
+MODULE_DESCRIPTION("CPM SCC/SMC port driver $Revision: 1.1.1.1 $");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS_CHARDEV(SERIAL_CPM_MAJOR, SERIAL_CPM_MINOR);

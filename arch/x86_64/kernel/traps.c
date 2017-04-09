@@ -7,7 +7,7 @@
  *  Pentium III FXSR, SSE support
  *	Gareth Hughes <gareth@valinux.com>, May 2000
  *
- *  $Id: traps.c,v 1.36 2002/03/24 11:09:10 ak Exp $
+ *  $Id: traps.c,v 1.1.1.1 2006/04/03 08:40:44 amos_lee Exp $
  */
 
 /*

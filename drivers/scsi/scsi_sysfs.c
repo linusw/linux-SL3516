@@ -864,6 +864,8 @@ void scsi_sysfs_device_initialize(struct scsi_device *sdev)
 	unsigned long flags;
 	struct Scsi_Host *shost = sdev->host;
 	struct scsi_target  *starget = sdev->sdev_target;
+	struct list_head *nxt,*cur;
+	struct scsi_device *sdev_tmp;
 
 	device_initialize(&sdev->sdev_gendev);
 	sdev->sdev_gendev.bus = &scsi_bus_type;
@@ -883,6 +885,21 @@ void scsi_sysfs_device_initialize(struct scsi_device *sdev)
 	spin_lock_irqsave(shost->host_lock, flags);
 	list_add_tail(&sdev->same_target_siblings, &starget->devices);
 	list_add_tail(&sdev->siblings, &shost->__devices);
+
+	// fix hot swap issue by jason <remove duplicated device which had be label "DELETED">	
+	cur = shost->__devices.next;
+	nxt = cur->next;
+	while(nxt != shost->__devices.next){
+		sdev_tmp = (struct scsi_device*)((unsigned int)cur -8);
+		if (sdev_tmp->channel == sdev->channel && sdev_tmp->id == sdev->id &&
+				sdev_tmp->lun == sdev->lun && sdev_tmp->sdev_state==SDEV_DEL){
+			list_del(cur);
+		}
+		cur = nxt;
+		nxt = cur->next;
+	}
+	// jason
+	
 	spin_unlock_irqrestore(shost->host_lock, flags);
 }
 

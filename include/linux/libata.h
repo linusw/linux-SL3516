@@ -22,7 +22,7 @@
  *  as Documentation/DocBook/libata.*
  *
  */
-
+#define OUR_SATA_PHY_RESET 1 //marco
 #ifndef __LINUX_LIBATA_H__
 #define __LINUX_LIBATA_H__
 
@@ -428,6 +428,9 @@ struct ata_timing {
 
 extern void ata_port_probe(struct ata_port *);
 extern void __sata_phy_reset(struct ata_port *ap);
+#ifdef OUR_SATA_PHY_RESET
+extern void __our_sata_phy_reset(struct ata_port *ap);//marco
+#endif
 extern void sata_phy_reset(struct ata_port *ap);
 extern void ata_bus_reset(struct ata_port *ap);
 extern void ata_port_disable(struct ata_port *);
@@ -609,7 +612,6 @@ static inline u8 ata_busy_wait(struct ata_port *ap, unsigned int bits,
 		status = ata_chk_status(ap);
 		max--;
 	} while ((status & bits) && (max > 0));
-
 	return status;
 }
 
@@ -634,6 +636,12 @@ static inline u8 ata_wait_idle(struct ata_port *ap)
 		printk(KERN_WARNING
 		       "ATA: abnormal status 0x%X on port 0x%lX\n",
 		       status, l);
+#ifdef OUR_SATA_PHY_RESET	       
+		if(status==0x80)
+		{
+			__our_sata_phy_reset(ap);
+		}
+#endif//marco, for unplug abnormal status		      
 	}
 
 	return status;
@@ -642,6 +650,8 @@ static inline u8 ata_wait_idle(struct ata_port *ap)
 static inline void ata_qc_set_polling(struct ata_queued_cmd *qc)
 {
 	qc->tf.ctl |= ATA_NIEN;
+	if((qc->ap->host_set->irq==4)||(qc->ap->host_set->irq==5))
+		writel(readl(0xf4800004)&(~(1<<qc->ap->host_set->irq)),0xf4800004);
 }
 
 static inline struct ata_queued_cmd *ata_qc_from_tag (struct ata_port *ap,
@@ -698,6 +708,10 @@ static inline u8 ata_irq_on(struct ata_port *ap)
 		writeb(ap->ctl, (void __iomem *) ioaddr->ctl_addr);
 	else
 		outb(ap->ctl, ioaddr->ctl_addr);
+	
+	if((ap->host_set->irq==4)||(ap->host_set->irq==5))
+		writel(readl(0xf4800004)|(1<<ap->host_set->irq),0xf4800004);
+	
 	tmp = ata_wait_idle(ap);
 
 	ap->ops->irq_clear(ap);

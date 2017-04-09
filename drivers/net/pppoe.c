@@ -631,6 +631,16 @@ static int pppoe_connect(struct socket *sock, struct sockaddr *uservaddr,
 
 	po->num = sp->sa_addr.pppoe.sid;
 
+#ifdef CONFIG_SL351X_IPSEC
+	// try to store the pppoe netdevice/connection information
+	// to our IPsec-VPN HW acceleration engine.  therefore, 
+	// when tunnels are established, it will pass the PPPoE 
+	// connection information, such that when VPN tunnel is 
+	// established, it will be able to link the VPN tunnel with 
+	// the right PPPoE net device.
+	sl_fast_pppoe_vpn_setup(po);
+#endif
+
  end:
 	release_sock(sk);
 	return error;

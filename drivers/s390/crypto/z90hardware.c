@@ -32,7 +32,7 @@
 #include "z90crypt.h"
 #include "z90common.h"
 
-#define VERSION_Z90HARDWARE_C "$Revision: 1.34 $"
+#define VERSION_Z90HARDWARE_C "$Revision: 1.1.1.1 $"
 
 char z90hardware_version[] __initdata =
 	"z90hardware.o (" VERSION_Z90HARDWARE_C "/"

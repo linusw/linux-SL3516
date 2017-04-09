@@ -682,7 +682,7 @@ static void usbfs_add_device(struct usb_device *dev)
 		dev->usbfs_dentry->d_inode->i_size = i_size;
 }
 
-static void usbfs_remove_device(struct usb_device *dev)
+void usbfs_remove_device(struct usb_device *dev)
 {
 	struct dev_state *ds;
 	struct siginfo sinfo;
@@ -703,6 +703,8 @@ static void usbfs_remove_device(struct usb_device *dev)
 			kill_proc_info_as_uid(ds->discsignr, &sinfo, ds->disc_pid, ds->disc_uid, ds->disc_euid);
 		}
 	}
+	usbfs_update_special();
+	usbfs_conn_disc_event();
 }
 
 static int usbfs_notify(struct notifier_block *self, unsigned long action, void *dev)

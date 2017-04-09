@@ -37,6 +37,17 @@
 #include <asm/uaccess.h>
 #include <asm/mman.h>
 
+#ifdef CONFIG_SL2312_TSO
+#include <linux/sysctl_storlink.h>
+#include <net/sock.h>
+static void free_chain(struct page_chain*);
+int check_page_uptodate(struct page_chain*, int);
+static struct page_chain* find_cached_pages(struct address_space* mapping,
+   unsigned long index, read_descriptor_t* desc, unsigned long offset,
+	 int*err, struct page** page);
+kmem_cache_t *page_chain_cachep=0;
+#endif
+
 static ssize_t
 generic_file_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
 	loff_t offset, unsigned long nr_segs);
@@ -702,6 +713,158 @@ grab_cache_page_nowait(struct address_space *mapping, unsigned long index)
 
 EXPORT_SYMBOL(grab_cache_page_nowait);
 
+#ifdef CONFIG_SL2312_TSO
+#define MAX_CHAIN_NUM	16
+void page_chain_cachep_init(void) {
+	page_chain_cachep = kmem_cache_create("page_chain",
+	                                       sizeof(struct page_chain),
+	                                       0, SLAB_HWCACHE_ALIGN, 0, 0);
+	printk("*** Page_chain_cachep Init!***\n");
+}
+EXPORT_SYMBOL(page_chain_cachep_init);
+
+int check_page_uptodate(struct page_chain* chain, int flush)
+{
+	if (!chain)
+		return -1;
+	struct page_chain* tmp_chain, *not_update_chain;
+	tmp_chain = chain;
+	not_update_chain = chain->next;
+	int ret_val = 0;
+
+	if (PageUptodate(chain->page)) 
+	{
+		ret_val = 1;
+		if (flush)
+			flush_dcache_page(chain->page);
+		while (not_update_chain) 
+		{
+			if (!PageUptodate(not_update_chain->page))
+				break;
+			if (flush)
+				flush_dcache_page(not_update_chain->page);
+
+			tmp_chain = not_update_chain;
+			not_update_chain = not_update_chain->next;
+		}
+	}
+
+	if (not_update_chain) 
+	{
+		tmp_chain->next = NULL;
+		while (not_update_chain) {
+			tmp_chain = not_update_chain;
+			not_update_chain = not_update_chain->next;
+			if (!tmp_chain->page->mapping)
+				page_cache_release(tmp_chain->page);
+			//free_page_chain(tmp_chain);
+			//kfree(tmp_chain);
+			kmem_cache_free(page_chain_cachep, tmp_chain);
+		}
+	}
+	return ret_val;
+}
+
+static void free_chain(struct page_chain* chain)
+{
+	struct page_chain* tmp_chain;
+	int i=0;
+	while (chain) 
+	{
+		i++;
+		tmp_chain = chain->next;
+		page_cache_release(chain->page);
+		chain->page = NULL;
+		//free_page_chain(chain);
+		//kfree(chain);
+		kmem_cache_free(page_chain_cachep, chain);
+		chain = tmp_chain;
+	}
+}
+static struct page_chain* find_cached_pages(struct address_space *mapping, unsigned long index, read_descriptor_t *desc, unsigned long offset, int* err, struct page** err_page)
+{
+	struct page* cached_page;
+	struct page_chain* start = NULL, *prev = NULL, *chain;
+	int i=0;
+	unsigned long pindex = index;
+	unsigned long poffset = offset;
+	int flush_page = 0;
+	int count = (int)desc->count;
+
+	if (mapping_writably_mapped(mapping))
+		flush_page = 1;
+
+	for(;;) 
+	{
+		cached_page = find_get_page(mapping, pindex);
+//	if (storlink_ctl.recvfile==2)
+//	{
+//printk("%s : cached_page=%x pindex=%d \n",__func__,cached_page,pindex);
+//    }
+		if (cached_page) 
+		{
+			if (!PageUptodate(cached_page)) 
+			{
+				// if (start)
+				//	page_cache_release(cached_page);
+				*err_page = cached_page;
+				//printk("not uptodate!, index %d, cached_pg %x, err_pg %x\n",
+				 //  pindex, cached_page, *err_page);
+				*err = -1;
+				break;
+			}
+			if (prev && prev->page == cached_page) 
+			{
+				*err = -2;
+				break;
+			}
+			chain = kmem_cache_alloc(page_chain_cachep, GFP_KERNEL);
+			//chain = (struct page_chain*)kmalloc(sizeof(struct page_chain), GFP_KERNEL);
+			//chain = alloc_page_chain();
+			if (!chain) 
+			{
+				//debug_Aaron
+				printk("%s: Run our of memory!!!\r\n", __func__);
+
+				page_cache_release(cached_page);
+				*err = -3;
+				break;
+			}
+			chain->page = cached_page;
+			chain->next = NULL;
+			if (prev) 
+			{
+				prev->next = chain;
+				prev= chain;
+			} 
+			else
+				start = prev = chain;
+			i++;
+			pindex++;
+			count -= (PAGE_CACHE_SIZE-poffset);
+			if (flush_page)
+				flush_dcache_page(cached_page);
+			if (!poffset)
+				mark_page_accessed(cached_page);
+			poffset = 0;
+			// printk("cnt %d\n", count);
+			if (count <=0)
+				break;
+			if (i>= MAX_CHAIN_NUM)
+				break;
+		} 
+		else 
+		{
+			//printk("%s: no page! index %ld, offset %ld, i %d, count %ld\n", __func__,
+			//	index, offset, i, count);
+			*err = -4;
+			break;
+		}
+	}
+	return start;
+}
+#endif
+
 /*
  * This is a generic file read routine, and uses the
  * mapping->a_ops->readpage() function for the actual low-level
@@ -739,22 +902,37 @@ void do_generic_mapping_read(struct address_space *mapping,
 	last_index = (*ppos + desc->count + PAGE_CACHE_SIZE-1) >> PAGE_CACHE_SHIFT;
 	offset = *ppos & ~PAGE_CACHE_MASK;
 
+#ifdef CONFIG_SL2312_TSO
+	int snd_mpages = 0;
+	struct page_chain* start = 0;
+	struct page_chain* tmp_chain = 0;
+	if (actor == file_mpage_send_actor)
+		snd_mpages = 1;
+	int err = 0;
+
+	//debug_Aaron
+        int cached_timeout = 5;
+#endif
+
 	isize = i_size_read(inode);
 	if (!isize)
 		goto out;
 
 	end_index = (isize - 1) >> PAGE_CACHE_SHIFT;
-	for (;;) {
+	for (;;) 
+	{
 		struct page *page;
 		unsigned long nr, ret;
 
 		/* nr is the maximum number of bytes to copy from this page */
 		nr = PAGE_CACHE_SIZE;
-		if (index >= end_index) {
+		if (index >= end_index) 
+		{
 			if (index > end_index)
 				goto out;
 			nr = ((isize - 1) & ~PAGE_CACHE_MASK) + 1;
-			if (nr <= offset) {
+			if (nr <= offset) 
+			{
 				goto out;
 			}
 		}
@@ -766,8 +944,90 @@ void do_generic_mapping_read(struct address_space *mapping,
 					index, last_index - index);
 
 find_page:
+#ifdef CONFIG_SL2312_TSO
+		if (snd_mpages) 
+		{
+			err = 0;
+			struct page* err_page;
+//printk("%s : index=%d next_index=%d \n",__func__,index,next_index);			
+			start = find_cached_pages(mapping, index, desc, offset, &err, &err_page);
+			// chain_count -= offset;
+			if (err) 
+			{
+				//debug_Aaron
+				// printk("%s: find_cached_pages err %d, start %x\r\n", __func__, err, start);
+
+				if (start) 
+				{
+					if (err == -1) /* has page not up to date */
+					{
+					//debug_Aaron
+					//printk("%s: start page %x, release err_page %x\r\n", __func__, start->page, err_page);
+						page_cache_release(err_page);
+					}
+
+					//debug_Aaron
+					//if (err == -4)   /* no enough pages */
+					//	printk("%s: shall we call handle_ra_miss here?\r\n", __func__);
+					page = start->page;
+					goto action;
+				} 
+				else 
+				{
+					if (err == -1) /* first page not up to date */
+					{
+						page = err_page;
+
+					//debug_Aaron
+					//printk("%s: goto page_not_up_to_date, start %x\r\n", __func__, start);
+						goto page_not_up_to_date;
+					}
+					if (err == -4)  /* no page */ 
+					{
+						//debug_Aaron
+					 //	printk("%s: handle ra miss.\r\n", __func__);
+						handle_ra_miss(mapping, &ra, index);
+
+                                        	//debug_Aaron on 06/05/2006, try to get cached page more then once
+                                        	cached_timeout--;
+                                        	if (cached_timeout == 0)
+                                        	{
+                                                	goto no_cached_page;
+                                        	}
+                                        	set_current_state(TASK_RUNNING);
+                                        	schedule();
+                                        	next_index = index; //Amos
+                                          	continue;       //Amos
+					}
+				}
+			} 
+			else 
+			{
+				if (!start) 
+				{
+					//debug_Aaron
+					//printk("%s: get page chain empty. handle_ra_miss. err code %d\n", __func__, err);
+
+					handle_ra_miss(mapping, &ra, index);
+					goto no_cached_page;
+				} 
+				else 
+				{
+					//debug_Aaron
+					//printk("%s: start page %x\r\n", __func__, start->page);
+
+					page = start->page;
+					goto action;
+				}
+			}
+		}
+#endif
 		page = find_get_page(mapping, index);
-		if (unlikely(page == NULL)) {
+		if (unlikely(page == NULL)) 
+		{
+			//debug_Aaron
+			///printk("%s: find_get_page() failed!!!\r\n", __func__);
+
 			handle_ra_miss(mapping, &ra, index);
 			goto no_cached_page;
 		}
@@ -800,10 +1060,40 @@ page_ok:
 		 * "pos" here (the actor routine has to update the user buffer
 		 * pointers and the remaining count).
 		 */
+action:
+#ifdef CONFIG_SL2312_TSO
+		if (snd_mpages) 
+		{
+			ret = actor(desc, (struct page*)start, offset, nr);
+		} 
+		else
+#endif
 		ret = actor(desc, page, offset, nr);
+#ifdef CONFIG_SL2312_TSO
+		if ((desc->error != 0) && (actor == file_mpage_send_actor)) 
+		{
+			//debug_Aaron
+			//printk("%s: actor return failed, desc->error=%d\r\n", __func__, desc->error);
+
+			free_chain(start);
+			start = NULL;
+			break;
+		}
+#endif
 		offset += ret;
 		index += offset >> PAGE_CACHE_SHIFT;
 		offset &= ~PAGE_CACHE_MASK;
+#ifdef CONFIG_SL2312_TSO
+		if (snd_mpages) 
+		{
+			free_chain(start);
+			start = NULL;
+			if (desc->count)
+				continue;
+			else
+				goto out;
+		}
+#endif
 
 		page_cache_release(page);
 		if (ret == nr && desc->count)
@@ -811,19 +1101,39 @@ page_ok:
 		goto out;
 
 page_not_up_to_date:
+#ifdef CONFIG_SL2312_TSO
+		if (snd_mpages && start)
+			page = start->page;
+#endif
 		/* Get exclusive access to the page ... */
 		lock_page(page);
 
 		/* Did it get unhashed before we got the lock? */
-		if (!page->mapping) {
+		if (!page->mapping) 
+		{
 			unlock_page(page);
 			page_cache_release(page);
 			continue;
 		}
 
 		/* Did somebody else fill it already? */
-		if (PageUptodate(page)) {
+		if (PageUptodate(page)) 
+		{
 			unlock_page(page);
+#ifdef CONFIG_SL2312_TSO
+			if (snd_mpages) 
+			{
+				if (!start)
+					start = kmem_cache_alloc(page_chain_cachep, GFP_KERNEL);
+					//start = (struct page_chain*)kmalloc(sizeof(struct page_chain), GFP_KERNEL);
+				//debug_Aaron
+				if (!start)
+					printk("%s: kmem_cache_alloc() return NULL!!!\r\n", __func__);
+
+				start->page = page;
+				start->next = NULL;
+			}
+#endif
 			goto page_ok;
 		}
 
@@ -834,10 +1144,13 @@ readpage:
 		if (unlikely(error))
 			goto readpage_error;
 
-		if (!PageUptodate(page)) {
+		if (!PageUptodate(page)) 
+		{
 			lock_page(page);
-			if (!PageUptodate(page)) {
-				if (page->mapping == NULL) {
+			if (!PageUptodate(page)) 
+			{
+				if (page->mapping == NULL) 
+				{
 					/*
 					 * invalidate_inode_pages got it
 					 */
@@ -845,6 +1158,10 @@ readpage:
 					page_cache_release(page);
 					goto find_page;
 				}
+
+				//debug_Aaron
+				printk("%s page not uptodate twice, error=--EIO!!!\r\n", __func__);
+
 				unlock_page(page);
 				error = -EIO;
 				goto readpage_error;
@@ -862,20 +1179,42 @@ readpage:
 		 */
 		isize = i_size_read(inode);
 		end_index = (isize - 1) >> PAGE_CACHE_SHIFT;
-		if (unlikely(!isize || index > end_index)) {
+		if (unlikely(!isize || index > end_index)) 
+		{
 			page_cache_release(page);
 			goto out;
 		}
 
 		/* nr is the maximum number of bytes to copy from this page */
 		nr = PAGE_CACHE_SIZE;
-		if (index == end_index) {
+		if (index == end_index) 
+		{
 			nr = ((isize - 1) & ~PAGE_CACHE_MASK) + 1;
-			if (nr <= offset) {
+			if (nr <= offset) 
+			{
 				page_cache_release(page);
 				goto out;
 			}
 		}
+
+#ifdef CONFIG_SL2312_TSO
+		if (snd_mpages) 
+		{
+			if (start)
+				free_chain(start);
+			start = kmem_cache_alloc(page_chain_cachep, GFP_KERNEL);
+			//start = (struct page_chain*)kmalloc(sizeof(struct page_chain), GFP_KERNEL);
+			if (!start)
+			{
+				//debug_Aaron
+				printk("%s: kmem_cache_alloc() return NULL!!!\r\n", __func__);
+				break;
+			}
+			start->page = page;
+			start->next = NULL;
+		}
+#endif
+
 		nr = nr - offset;
 		goto page_ok;
 
@@ -890,16 +1229,19 @@ no_cached_page:
 		 * Ok, it wasn't cached, so we need to create a new
 		 * page..
 		 */
-		if (!cached_page) {
+		if (!cached_page) 
+		{
 			cached_page = page_cache_alloc_cold(mapping);
-			if (!cached_page) {
+			if (!cached_page) 
+			{
 				desc->error = -ENOMEM;
 				goto out;
 			}
 		}
 		error = add_to_page_cache_lru(cached_page, mapping,
 						index, GFP_KERNEL);
-		if (error) {
+		if (error) 
+		{
 			if (error == -EEXIST)
 				goto find_page;
 			desc->error = error;
@@ -911,6 +1253,14 @@ no_cached_page:
 	}
 
 out:
+#ifdef CONFIG_SL2312_TSO
+	if (snd_mpages) 
+	{
+		if (start)
+			free_chain(start);
+	}
+#endif
+
 	*_ra = ra;
 
 	*ppos = ((loff_t) index << PAGE_CACHE_SHIFT) + offset;
@@ -1068,6 +1418,47 @@ generic_file_read(struct file *filp, char __user *buf, size_t count, loff_t *ppo
 }
 
 EXPORT_SYMBOL(generic_file_read);
+
+#ifdef CONFIG_SL2312_TSO
+//debug_Aaron
+EXPORT_SYMBOL(file_mpage_send_actor);
+int file_mpage_send_actor(read_descriptor_t* desc, struct page* chain, unsigned long offset, unsigned long size)
+{
+	ssize_t written = 0;
+	unsigned long count = desc->count;	/* total bytes to send */
+	struct file* file = (struct file*) desc->arg.data;
+	struct page_chain* pchain = (struct page_chain*)chain;	/* chain list */
+	struct page_chain* tmp_chain = pchain;
+	int send_size = 0;
+	
+	if (file->f_op->send_mpages) {	/* sock_send_mpages() */
+
+		int i=0;
+		while (pchain){
+			if (i==0)
+				send_size += PAGE_SIZE-offset;	/* data size of the first page */
+			else
+				send_size += PAGE_SIZE;
+
+			i++;
+			pchain = pchain->next;
+		}
+		if (send_size > count)
+			send_size = count;
+		/* sock_send_mpages() */
+		written = file->f_op->send_mpages(file, tmp_chain, offset,
+										send_size, &file->f_pos, 0);
+		if (written < 0) {
+			desc->error = written;
+			written = 0;
+		}
+	}
+	desc->count = count - written;
+	desc->written += written;
+	return written;
+}
+
+#endif
 
 int file_send_actor(read_descriptor_t * desc, struct page *page, unsigned long offset, unsigned long size)
 {
@@ -1871,6 +2262,543 @@ generic_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
 	return written;
 }
 EXPORT_SYMBOL(generic_file_direct_write);
+
+#ifdef CONFIG_SL2312_RECVFILE
+#ifdef CONFIG_SL2312_MPAGE
+struct page_chain* grab_write_pages(
+	struct address_space *mapping, 
+	unsigned long index, 
+	struct file* file, 
+	int poff, 
+	int bytes, 
+	struct pagevec *lru_pvec, 
+	struct page** cached_page)
+{
+	struct page_chain* start = NULL;
+	struct page_chain *chain = NULL;
+	struct page* page = NULL;
+	int i;
+	int num_pages;
+
+	//debug_Aaron
+	num_pages = !!((poff+bytes) & (PAGE_CACHE_SIZE - 1)) + /* round up partial  pages */
+		    ((bytes + (poff & (PAGE_CACHE_SIZE-1))) >> PAGE_CACHE_SHIFT); /* convert size to amount of  pages */
+
+STOR_PRINTK("num_pages=%d,bytes=%d\n",num_pages, bytes);
+
+	start = chain = (struct page_chain*)kmalloc((sizeof(struct page_chain)*num_pages), GFP_KERNEL);
+
+STOR_PRINTK("km=%p\n",start);	
+
+	//debug_Aaron
+	if (!chain) 
+	{
+		printk("%s: num_pages=%d, kmalloc() failed!!!\r\n", __func__, num_pages);
+		return NULL;
+	}
+
+	//debug_Aaron on 05/26/2006, chain up the link list
+	for (i = 1; i < num_pages; i++)
+	{
+		chain->next = (struct page_chain *) ((char *)chain + sizeof(struct page_chain));
+		chain = chain->next;
+	}
+	chain->next=NULL;
+
+	chain = start;
+	for (i = 0; i < num_pages; i++) 
+	{
+STOR_PRINTK("gcp-in->");
+		page = __grab_cache_page(mapping, index, cached_page, lru_pvec);
+STOR_PRINTK("gcp-out-%p>", page);		
+		if (!page) 
+		{
+			//debug_Aaron
+			printk("%s: __grab_cache_page() return NULL!!!\r\n", __func__);
+			chain = NULL;
+			break;
+		}
+		chain->page = page;
+		chain = chain->next;
+		index++;
+	}
+
+	STOR_PRINTK("start=%p\n", start);
+	return start;
+}
+
+
+extern int sk_backlog_data_len(struct socket* sock);
+
+static void free_allocated_chains(struct page_chain *start, struct page_chain *chain)
+{
+ 	while (chain)
+        {
+        	kunmap(chain->page);
+                unlock_page(chain->page);
+                page_cache_release(chain->page);
+                chain = chain->next;
+        }
+        if (start)
+                kfree(start);
+}
+
+//debug_Aaron on 05/23/2006, write file regarded as how much the resource has
+ssize_t generic_file_recvfile_write_mpages(
+	struct kiocb *iocb, 
+	struct file* sock_file, 
+	loff_t *ppos, 
+	size_t count, 
+	int ftpFlag)
+{
+	struct file* write_file = iocb->ki_filp;
+	struct address_space *mapping = write_file->f_mapping;
+	struct address_space_operations *a_ops = mapping->a_ops;
+	struct inode* inode = mapping->host;
+	long status = 0;
+	loff_t pos = *ppos;
+	struct page* cached_page = NULL;
+	size_t bytes = 0, written = 0;
+	struct pagevec lru_pvec;
+	ssize_t err;
+	struct page_chain *start = 0, *chain=0;
+
+ 	 int ftpFin = 0;  // zachary
+	struct socket* sock = SOCKET_I(sock_file->f_dentry->d_inode);
+	int sock_data_len = 0;
+	int total_count = (int) count;
+	int tmp_cnt = 0;
+
+	//debug_Aaron
+	int retval;
+	int recv_mptimeout;
+	int commit_wrtimeout;
+	int backlog_timeout;
+
+	STOR_PRINTK("gfrwm-IN->\n");
+	
+	pagevec_init(&lru_pvec, 0);
+
+	recv_mptimeout = 10;
+	backlog_timeout = 10;
+
+	unsigned long index;
+	int offset;
+
+	offset = (pos & (PAGE_CACHE_SIZE-1));
+	index = pos >> PAGE_CACHE_SHIFT;
+
+	//debug_Aaron on 05/26/2006, when traffic is busy, may get no backlog data	
+	for (;;)
+	{	
+		sock_data_len = sk_backlog_data_len(sock);
+
+		if (sock_data_len > 0)
+			break;
+
+		backlog_timeout--;
+		if (backlog_timeout == 0)
+		{
+			//printk("%s: sk_backlog_data_len(sock) return 0, 10 times, timeout!!!\r\n", __func__);
+			//debug_Aaron on 07/24/2006, at this moment there is no pages added pagevec_lru_add() can be avoided to call
+			pagevec_lru_add(&lru_pvec);  
+			return  0;
+		}
+		set_current_state(TASK_RUNNING);
+		schedule();	
+	}
+	total_count = min_t(int, sock_data_len, total_count);
+	
+	//debug_Aaron this should not happen ??		
+	if (total_count <= 0) 
+	{
+		//debug_Aaron
+                //printk("%s: total_count=%d !!!\r\n", __func__, total_count);
+		pagevec_lru_add(&lru_pvec);  
+                return  0;
+	}
+
+	STOR_PRINTK("gwp-in->\n");
+	start = chain = grab_write_pages(mapping, index, write_file, offset, total_count, &lru_pvec, &cached_page);
+	STOR_PRINTK("gwp-out->\n");
+	if (!chain) 
+	{
+		//debug_Aaron
+		printk("%s: grab_write_pages(offset=%d, totoal_count=%d) return NULL !!!\r\n", 
+					    __func__, offset, total_count);
+		if (cached_page)
+			page_cache_release(cached_page);
+
+		pagevec_lru_add(&lru_pvec);  
+                return  -ENOMEM;
+	}
+	//count -= total_count;
+
+	STOR_PRINTK("rmpages-in->\n");		
+	written = sock_file->f_op->recv_mpages(sock_file, chain, offset, total_count, ppos, 1, &ftpFin);  // Zachary;			
+	STOR_PRINTK("written=%d\n", written);
+		
+	if (ftpFlag && ftpFin && !written) // Zachary 
+	{   
+		chain = start;
+                free_allocated_chains(start, chain);
+		goto fin_ok;
+	}
+
+	if (written <= 0) 
+	{
+		printk("%s: sock_file->f_op->recv_mpages() =%d !!!\r\n", __func__, written);
+
+		if (written < 0)
+			status = -ENOMEM;
+		else
+			status = 0;
+
+		//debug_Aaron
+		//release the resource which is allocated
+		free_allocated_chains(start, chain);
+	}
+	else
+	{
+		tmp_cnt = PAGE_CACHE_SIZE - offset;	
+
+		//debug_Aaron
+		commit_wrtimeout = 10;
+		//while (chain && (written > 0) && (status >=0)) 
+		while (1) 
+		{
+			struct inode *inode=mapping->host;
+
+			if (tmp_cnt > written)
+				tmp_cnt = written;
+		
+			flush_dcache_page(chain->page);
+
+                        status = a_ops->prepare_write(write_file, chain->page, offset, offset+tmp_cnt);
+                        if (unlikely(status))
+                        {
+                                loff_t isize = i_size_read(inode);
+
+				//debug_Aaron
+				printk("%s: a_ops->prepare_write() return %d\r\n", __func__, status);
+
+				//unlock_page(chain->page);
+                                //page_cache_release(chain->page);
+                                if (offset+tmp_cnt > isize)
+                                	vmtruncate(inode, isize);
+			}
+
+			if (status >= 0)
+				status = a_ops->commit_write(write_file, chain->page, offset, offset+tmp_cnt);
+
+			kunmap(chain->page);
+			unlock_page(chain->page);
+			mark_page_accessed(chain->page);
+			page_cache_release(chain->page);
+			chain = chain->next;
+		
+			if (status < 0)
+                        {
+                                //debug_Aaron
+                                printk("%s: a_ops->commit_write() return status=%d\r\n", __func__, status);
+
+                                status = -EFAULT;
+
+                                //release the resource which is allocated
+                                free_allocated_chains(start, chain);
+                                break;
+                        }/**/
+	
+			pos = pos + tmp_cnt;
+			total_count = total_count - tmp_cnt;
+			written = written - tmp_cnt;
+			bytes += tmp_cnt;
+			
+			offset = (pos & (PAGE_CACHE_SIZE-1));
+			tmp_cnt = PAGE_CACHE_SIZE - offset;
+		
+			//debug_Aaron on 05/23/2006, avoid cond_resched()
+			if (chain == NULL)
+			{
+				if (start)
+					kfree(start);
+				break;
+			}
+
+                       	if (written <= 0)
+			{
+				free_allocated_chains(start, chain);
+                               	break;	
+			}
+
+			//debug_Aaron ???
+			cond_resched();
+		}  // while loop end
+	}
+			
+
+	balance_dirty_pages_ratelimited(mapping);
+
+fin_ok:  		// Zachary
+
+	*ppos = pos;
+
+	if (cached_page)
+		page_cache_release(cached_page);
+	
+	if (status >= 0) 
+	{
+		if ((write_file->f_flags & O_SYNC) || IS_SYNC(inode)) 
+		{
+			if (!mapping->a_ops->writepage || !is_sync_kiocb(iocb))
+				status = generic_osync_inode(inode, mapping, OSYNC_METADATA | OSYNC_DATA);
+		}
+		retval = bytes;
+	}
+	else
+	{
+		retval = status;
+	} 
+
+	//debug_Aaron on 07/24/2006, call add_page_to_inactive_list(), release_pages() and reset the number of pages used
+	pagevec_lru_add(&lru_pvec);	 // call this inside loop? Ans: no need
+
+ 	if (ftpFlag && retval >= 0)   // Zachary
+ 		retval = (retval << 1) | ftpFin;
+
+	STOR_PRINTK("gfrwm-out-[%d]->\n",err);
+
+	//debug_Aaron
+	if (retval == 0)
+		printk("%s: return = %d, get nothing !!\r\n", __func__, retval);
+
+	return retval;
+}
+
+#endif
+
+ssize_t generic_file_recvfile_write(struct kiocb *iocb, struct file *sock_file,
+loff_t* ppos, size_t count, int ftpFlag)
+{
+	struct file *write_file = iocb->ki_filp;
+	struct address_space *mapping = write_file->f_mapping;
+	struct address_space_operations *a_ops = mapping->a_ops;
+	struct inode *inode = mapping->host;
+	long status = 0;
+	struct page *page;
+	struct page	*cached_page=NULL;
+	size_t bytes;
+	int written=0;
+	int total_count = (int)count;
+//	pagevec_init(&lru_pvec, 0); // what is this function?
+	long long pos = *ppos;
+
+//	printk("gen_file_rcvfile_write. pos %ld, cnt %ld\t", *ppos, count);
+
+	//long long orig_ppos = *ppos;
+	//size_t orig_cnt = count;
+	int ftpFin = 0;  // zachary
+	int copied = 0;
+	char* kaddr = 0;
+
+	struct pagevec lru_pvec;
+	pagevec_init(&lru_pvec, 0); // what is this function?
+
+	do {
+		unsigned long index;
+		size_t offset = 0;
+		
+		offset = (pos & (PAGE_CACHE_SIZE-1)); // within page
+		index = pos >> PAGE_CACHE_SHIFT;
+		bytes = PAGE_CACHE_SIZE - offset;
+		// printk("write page. offset index %d, bytes %d\n", index, bytes);
+
+		if (bytes > total_count)
+			bytes = total_count;
+
+		// fault_in_pages_readable(buf, bytes); 
+		// is it necessary for copying data from socket?
+		
+		page = __grab_cache_page(mapping, index, &cached_page, &lru_pvec);
+		if (!page) {
+			status = -ENOMEM;
+			break;
+		}
+		status = a_ops->prepare_write(write_file, page, offset, offset+bytes);
+		if (unlikely(status)) {
+			loff_t isize = i_size_read(inode);
+			unlock_page(page);
+			page_cache_release(page);
+			if (pos + bytes > isize)
+				vmtruncate(inode, isize);
+			//printk("prepare_write. offset %x, bytes %x, isize %x\n", offset, bytes, isize);
+			break;
+		}
+
+		kaddr = kmap(page);
+		copied = sock_file->f_op->recvpage(sock_file, offset+kaddr, bytes, &pos, 1, &ftpFin);
+		flush_dcache_page(page);
+//		if (copied > 0 && ((total_count == copied) ||
+//		    (offset+copied == PAGE_CACHE_SIZE)))
+			status = mapping->a_ops->commit_write(write_file, page, offset, offset+copied);
+
+		if (copied > 0) {
+			if ( status != 0)
+				status = copied;
+			if (status >=0) {
+				written += copied;
+				total_count -= copied;
+				pos += copied;
+				// filemap_set_next_iov();
+			}
+		}
+
+	/* the data from network socket might be incomplete.
+		if (unlikely(copied != bytes))
+			if (status >=0)
+				status = -EFAULT;
+	*/
+
+		kunmap(page);
+		unlock_page(page);
+		mark_page_accessed(page);
+		page_cache_release(page);
+		if (status <0)
+			break;
+
+		balance_dirty_pages_ratelimited(mapping);
+		cond_resched();
+	} while (total_count>0);
+	*ppos = pos;
+/*
+	if (pos <0)
+		printk("pos %x\n", pos);
+*/
+	if (cached_page)
+		page_cache_release(cached_page);
+
+	// shall we check O_SYNC here?
+	if (likely(status >= 0)) {
+		if (unlikely((write_file->f_flags & O_SYNC) || IS_SYNC(inode))) {
+			if (!mapping->a_ops->writepage || !is_sync_kiocb(iocb))
+				status = generic_osync_inode(inode, mapping,
+				             OSYNC_METADATA | OSYNC_DATA);
+		}			
+	}
+	// no O_DIRECT
+	pagevec_lru_add(&lru_pvec);
+//	if (written < 0)
+//		printk("gen_file_recvfile written %d, status %d\n", written, status);
+
+ 	if (ftpFlag && written >= 0) {  // Zachary
+ 		written = (written << 1) | ftpFin;
+ 		return written;
+ 	}
+
+
+	return written ? written : status;	
+}
+
+//debug_Aaron
+extern int global_recvfile;
+
+ssize_t
+__generic_aio_recvfile_nolock(struct kiocb *iocb, struct file *sock_file,
+loff_t* ppos, size_t count, int ftpFlag)
+{
+	struct file *write_file = iocb->ki_filp;
+	struct address_space *mapping = write_file->f_mapping;
+	struct inode *inode = mapping->host;
+//	loff_t pos;
+	ssize_t written, err;
+
+
+	// skip segments check
+//	pos = *ppos;
+	written = 0;
+	current->backing_dev_info = mapping->backing_dev_info;
+	//printk("ge_write_checks. pos %d, write_file %x\n", pos, write_file);
+
+	err = generic_write_checks(write_file, ppos, &count, S_ISBLK(inode->i_mode));
+
+	if (err)
+		goto out;
+
+	if (count==0)
+		goto out;
+
+	err = remove_suid(write_file->f_dentry);
+	if (err)
+		goto out;
+
+	inode_update_time(inode, 1);
+	// skip O_DIRECT check
+
+
+#ifdef CONFIG_SL2312_MPAGE
+	written = generic_file_recvfile_write_mpages(iocb, sock_file, ppos, count, ftpFlag);
+
+	//debug_Aaron
+	//if ((global_recvfile == 1) && (written == 0))
+	//	printk("%s: generic_file_recvfile_write_mpages() return 0!!!\r\n", __func__);
+#else
+	written = generic_file_recvfile_write(iocb, sock_file, ppos, count, ftpFlag);
+#endif
+
+out:
+	current->backing_dev_info = NULL;
+	if (ftpFlag && written >= 0)   // Zachary
+		return written;
+	return written ? written : err;
+}
+
+size_t generic_recvfile_write(struct file* write_file, struct file* sock_file,
+loff_t* ppos, size_t count, int ftpFlag)
+{
+	struct address_space *mapping = write_file->f_mapping;
+	struct inode *inode = mapping->host;
+	ssize_t ret;
+	//loff_t orig_ppos = *ppos;
+	int ftpFin=0; // Zachary
+
+	down(&inode->i_sem);
+	{
+		struct kiocb kiocb;
+
+		init_sync_kiocb(&kiocb, write_file);
+		//printk("gen_recvfile_write. cnt %d\n", count);
+		ret = __generic_aio_recvfile_nolock(&kiocb, sock_file, ppos, count, ftpFlag);
+
+		//debug_Aaron
+		//if (ret == 0)
+		//	printk("%s: __generic_aio_recvfile_nolock() return 0, count=%d\r\n", __func__, count);
+
+		if (ftpFlag && ret >= 0) {  // Zachary
+			ftpFin = ret & 1;   //Get ftp finish flag; if ftpFin=1 then ftp stop. The count ; Zachary
+			ret = ret >> 1;   // Get real length value ; Zachary
+		}
+    
+		if (ret == -EIOCBQUEUED) 
+			ret = wait_on_sync_kiocb(&kiocb);
+		
+	}
+	up(&inode->i_sem);
+	if (ret > 0 && ((write_file->f_flags & O_SYNC) || IS_SYNC(inode))) {
+		ssize_t err;
+		err = sync_page_range(inode, mapping, *ppos - ret, ret);
+		if (err < 0)
+			ret = err;
+	}
+	
+	if (ftpFlag && ret >=0)   // Zachary
+		ret = (ret << 1) | ftpFin;
+
+	return ret;
+}
+
+EXPORT_SYMBOL(generic_recvfile_write);
+
+#endif
 
 ssize_t
 generic_file_buffered_write(struct kiocb *iocb, const struct iovec *iov,

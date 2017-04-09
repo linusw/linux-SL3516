@@ -43,5 +43,14 @@ config PHONE_IXJ_PCMCIA
 	  cards manufactured by Quicknet Technologies, Inc.  This changes the
 	  card initialization code to work with the card manager daemon.
 
+config GEMINI_SSP
+	tristate "Storlink SSP module with PROSLIC support"
+	depends on PHONE
+	---help---
+	  Say Y here if you have Storlink SSP module with PROSLIC support.
+	  
+	  Note: this has nothing to do with modems.  You do not need to say Y
+	  here in order to be able to use a modem under Linux.
+
 endmenu
 

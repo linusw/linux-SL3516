@@ -1,4 +1,4 @@
-/* $Id: chmctrl.h,v 1.1 2001/03/29 11:43:28 davem Exp $ */
+/* $Id: chmctrl.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $ */
 #ifndef _SPARC64_CHMCTRL_H
 #define _SPARC64_CHMCTRL_H
 

@@ -115,6 +115,10 @@
 #endif	/* CONFIG_NET_RADIO */
 #include <asm/current.h>
 
+#ifdef CONFIG_SL351x_FAST_NET
+#include <asm/arch/sl351x_fast_net.h>
+#include <linux/sysctl_storlink.h>
+#endif
 /*
  *	The list of packet types we will receive (as opposed to discard)
  *	and the routines to invoke.
@@ -1248,6 +1252,20 @@ int dev_queue_xmit(struct sk_buff *skb)
 	struct Qdisc *q;
 	int rc = -ENOMEM;
 
+#ifdef CONFIG_BRIDGE
+	int retval;
+	if((skb->dev->name[0]=='b') && (skb->dev->name[1]=='r')){
+#if 1
+		retval = br_fdb_check_eth0(skb->dev,skb->data);
+#else
+		retval = br_fdb_check_eth0(skb->data);
+#endif		
+		if(retval){	// Gmac
+			goto SKIP_CHECK;
+		}
+	}
+#endif
+
 	if (skb_shinfo(skb)->frag_list &&
 	    !(dev->features & NETIF_F_FRAGLIST) &&
 	    __skb_linearize(skb, GFP_ATOMIC))
@@ -1272,6 +1290,7 @@ int dev_queue_xmit(struct sk_buff *skb)
 	      	if (skb_checksum_help(skb, 0))
 	      		goto out_kfree_skb;
 
+SKIP_CHECK:
 	spin_lock_prefetch(&dev->queue_lock);
 
 	/* Disable soft irqs for various locks below. Also 
@@ -1586,6 +1605,14 @@ int netif_receive_skb(struct sk_buff *skb)
 	/* if we've gotten here through NAPI, check netpoll */
 	if (skb->dev->poll && netpoll_rx(skb))
 		return NET_RX_DROP;
+
+#ifdef CONFIG_SL351x_FAST_NET
+	if (storlink_ctl.fast_net) {
+		if (likely(sl_fast_net(skb))) {
+			return NET_RX_SUCCESS;
+		}
+	}
+#endif
 
 	if (!skb->tstamp.off_sec)
 		net_timestamp(skb);

@@ -6,7 +6,8 @@
  * continue to use just usb_device and usb_gadget.
  */
 
-
+#ifndef __usb_otg_h
+#define __usb_otg_h
 /* OTG defines lots of enumeration states before device reset */
 enum usb_otg_state {
 	OTG_STATE_UNDEFINED = 0,
@@ -129,3 +130,7 @@ otg_start_srp(struct otg_transceiver *otg)
 
 /* for OTG controller drivers (and maybe other stuff) */
 extern int usb_bus_start_enum(struct usb_bus *bus, unsigned port_num);
+
+extern int USB_driver_Flag;
+extern int USB_driver_Flag_1;
+#endif

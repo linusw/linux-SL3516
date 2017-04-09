@@ -12,6 +12,7 @@
 #define APOLLO_MOUSE_MINOR 7
 #define PC110PAD_MINOR 9
 /*#define ADB_MOUSE_MINOR 10	FIXME OBSOLETE */
+#define CRYPTODEV_MINOR		70	/* /dev/crypto */
 #define WATCHDOG_MINOR		130	/* Watchdog timer     */
 #define TEMP_MINOR		131	/* Temperature Sensor */
 #define RTC_MINOR 135
@@ -23,6 +24,7 @@
 #define STORE_QUEUE_MINOR	155
 #define I2O_MINOR 166
 #define MICROCODE_MINOR		184
+#define GPIO_MINOR             185  
 #define MWAVE_MINOR	219		/* ACP/Mwave Modem */
 #define MPT_MINOR	220
 #define MISC_DYNAMIC_MINOR 255

@@ -6,7 +6,7 @@
  *	Pedro Roque		<roque@di.fc.ul.pt>
  *	Ian P. Morris		<I.P.Morris@soton.ac.uk>
  *
- *	$Id: ip6_input.c,v 1.19 2000/12/13 18:31:50 davem Exp $
+ *	$Id: ip6_input.c,v 1.1.1.1 2006/04/03 08:41:30 amos_lee Exp $
  *
  *	Based in linux/net/ipv4/ip_input.c
  *

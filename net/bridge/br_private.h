@@ -4,7 +4,7 @@
  *	Authors:
  *	Lennert Buytenhek		<buytenh@gnu.org>
  *
- *	$Id: br_private.h,v 1.7 2001/12/24 00:59:55 davem Exp $
+ *	$Id: br_private.h,v 1.2 2006/04/20 02:33:47 beckerh Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License
@@ -19,6 +19,10 @@
 #include <linux/miscdevice.h>
 #include <linux/if_bridge.h>
 
+#ifdef CONFIG_BRIDGE_IGMPP_PROCFS
+#include <linux/list.h>
+#endif
+
 #define BR_HASH_BITS 8
 #define BR_HASH_SIZE (1 << BR_HASH_BITS)
 
@@ -30,6 +34,53 @@
 typedef struct bridge_id bridge_id;
 typedef struct mac_addr mac_addr;
 typedef __u16 port_id;
+
+#ifdef CONFIG_BRIDGE_IGMPP_PROCFS
+#define BR_IGMPP_MSG_ERROR		0
+#define BR_IGMPP_MSG_OK			1
+#define BR_IGMPP_MSG_INFO		2	
+#define BR_IGMPP_MSG_WARNING	3	
+
+#define MESSAGE_LENGTH			80
+#define MESSAGE_DELIM			" \t"
+#define MESSAGE_ARGC			3
+#define IP_DELIM				"."
+#define IP_ACCEPT_CHAR			".0123456789"
+#define MAC_DELIM				":"
+#define MAC_ACCEPT_CHAR			":0123456789ABCDEFabcdef"
+#define ACTION_ADD				"add"
+#define ACTION_REMOVE			"remove"
+#define ACTION_SET_WL			"setwl"
+#define ACTION_UNSET_WL			"unsetwl"
+#define ACTION_ENABLE_TABLE		"enable"
+#define ACTION_DISABLE_TABLE	"disable"
+
+#define HOSTLIST_NUMBER			8		
+#define GROUPLIST_NUMBER		8						
+
+struct port_igmpp_mac_t {
+	int				used;
+	unsigned char	mac_addr[6];			
+};
+
+struct port_igmpp_group_t {
+	int				used;
+	uint32_t		ip_addr;
+	struct	port_igmpp_mac_t host_list[HOSTLIST_NUMBER];
+};
+
+struct port_igmpp_table_t {
+	int				enable;	
+	struct port_igmpp_group_t group_list[GROUPLIST_NUMBER];
+};
+
+struct br_mac_table_t {
+	struct list_head list;
+	uint32_t		ip_addr;
+	unsigned char	mac_addr[6];
+};
+
+#endif
 
 struct bridge_id
 {
@@ -79,6 +130,16 @@ struct net_bridge_port
 	struct timer_list		message_age_timer;
 	struct kobject			kobj;
 	struct rcu_head			rcu;
+#ifdef CONFIG_BRIDGE_IGMPP_PROCFS
+	struct port_igmpp_table_t port_igmpp_table;	// two-way array
+
+	/* wireless_interface = 1, corresponding device of net_bridge_port is wireless device. 
+	 * wireless_interface = 0, corresponding device of net_bridge_port is wired device.
+	 * NOTE & TODO: This variable only change by IGMPProxy, should we modify br_add_if() 
+	 * 				for initial this variable ?!
+	 */
+	atomic_t				wireless_interface;
+#endif
 };
 
 struct net_bridge
@@ -113,6 +174,14 @@ struct net_bridge
 	struct timer_list		topology_change_timer;
 	struct timer_list		gc_timer;
 	struct kobject			ifobj;
+#ifdef CONFIG_BRIDGE_IGMPP_PROCFS
+	atomic_t					br_igmpp_table_enable; // for check each port_igmpp_table conveniently
+	struct proc_dir_entry		*br_igmpp_proc; // port_igmpp_table I/O with user or processes
+
+	struct br_mac_table_t		br_mac_table; // linking list structure	
+	atomic_t					br_mac_table_enable; // for check br_mac_table conveniently
+	struct proc_dir_entry		*br_mac_proc; // br_mac_table I/O with user or processes
+#endif 
 };
 
 extern struct notifier_block br_device_notifier;
@@ -175,6 +244,9 @@ extern int br_del_if(struct net_bridge *br,
 	      struct net_device *dev);
 extern int br_min_mtu(const struct net_bridge *br);
 extern void br_features_recompute(struct net_bridge *br);
+#ifdef CONFIG_BRIDGE_IGMPP_PROCFS
+extern int search_group_IP(struct port_igmpp_table_t *pt, uint32_t ip_addr);
+#endif
 
 /* br_input.c */
 extern int br_handle_frame_finish(struct sk_buff *skb);
@@ -241,5 +313,11 @@ extern void br_sysfs_delbr(struct net_device *dev);
 #define br_sysfs_addbr(dev)	(0)
 #define br_sysfs_delbr(dev)	do { } while(0)
 #endif /* CONFIG_SYSFS */
+
+#if defined(CONFIG_SL2312_TSO)
+/*br_fdb.c*/
+extern int br_fdb_check_eth0(struct net_device *dev,unsigned char * addr);
+
+#endif
 
 #endif

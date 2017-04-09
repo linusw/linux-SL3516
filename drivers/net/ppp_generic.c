@@ -1032,8 +1032,12 @@ pad_compress_skb(struct ppp *ppp, struct sk_buff *skb)
 	int len;
 	int new_skb_size = ppp->dev->mtu +
 		ppp->xcomp->comp_extra + ppp->dev->hard_header_len;
+
+//debug_Aaron on 01/07/2008 need 4 more bytes
 	int compressor_skb_size = ppp->dev->mtu +
-		ppp->xcomp->comp_extra + PPP_HDRLEN;
+		ppp->xcomp->comp_extra + PPP_HDRLEN + 4;
+
+
 	new_skb = alloc_skb(new_skb_size, GFP_ATOMIC);
 	if (!new_skb) {
 		if (net_ratelimit())
@@ -1048,6 +1052,9 @@ pad_compress_skb(struct ppp *ppp, struct sk_buff *skb)
 	len = ppp->xcomp->compress(ppp->xc_state, skb->data - 2,
 				   new_skb->data, skb->len + 2,
 				   compressor_skb_size);
+
+//printk("%s: ppp->xcomp->compress=0x%x, len=%d, skb->len=%d\r\n", __func__, ppp->xcomp->compress, len, skb->len);
+
 	if (len > 0 && (ppp->flags & SC_CCP_UP)) {
 		kfree_skb(skb);
 		skb = new_skb;
@@ -1058,6 +1065,19 @@ pad_compress_skb(struct ppp *ppp, struct sk_buff *skb)
 		kfree_skb(new_skb);
 		new_skb = skb;
 	} else {
+
+//debug_Aaron
+int i;
+char *ptr;
+ptr = skb->data - 2;
+printk("%s: ppp->xcomp->compress=0x%x, len=%d, skb->len=%d\r\n", __func__, ppp->xcomp->compress, len, skb->len);
+printk("data[]=");
+for (i=0; i < skb->len + 2; i++)
+{
+	printk("[0x%x]", ptr[i]);
+}
+printk("\r\n");
+
 		/*
 		 * (len < 0)
 		 * MPPE requires that we do not send unencrypted
@@ -1693,6 +1713,18 @@ ppp_receive_nonmp_frame(struct ppp *ppp, struct sk_buff *skb)
 			skb->dev = ppp->dev;
 			skb->protocol = htons(npindex_to_ethertype[npi]);
 			skb->mac.raw = skb->data;
+#ifdef CONFIG_SL351X_IPSEC
+			// enter packet stealing here!!!
+			// if this packet is ESP/AH packet. we call 
+			// HW VPN to do a check on this first.
+			struct iphdr *iph = (struct iphdr *)(skb->data);
+			if (((iph->protocol == IPPROTO_AH) || (iph->protocol == IPPROTO_ESP)) 
+					&& (sl_fast_pppoe_vpn(skb)))
+			{
+				ipsec_handle_skb_finish();
+				return;
+			}
+#endif
 			netif_rx(skb);
 			ppp->dev->last_rx = jiffies;
 		}

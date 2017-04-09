@@ -21,14 +21,15 @@ unsigned int __machine_arch_type;
 #include <linux/string.h>
 
 #include <asm/arch/uncompress.h>
+#include "it8712.h"
 
 #ifdef STANDALONE_DEBUG
 #define putstr printf
 #endif
 
 #ifdef CONFIG_DEBUG_ICEDCC
-#define putstr icedcc_putstr
-#define putc icedcc_putc
+//#define putstr icedcc_putstr
+//#define putc icedcc_putc
 
 extern void icedcc_putc(int ch);
 
@@ -43,6 +44,30 @@ icedcc_putstr(const char *ptr)
 #endif
 
 #define __ptr_t void *
+
+#ifdef CONFIG_SERIAL_IT8712
+unsigned int it8712_uart_base;
+#define UART_RX         0
+#define UART_TX         0
+#define UART_DLL        0
+#define UART_TRG        0
+#define UART_DLM        1
+#define UART_IER        1
+#define UART_FCTR       1
+#define UART_IIR        2
+#define UART_FCR        2
+#define UART_EFR        2
+#define UART_LCR        3
+#define UART_MCR        4
+#define UART_LSR        5
+#define UART_MSR        6
+#define UART_SCR        7
+#define UART_EMSR       7
+void LPCEnterMBPnP(void);
+void LPCExitMBPnP(void);
+int SearchIT8712(void);
+int InitLPCInterface(void);
+#endif
 
 /*
  * Optimised C version of memzero for the ARM.
@@ -200,6 +225,8 @@ static ulg free_mem_ptr_end;
 #define HEAP_SIZE 0x2000
 
 #include "../../../../lib/inflate.c"
+#include "Decoder.c"
+
 
 #ifndef STANDALONE_DEBUG
 static void *malloc(int size)
@@ -304,6 +331,9 @@ ulg
 decompress_kernel(ulg output_start, ulg free_mem_ptr_p, ulg free_mem_ptr_end_p,
 		  int arch_id)
 {
+#ifdef CONFIG_SERIAL_IT8712
+        unsigned char *addr;
+#endif
 	output_data		= (uch *)output_start;	/* Points to kernel start */
 	free_mem_ptr		= free_mem_ptr_p;
 	free_mem_ptr_end	= free_mem_ptr_end_p;
@@ -311,8 +341,54 @@ decompress_kernel(ulg output_start, ulg free_mem_ptr_p, ulg free_mem_ptr_end_p,
 
 	arch_decomp_setup();
 
+#ifdef CONFIG_SERIAL_IT8712
+
+        InitLPCInterface();
+        LPCSetConfig(0, 0x02, 0x01);
+        LPCSetConfig(LDN_SERIAL1, 0x30, 0x1);
+        LPCSetConfig(LDN_SERIAL1, 0x23, 0x0);
+        it8712_uart_base = IT8712_IO_BASE;
+        it8712_uart_base += ((LPCGetConfig(LDN_SERIAL1, 0x60) << 8) + LPCGetConfig(LDN_SERIAL1, 0x61));
+                                                                                                                       
+        do {
+        addr = (unsigned char *)(it8712_uart_base + UART_LCR) ;
+        *addr = 0x80;
+        // Set Baud Rate
+        addr = (unsigned char *)(it8712_uart_base+UART_DLL);
+        *addr = 0x06 ;
+        addr = (unsigned char *)(it8712_uart_base+UART_DLM);
+        *addr = 0x00 ;
+                                                                                                                       
+        addr = (unsigned char *)(it8712_uart_base+UART_LCR);    // LCR
+        *addr = 0x07 ;
+        addr = (unsigned char *)(it8712_uart_base+UART_MCR);    // MCR
+        *addr = 0x08 ;
+        addr = (unsigned char *)(it8712_uart_base+UART_FCR);    // FCR
+        *addr = 0x01 ;
+    	} while(0);                                                                                                           
+#endif
+
 	makecrc();
 	putstr("Uncompressing Linux...");
+#if 1/*joel add for the 7zip decompress*/
+	if(input_data[0]=='7' && input_data[1]=='z')
+	{
+		unsigned int compr_length , uncompr_size;	
+		int i;
+		compr_length = &input_data_end[0] - &input_data[0];
+		uncompr_size = *((unsigned int *)(input_data+20));
+		putstr("7zip decompressing ...\n");
+		i = cm_hwDecodeLZMA(output_data,uncompr_size,input_data,compr_length,free_mem_ptr_p);
+		if(i==0)
+		{
+			putstr("7zip decompress success\n");
+			//output_ptr = uncompr_size;
+		}
+		else
+			putstr("7zip decompress fail\n");
+	}
+	else
+#endif
 	gunzip();
 	putstr(" done, booting the kernel.\n");
 	return output_ptr;
@@ -331,5 +407,120 @@ int main()
 	putstr("done.\n");
 	return 0;
 }
+#endif
+
+#ifdef CONFIG_SERIAL_IT8712
+
+#define LPC_KEY_ADDR    (unsigned char *)(SL2312_LPC_IO_BASE + 0x2e)
+#define LPC_DATA_ADDR   (unsigned char *)(SL2312_LPC_IO_BASE + 0x2f)
+#define LPC_BUS_CTRL                    *( unsigned char*) (SL2312_LPC_HOST_BASE + 0)
+#define LPC_BUS_STATUS                  *( unsigned char*) (SL2312_LPC_HOST_BASE + 2)
+#define LPC_SERIAL_IRQ_CTRL             *( unsigned char*) (SL2312_LPC_HOST_BASE + 4)
+                                                                                                                       
+char LPCGetConfig(char LdnNumber, char Index)
+{
+        char rtn;
+        unsigned char *addr ;
+                                                                                                                       
+        LPCEnterMBPnP();                                // Enter IT8712 MB PnP mode
+                                                                                                                       
+        addr = LPC_KEY_ADDR;
+        *addr = 0x07 ;
+                                                                                                                       
+        addr = LPC_DATA_ADDR;
+        *addr = LdnNumber ;
+                                                                                                                       
+        addr = LPC_KEY_ADDR;
+        *addr = Index ;
+                                                                                                                       
+        addr = LPC_DATA_ADDR ;
+        rtn = *addr ;
+                                                                                                                       
+        LPCExitMBPnP();
+        return rtn;
+                                                                                                                       
+}
+
+void LPCSetConfig(char LdnNumber, char Index, char data)
+{
+        unsigned char *addr;
+        LPCEnterMBPnP();                                // Enter IT8712 MB PnP mode
+        addr = LPC_KEY_ADDR;
+        *addr = 0x07;
+        addr = LPC_DATA_ADDR;
+        *addr = LdnNumber;
+        addr = LPC_KEY_ADDR;
+        *addr = Index;
+        addr = LPC_DATA_ADDR;
+        *addr = data;
+                                                                                                                       
+        LPCExitMBPnP();
+}
+    
+//unsigned char key[4] ;                                                                                                                   
+void LPCEnterMBPnP(void)
+{
+        unsigned char *addr;
+        addr = LPC_KEY_ADDR;
+        unsigned char key[4] = {0x87, 0x01, 0x55, 0x55};
+        
+ 		do {
+ 		*addr = key[0];
+ 		*addr = key[1];
+ 		*addr = key[2];
+ 		*addr = key[3];
+ 		}while(0);
+}
+
+void LPCExitMBPnP(void)
+{
+        unsigned char *addr;
+        addr = LPC_KEY_ADDR;
+        *addr = 0x02 ;
+                                                                                                                       
+        addr = LPC_DATA_ADDR;
+        *addr = 0x02 ;
+}
+
+int InitLPCInterface(void)
+{
+        int i;
+        LPC_BUS_CTRL = 0xc0;
+        LPC_SERIAL_IRQ_CTRL = 0xc0;
+                                                                                                                       
+        for(i=0;i<0x2000;i++) ;
+                                                                                                                       
+        LPC_SERIAL_IRQ_CTRL = 0x80;
+        if (!SearchIT8712()) ;
+//			while(1);
+        return 0;
+}
+
+int SearchIT8712(void)
+{
+        unsigned char Id1, Id2;
+        unsigned short Id;
+        unsigned char *addr;
+                                                                                                                       
+        LPCEnterMBPnP();
+        addr = LPC_KEY_ADDR;
+        *addr = 0x20 ;
+        addr = LPC_DATA_ADDR;
+        Id1 = *addr ;
+                                                                                                                       
+        addr = LPC_KEY_ADDR;
+        *addr = 0x21 ;
+        addr = LPC_DATA_ADDR;
+        Id2 = *addr ;
+                                                                                                                       
+        Id = (Id1 << 8) | Id2;
+        LPCExitMBPnP();
+                                                                                                                       
+        if (Id == 0x8712)
+                return 1;
+        else
+                return 0;
+}
+
 #endif
 	

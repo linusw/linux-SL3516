@@ -500,6 +500,7 @@ pci_bus_assign_resources(struct pci_bus *bus)
 {
 	struct pci_bus *b;
 	struct pci_dev *dev;
+	int retval;
 
 	pbus_assign_resources_sorted(bus);
 
@@ -513,6 +514,11 @@ pci_bus_assign_resources(struct pci_bus *bus)
 		switch (dev->class >> 8) {
 		case PCI_CLASS_BRIDGE_PCI:
 			pci_setup_bridge(b);
+			// fixed by Jason, enable bridge or it won't forward io/mem to behind devices	
+			retval = pci_enable_device(dev);
+			pci_set_master(dev);
+			pci_enable_bridges(dev->subordinate);
+			// Jason
 			break;
 
 		case PCI_CLASS_BRIDGE_CARDBUS:

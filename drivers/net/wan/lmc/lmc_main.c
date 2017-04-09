@@ -36,7 +36,7 @@
   *
   */
 
-/* $Id: lmc_main.c,v 1.36 2000/04/11 05:25:25 asj Exp $ */
+/* $Id: lmc_main.c,v 1.1.1.1 2006/04/03 08:40:56 amos_lee Exp $ */
 
 #include <linux/kernel.h>
 #include <linux/module.h>

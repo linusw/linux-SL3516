@@ -1,4 +1,4 @@
-/*  $Id: sun4d_irq.c,v 1.29 2001/12/11 04:55:51 davem Exp $
+/*  $Id: sun4d_irq.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  *  arch/sparc/kernel/sun4d_irq.c:
  *			SS1000/SC2000 interrupt handling.
  *

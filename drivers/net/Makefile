@@ -76,6 +76,9 @@ obj-$(CONFIG_PHYLIB) += phy/
 obj-$(CONFIG_SUNDANCE) += sundance.o
 obj-$(CONFIG_HAMACHI) += hamachi.o
 obj-$(CONFIG_NET) += Space.o loopback.o
+#ifdef CONFIG_GEMINI_IPI
+obj-$(CONFIG_GEMINI_IPI) += ipcloop.o
+#endif
 obj-$(CONFIG_SEEQ8005) += seeq8005.o
 obj-$(CONFIG_NET_SB1000) += sb1000.o
 obj-$(CONFIG_MAC8390) += mac8390.o 8390.o
@@ -206,4 +209,48 @@ obj-$(CONFIG_ETRAX_ETHERNET) += cris/
 obj-$(CONFIG_NETCONSOLE) += netconsole.o
 
 obj-$(CONFIG_FS_ENET) += fs_enet/
+
+#obj-$(CONFIG_NET_SL2312) += sl2312_emac.o
+#obj-$(CONFIG_NET_SL2312_LEPUS)+= sl_lepus_gmac.o sl_lepus_nat.o sl_lepus_hash.o sl_lepus_crc16.o
+ifeq ($(CONFIG_NET_SL351X),y)
+obj-$(CONFIG_NET_SL351X) += sl351x_nat.o sl351x_hash.o sl351x_crc16.o sl351x_proc.o sl351x_ioctl.o
+
+ifeq ($(CONFIG_RTL8366SR_PHY),y)
+obj-$(CONFIG_NET_SL351X) += sl351x_rtl8366.o
+else
+obj-$(CONFIG_NET_SL351X) += sl_switch.o
+endif
+
+ifeq ($(CONFIG_SL351X_DUALCORE),y)
+obj-y += sl351x_gmac_dualcore.o
+endif
+#####joel
+#CHIP_RTL8366SR = y
+#CHIP_RTL8366RB = y
+
+include ../../path.mk
+include $(TOPDIR)/progs.board/customer.mk
+ifdef SWITCH_MODULE
+obj-y += sl351x_gmac.module.o
+else
+ifdef CHIP_RTL8366SR
+obj-y += sl351x_gmac.o
+obj-y += rtl8366s/
+CFLAGS += -DCHIP_RTL8366SR
+else
+obj-y += sl351x_gmac.8366rb.o
+obj-y += rtl8366rb/
+CFLAGS += -DCHIP_RTL8366RB
+endif
+endif
+ifeq ($(CONFIG_SL351x_FAST_NET),y)
+obj-y += sl351x_fast_net.o
+endif
+ifeq ($(CONFIG_SL351X_IPSEC),y)
+obj-y += sl351x_ipsec.o
+endif
+endif
+ifeq ($(CONFIG_NET_SL2312),y) 
+obj-$(CONFIG_NET_SL2312)+= sl2312_emac.o
+endif
 

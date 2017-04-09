@@ -19,7 +19,7 @@
  *      along with this program; if not, write to the Free Software
  *      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- *  $Id: devio.c,v 1.7 2000/02/01 17:28:48 fliegl Exp $
+ *  $Id: devio.c,v 1.2 2007/10/25 05:33:24 stone Exp $
  *
  *  This file implements the usbfs/x/y files, where
  *  x is the bus number and y the device number.
@@ -1549,6 +1549,13 @@ static int usbdev_ioctl(struct inode *inode, struct file *file, unsigned int cmd
 		snoop(&dev->dev, "%s: IOCTL\n", __FUNCTION__);
 		ret = proc_ioctl_default(ps, p);
 		break;
+//+++Add by shiang for usb printer hotplug detection. 2004/12/08
+	case USBDEVFS_PRINTERDEV_MINOR_ID:
+		//printk("Got USBDEVFS_DEVICE_MINOR_ID ioctl from user space!arg=%d\n", *((int *)arg));
+		ret =proc_getprinter_minor_id(ps, (void *)arg);
+		printk("ret is %x %s \n",ret,__FUNCTION__);
+		break;
+//---Add by shiang for usb printer hotplug detection. 2004/12/08
 	}
 	usb_unlock_device(dev);
 	if (ret >= 0)
@@ -1590,7 +1597,7 @@ static void usbdev_add(struct usb_device *dev)
 	dev->class_dev->class_data = dev;
 }
 
-static void usbdev_remove(struct usb_device *dev)
+void usbdev_remove(struct usb_device *dev)
 {
 	class_device_unregister(dev->class_dev);
 }
@@ -1662,4 +1669,89 @@ void usbdev_cleanup(void)
 	cdev_del(&usb_device_cdev);
 	unregister_chrdev_region(USB_DEVICE_DEV, USB_DEVICE_MAX);
 }
+
+	//+++Add by shiang for usb printer hotplug detection 2004/12/08
+/* The follwoing definition is defined in printer.c, but we copy it to here for usblp data structure.
+     It's a work-around solution to resolve the alpha-styel printer hotplug detection problem when we have devfs.
+     
+Problem description: when a usb printer was removed from the usb bus. By deafult, our hotplug will trigger the corresponding
+     handler to deal with it! In my original design, I tried to open the /dev/usb directory and traverse the whole	directoy to find out
+     some specific files(i.e. the printer device files). It'll make the my handler dead when I call readidr(). I have no idea about
+     why it could happen.
+*/
+#define USBLP_FIRST_PROTOCOL	1
+#define USBLP_LAST_PROTOCOL	3
+#define USBLP_MAX_PROTOCOLS	(USBLP_LAST_PROTOCOL+1)
+
+struct usblp {
+	struct usb_device 	*dev;			/* USB device */
+	struct semaphore	sem;			/* locks this struct, especially "dev" */
+	char			*writebuf;		/* write transfer_buffer */
+	char			*readbuf;		/* read transfer_buffer */
+	char			*statusbuf;		/* status transfer_buffer */
+	struct urb		*readurb, *writeurb;	/* The urbs */
+	wait_queue_head_t	wait;			/* Zzzzz ... */
+	int			readcount;		/* Counter for reads */
+	int			ifnum;			/* Interface number */
+	struct usb_interface	*intf;			/* The interface */
+	/* Alternate-setting numbers and endpoints for each protocol
+	 * (7/1/{index=1,2,3}) that the device supports: */
+	struct {
+		int				alt_setting;
+		struct usb_endpoint_descriptor	*epwrite;
+		struct usb_endpoint_descriptor	*epread;
+	}			protocol[USBLP_MAX_PROTOCOLS];
+	int			current_protocol;
+	int			minor;			/* minor number of device */
+	int			wcomplete;		/* writing is completed */
+	int			rcomplete;		/* reading is completed */
+	unsigned int		quirks;			/* quirks flags */
+	unsigned char		used;			/* True if open */
+	unsigned char		present;		/* True if not disconnected */
+	unsigned char		bidir;			/* interface is bidirectional */
+	unsigned char		*device_id_string;	/* IEEE 1284 DEVICE ID string (ptr) */
+							/* first 2 bytes are (big-endian) length */
+};
+
+/* shiang: This ioctl function is used to get the minor number of the printer device, by the minor number and 
+		naming rule of usb printer defined in printer.c, we can get the printer device file name(/dev/usb/lpX,
+		X= minor-number) of the specific printer device.
+
+		Input:  interface number for detection.
+		Output:minor number
+*/
+
+static int proc_getprinter_minor_id(struct dev_state *ps, void *arg)
+{
+	struct usb_device *dev = ps->dev;
+	struct usb_interface *iface = NULL;
+	unsigned int  ifnum;
+	unsigned int minor_num= 0;
+	struct usblp *printer;
+	int ret;
+
+	if (get_user(ifnum, (unsigned int *)arg))
+		return -EFAULT;
+	
+	/*if ((ret = checkintf(ps->dev, ifnum)) < 0)
+		return ret;*/
+	iface = usb_ifnum_to_if(ps->dev, ifnum);
+	if (!iface)
+		return -EINVAL;
+/*	if (!iface->private_data)
+		return -ENODATA;
+	
+	printer=(struct usblp*)(iface->private_data);*/
+	minor_num = iface->minor;
+	printk("minor_num=%d, printer->minor=%d!\n", minor_num, printer->minor);
+	if (copy_to_user(arg, &minor_num, sizeof(minor_num)))
+		return -EFAULT;
+	
+	return 0;
+	
+}
+
+//---Add by shiang for usb printer hotplug detection 2004/12/08
+
+
 

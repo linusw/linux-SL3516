@@ -4,10 +4,12 @@
 
 # Link order matters here.
 obj-$(CONFIG_IP6_NF_IPTABLES) += ip6_tables.o
+obj-$(CONFIG_IP6_NF_MATCH_EXPIRE) += ip6t_expire.o
 obj-$(CONFIG_IP6_NF_MATCH_LIMIT) += ip6t_limit.o
 obj-$(CONFIG_IP6_NF_MATCH_MARK) += ip6t_mark.o
 obj-$(CONFIG_IP6_NF_MATCH_LENGTH) += ip6t_length.o
 obj-$(CONFIG_IP6_NF_MATCH_MAC) += ip6t_mac.o
+obj-$(CONFIG_IP6_NF_MATCH_FUZZY) += ip6t_fuzzy.o
 obj-$(CONFIG_IP6_NF_MATCH_RT) += ip6t_rt.o
 obj-$(CONFIG_IP6_NF_MATCH_OPTS) += ip6t_hbh.o ip6t_dst.o
 obj-$(CONFIG_IP6_NF_MATCH_IPV6HEADER) += ip6t_ipv6header.o
@@ -24,6 +26,10 @@ obj-$(CONFIG_IP6_NF_TARGET_HL) += ip6t_HL.o
 obj-$(CONFIG_IP6_NF_TARGET_NFQUEUE) += ip6t_NFQUEUE.o
 obj-$(CONFIG_IP6_NF_QUEUE) += ip6_queue.o
 obj-$(CONFIG_IP6_NF_TARGET_LOG) += ip6t_LOG.o
+
+obj-$(CONFIG_IP6_NF_MATCH_RANDOM) += ip6t_random.o
+
+obj-$(CONFIG_IP6_NF_MATCH_NTH) += ip6t_nth.o
 obj-$(CONFIG_IP6_NF_RAW) += ip6table_raw.o
 obj-$(CONFIG_IP6_NF_MATCH_HL) += ip6t_hl.o
 obj-$(CONFIG_IP6_NF_TARGET_REJECT) += ip6t_REJECT.o

@@ -30,7 +30,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: ucm.c 2594 2005-06-13 19:46:02Z libor $
+ * $Id: ucm.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 #include <linux/init.h>
 #include <linux/fs.h>

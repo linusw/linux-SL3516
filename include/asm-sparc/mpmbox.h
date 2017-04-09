@@ -1,4 +1,4 @@
-/* $Id: mpmbox.h,v 1.4 1996/04/25 06:13:19 davem Exp $
+/* $Id: mpmbox.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $
  * mpmbox.h:  Interface and defines for the OpenProm mailbox
  *               facilities for MP machines under Linux.
  *

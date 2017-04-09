@@ -146,7 +146,8 @@ typedef struct mdp_superblock_s {
 	__u32 cp_events_hi;	/* 10 high-order of checkpoint update count   */
 #endif
 	__u32 recovery_cp;	/* 11 recovery checkpoint sector count	      */
-	__u32 gstate_sreserved[MD_SB_GENERIC_STATE_WORDS - 12];
+	__u32 rdev_size;	/* 12 import size of this partition	      */
+	__u32 gstate_sreserved[MD_SB_GENERIC_STATE_WORDS - 13];
 
 	/*
 	 * Personality information

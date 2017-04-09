@@ -20,9 +20,9 @@
  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/ftape/lowlevel/fdc-isr.h,v $
- * $Revision: 1.2 $
- * $Date: 1997/10/05 19:18:07 $
+ * $Source: /home/cvs/gemini-2.6.15/drivers/char/ftape/lowlevel/fdc-isr.h,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2006/04/03 08:40:46 $
  *
  *      This file declares the global variables necessary to
  *      synchronize the interrupt service routine (isr) with the

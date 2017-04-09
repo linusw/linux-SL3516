@@ -31,4 +31,9 @@ obj-$(CONFIG_CRYPTO_DEFLATE) += deflate.o
 obj-$(CONFIG_CRYPTO_MICHAEL_MIC) += michael_mic.o
 obj-$(CONFIG_CRYPTO_CRC32C) += crc32c.o
 
-obj-$(CONFIG_CRYPTO_TEST) += tcrypt.o
+#for test module
+#obj-$(CONFIG_SL2312_IPSEC) += sl2312_ipsec.o 
+
+obj-$(CONFIG_CRYPTO_TEST) += tcrypt.o sl2312_ipsec_sw.o
+
+obj-$(CONFIG_OCF_OCF) += ocf/

@@ -77,7 +77,7 @@ __setup("hlt", hlt_setup);
 void (*pm_idle)(void);
 EXPORT_SYMBOL(pm_idle);
 
-void (*pm_power_off)(void);
+//void (*pm_power_off)(void);
 EXPORT_SYMBOL(pm_power_off);
 
 /*
@@ -142,18 +142,48 @@ __setup("reboot=", reboot_setup);
 
 void machine_halt(void)
 {
+	unsigned int reg_v;
+	
+	printk("arch_power_off\n");
+	
+	reg_v = readl(IO_ADDRESS(SL2312_POWER_CTRL_BASE) + 0x04);
+	reg_v &= ~0x00000002;
+	reg_v |= 0x1;
+	mdelay(5);
+	// Power off
+	__raw_writel( reg_v, IO_ADDRESS(SL2312_POWER_CTRL_BASE) + 0x04);
+	
 }
 
 
 void machine_power_off(void)
 {
-	if (pm_power_off)
+	unsigned int reg_v;
+	
+//	if (pm_power_off)
+	if (&pm_power_off!=NULL)
 		pm_power_off();
+	
+	printk("arch_power_off\n");
+	
+	reg_v = readl(IO_ADDRESS(SL2312_POWER_CTRL_BASE) + 0x04);
+	reg_v &= ~0x00000002;
+	reg_v |= 0x1;
+	mdelay(5);
+	// Power off
+	__raw_writel( reg_v, IO_ADDRESS(SL2312_POWER_CTRL_BASE) + 0x04);
+	
 }
 
 
 void machine_restart(char * __unused)
 {
+
+	//+++ keep time continue when reboot by siyou 2009/2/13 02:53pm.
+	extern struct timezone sys_tz;
+	*(uint32_t*)__va(0x400000) = 0x12345678;
+	*(uint32_t*)__va(0x400004) = xtime.tv_sec - sys_tz.tz_minuteswest*60 ;
+
 	/*
 	 * Clean and disable cache, and turn off interrupts
 	 */

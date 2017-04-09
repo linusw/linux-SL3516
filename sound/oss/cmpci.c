@@ -3365,7 +3365,7 @@ static struct pci_driver cm_driver = {
 
 static int __init init_cmpci(void)
 {
-	printk(KERN_INFO "cmpci: version $Revision: 6.82 $ time " __TIME__ " " __DATE__ "\n");
+	printk(KERN_INFO "cmpci: version $Revision: 1.1.1.1 $ time " __TIME__ " " __DATE__ "\n");
 	return pci_module_init(&cm_driver);
 }
 

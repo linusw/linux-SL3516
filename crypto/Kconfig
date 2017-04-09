@@ -310,6 +310,17 @@ config CRYPTO_TEST
 	help
 	  Quick & dirty crypto test module.
 
+#for test module
+#config SL2312_IPSEC
+#	tristate "Storlink H/W IPSec Acceleration Engine"
+#	depends on CRYPTO
+#	help
+#	    Storlink H/W crypto engine include MD5,SHA1,HMAC-MD5,HMAC-SHA1,
+#	    DES,3DES and AES.
+
+source "crypto/ocf/Kconfig"
+
 source "drivers/crypto/Kconfig"
+
 endmenu
 

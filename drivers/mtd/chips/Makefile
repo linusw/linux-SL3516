@@ -1,7 +1,7 @@
 #
 # linux/drivers/chips/Makefile
 #
-# $Id: Makefile.common,v 1.5 2005/11/07 11:14:22 gleixner Exp $
+# $Id: Makefile,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
 
 #                       *** BIG UGLY NOTE ***
 #
@@ -22,5 +22,6 @@ obj-$(CONFIG_MTD_JEDEC)		+= jedec.o
 obj-$(CONFIG_MTD_JEDECPROBE)	+= jedec_probe.o
 obj-$(CONFIG_MTD_RAM)		+= map_ram.o
 obj-$(CONFIG_MTD_ROM)		+= map_rom.o
+obj-$(CONFIG_MTD_SERIAL)	+= map_serial.o
 obj-$(CONFIG_MTD_SHARP)		+= sharp.o
 obj-$(CONFIG_MTD_ABSENT)	+= map_absent.o

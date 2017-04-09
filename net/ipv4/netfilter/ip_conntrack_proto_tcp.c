@@ -99,7 +99,8 @@ unsigned long ip_ct_tcp_timeout_close =        10 SECS;
    to ~13-30min depending on RTO. */
 unsigned long ip_ct_tcp_timeout_max_retrans =     5 MINS;
  
-static const unsigned long * tcp_timeouts[]
+//marco static const unsigned long * tcp_timeouts[]
+const unsigned long * tcp_timeouts[]
 = { NULL,                              /*      TCP_CONNTRACK_NONE */
     &ip_ct_tcp_timeout_syn_sent,       /*      TCP_CONNTRACK_SYN_SENT, */
     &ip_ct_tcp_timeout_syn_recv,       /*      TCP_CONNTRACK_SYN_RECV, */
@@ -170,7 +171,8 @@ enum tcp_bit_set {
  *	if they are invalid
  *	or we do not support the request (simultaneous open)
  */
-static const enum tcp_conntrack tcp_conntracks[2][6][TCP_CONNTRACK_MAX] = {
+//marco static const enum tcp_conntrack tcp_conntracks[2][6][TCP_CONNTRACK_MAX] = {
+const enum tcp_conntrack tcp_conntracks[2][6][TCP_CONNTRACK_MAX] = {
 	{
 /* ORIGINAL */
 /* 	     sNO, sSS, sSR, sES, sFW, sCW, sLA, sTW, sCL, sLI	*/
@@ -389,7 +391,8 @@ static int nfattr_to_tcp(struct nfattr *cda[], struct ip_conntrack *ct)
 }
 #endif
 
-static unsigned int get_conntrack_index(const struct tcphdr *tcph)
+//marco static unsigned int get_conntrack_index(const struct tcphdr *tcph)
+unsigned int get_conntrack_index(const struct tcphdr *tcph)
 {
 	if (tcph->rst) return TCP_RST_SET;
 	else if (tcph->syn) return (tcph->ack ? TCP_SYNACK_SET : TCP_SYN_SET);
@@ -905,6 +908,9 @@ static int tcp_packet(struct ip_conntrack *conntrack,
 	struct tcphdr *th, _tcph;
 	unsigned long timeout;
 	unsigned int index;
+#ifdef CONFIG_SL351x_NAT
+	NAT_CB_T			*nat_cb = NAT_SKB_CB(skb);
+#endif
 	
 	th = skb_header_pointer(skb, iph->ihl * 4,
 				sizeof(_tcph), &_tcph);
@@ -915,6 +921,11 @@ static int tcp_packet(struct ip_conntrack *conntrack,
 	dir = CTINFO2DIR(ctinfo);
 	index = get_conntrack_index(th);
 	new_state = tcp_conntracks[dir][index][old_state];
+
+#ifdef CONFIG_SL351x_NAT
+	// printk("ip_conntrack=0x%x, new_state=%d\n", (u32)conntrack, new_state);
+	nat_cb->state = new_state;
+#endif
 
 	switch (new_state) {
 	case TCP_CONNTRACK_IGNORE:
@@ -1011,12 +1022,17 @@ static int tcp_packet(struct ip_conntrack *conntrack,
 		/* Keep compilers happy. */
 		break;
 	}
+#ifndef CONFIG_SL351x_FAST_NET
+#ifdef CONFIG_SL351x_NAT
+	if (!conntrack->hw_nat)
+#endif
 
 	if (!tcp_in_window(&conntrack->proto.tcp, dir, index, 
 			   skb, iph, th)) {
 		write_unlock_bh(&tcp_lock);
 		return -NF_ACCEPT;
 	}
+#endif
     in_window:
 	/* From now on we have got in-window packets */	
 	conntrack->proto.tcp.last_index = index;

@@ -18,6 +18,9 @@
 #ifndef __XFS_DINODE_H__
 #define	__XFS_DINODE_H__
 
+//debug_Aaron on 08/18/2006 fix bug of XFS internal error xfs_da_do_buf(2) at line 2221 of file fs/xfs/xfs_da_btree.c
+#define JZ_PACKED __attribute__ ((packed))
+
 struct xfs_buf;
 struct xfs_mount;
 
@@ -97,7 +100,9 @@ typedef struct xfs_dinode
 		xfs_bmbt_rec_32_t di_abmx[1];	/* extent list */
 		xfs_attr_shortform_t di_attrsf;	/* shortform attribute list */
 	}		di_a;
-} xfs_dinode_t;
+//debug_Aaron
+//} xfs_dinode_t;
+} JZ_PACKED xfs_dinode_t;
 
 /*
  * The 32 bit link count in the inode theoretically maxes out at UINT_MAX.

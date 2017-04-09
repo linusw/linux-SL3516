@@ -132,8 +132,8 @@ static int multicast_filter_limit = 32;
 
 #define R8169_REGS_SIZE		256
 #define R8169_NAPI_WEIGHT	64
-#define NUM_TX_DESC	64	/* Number of Tx descriptor registers */
-#define NUM_RX_DESC	256	/* Number of Rx descriptor registers */
+#define NUM_TX_DESC	512	/* Number of Tx descriptor registers */
+#define NUM_RX_DESC	64	/* Number of Rx descriptor registers */
 #define RX_BUF_SIZE	1536	/* Rx Buffer size */
 #define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
 #define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
@@ -2290,7 +2290,11 @@ rtl8169_tx_interrupt(struct net_device *dev, struct rtl8169_private *tp,
 		rtl8169_unmap_tx_skb(tp->pci_dev, tx_skb, tp->TxDescArray + entry);
 
 		if (status & LastFrag) {
-			dev_kfree_skb_irq(tx_skb->skb);
+			if (tx_skb->skb->destructor)
+				dev_kfree_skb(tx_skb->skb);
+			else
+				dev_kfree_skb_any(tx_skb->skb);
+			//dev_kfree_skb_irq(tx_skb->skb);
 			tx_skb->skb = NULL;
 		}
 		dirty_tx++;
@@ -2417,8 +2421,9 @@ rtl8169_rx_interrupt(struct net_device *dev, struct rtl8169_private *tp,
 
 			skb->dev = dev;
 			skb_put(skb, pkt_size);
+			
 			skb->protocol = eth_type_trans(skb, dev);
-
+			
 			if (rtl8169_rx_vlan_skb(tp, desc, skb) < 0)
 				rtl8169_rx_skb(skb);
 

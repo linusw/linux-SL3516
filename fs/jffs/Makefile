@@ -1,7 +1,7 @@
 #
 # Makefile for the linux Journalling Flash FileSystem (JFFS) routines.
 #
-# $Id: Makefile,v 1.11 2001/09/25 20:59:41 dwmw2 Exp $
+# $Id: Makefile,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $
 #
 
 obj-$(CONFIG_JFFS_FS) += jffs.o

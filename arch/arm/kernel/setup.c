@@ -741,6 +741,15 @@ void __init setup_arch(char **cmdline_p)
 	if (mdesc->boot_params)
 		tags = phys_to_virt(mdesc->boot_params);
 
+	//+++ add by siyou to retrive the time before reboot.
+	if ( *(uint32_t*)phys_to_virt(0x400000) == 0x12345678 )
+	{
+		xtime.tv_sec = *(uint32_t*)phys_to_virt(0x400004);
+		xtime.tv_sec += 10; //compensate the reboot time.
+		wall_to_monotonic.tv_sec = -1*xtime.tv_sec;//this to make uptime correct.
+		//printk("<3>xtime.tv_sec=%ld\n", xtime.tv_sec);
+	}
+
 	/*
 	 * If we have the old style parameters, convert them to
 	 * a tag list.

@@ -5,7 +5,7 @@
  *
  *  (C) 2002 MontVista Software, Inc.
  *
- * $Id: omap-toto-flash.c,v 1.5 2005/11/07 11:14:27 gleixner Exp $
+ * $Id: omap-toto-flash.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  */
 
 #include <linux/config.h>

@@ -55,6 +55,10 @@
 #include <net/dst.h>
 #include <net/checksum.h>
 
+#ifdef CONFIG_SL2312_TSO
+struct page_chain;
+#endif
+
 /*
  * This structure really needs to be cleaned up.
  * Most of it is for TCP, and not used by any of
@@ -251,6 +255,15 @@ struct sock {
   	int			(*sk_backlog_rcv)(struct sock *sk,
 						  struct sk_buff *skb);  
 	void                    (*sk_destruct)(struct sock *sk);
+
+#ifdef CONFIG_BRIDGE
+	/*++beck*/
+	int tss_flag;   /*1=TSS ON, 0=TSS OFF */
+#endif
+#ifdef CONFIG_SL2312_MPAGE
+	/* fast socket, for FTP data, jeanson */
+	int fast_sock;
+#endif	
 };
 
 /*
@@ -527,6 +540,20 @@ struct proto {
 					int *addr_len);
 	int			(*sendpage)(struct sock *sk, struct page *page,
 					int offset, size_t size, int flags);
+#ifdef CONFIG_SL2312_TSO
+	int			(*send_mpages)(struct sock *sk, struct page_chain* chain,
+					int offset, size_t size, int flags);
+#endif
+#ifdef CONFIG_SL2312_RECVFILE
+	int			(*recvpage)(struct sock *sk, char* buf,
+					size_t size, int nonblock, int flags);
+#endif
+#if defined(CONFIG_SL2312_RECVFLE) && defined(CONFIG_SL2312_MPAGE)
+	int			(*recv_mpages)(struct sock *sk, struct page_chain* chain,
+				        //int offset, size_t size, int nonblock, int flags);
+				        int offset, size_t size, int nonblock, int flags, int *ftpFinFlag); // Zachary
+#endif
+
 	int			(*bind)(struct sock *sk, 
 					struct sockaddr *uaddr, int addr_len);
 
@@ -1037,10 +1064,22 @@ sk_dst_check(struct sock *sk, u32 cookie)
 	return dst;
 }
 
+#ifdef CONFIG_BRIDGE
+extern int tcp_check_tss_eth0(struct sock *sk);
+#endif
+
 static inline void sk_setup_caps(struct sock *sk, struct dst_entry *dst)
 {
 	__sk_dst_set(sk, dst);
 	sk->sk_route_caps = dst->dev->features;
+
+#ifdef CONFIG_BRIDGE
+		if((dst->dev->name[0]=='b')&&(dst->dev->name[1]=='r')){
+			sk->tss_flag = tcp_check_tss_eth0(sk);
+			if(sk->tss_flag)
+				sk->sk_route_caps |= NETIF_F_TSO;
+		}
+#endif
 	if (sk->sk_route_caps & NETIF_F_TSO) {
 		if (sock_flag(sk, SOCK_NO_LARGESEND) || dst->header_len)
 			sk->sk_route_caps &= ~NETIF_F_TSO;

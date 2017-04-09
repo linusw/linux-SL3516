@@ -7,7 +7,7 @@
  *    Copyright (C) 1995  Linus Torvalds
  */
 
-/* $Id: fault-nommu.c,v 1.1 2004/03/30 06:40:59 sakugawa Exp $ */
+/* $Id: fault-nommu.c,v 1.1.1.1 2006/04/03 08:40:34 amos_lee Exp $ */
 
 #include <linux/config.h>
 #include <linux/signal.h>

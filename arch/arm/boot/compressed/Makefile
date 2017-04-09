@@ -25,6 +25,10 @@ ifeq ($(CONFIG_ARCH_CAMELOT),y)
 OBJS		+= head-epxa10db.o
 endif
 
+ifeq ($(CONFIG_ARCH_SL2312),y)
+OBJS		+= head-sl2312.o
+endif
+
 ifeq ($(CONFIG_ARCH_L7200),y)
 OBJS		+= head-l7200.o
 endif
@@ -88,20 +92,24 @@ endif
 ifneq ($(PARAMS_PHYS),)
 LDFLAGS_vmlinux += --defsym params_phys=$(PARAMS_PHYS)
 endif
-LDFLAGS_vmlinux += -p --no-undefined -X \
-	$(shell $(CC) $(CFLAGS) --print-libgcc-file-name) -T
+#LDFLAGS_vmlinux += -p --no-undefined -X \
+#	$(shell $(CC) $(CFLAGS) --print-libgcc-file-name) -T
+LDFLAGS_vmlinux += -p --no-undefined -X -T
 
 # Don't allow any static data in misc.o, which
 # would otherwise mess up our GOT table
 CFLAGS_misc.o := -Dstatic=
 
 $(obj)/vmlinux: $(obj)/vmlinux.lds $(obj)/$(HEAD) $(obj)/piggy.o \
-	 	$(addprefix $(obj)/, $(OBJS)) FORCE
+	 	$(addprefix $(obj)/, $(OBJS)) $(shell $(CC) $(CFLAGS) --print-libgcc-file-name) FORCE
 	$(call if_changed,ld)
 	@:
 
+quiet_cmd_7zip = 7ZIP    $@
+cmd_7zip = $(TOPDIR)/../../tools/7zip $< $@ -k little 
+
 $(obj)/piggy.gz: $(obj)/../Image FORCE
-	$(call if_changed,gzip)
+	$(call if_changed,7zip)
 
 $(obj)/piggy.o:  $(obj)/piggy.gz FORCE
 
@@ -111,4 +119,6 @@ $(obj)/vmlinux.lds: $(obj)/vmlinux.lds.in arch/arm/boot/Makefile .config
 	@sed "$(SEDFLAGS)" < $< > $@
 
 $(obj)/misc.o: $(obj)/misc.c include/asm/arch/uncompress.h lib/inflate.c
+
+#.PHONY: $(shell $(CC) $(CFLAGS) --print-libgcc-file-name)
 

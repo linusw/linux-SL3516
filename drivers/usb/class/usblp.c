@@ -76,6 +76,10 @@
 #define IOCNR_GET_BUS_ADDRESS		5
 #define IOCNR_GET_VID_PID		6
 #define IOCNR_SOFT_RESET		7
+//+++Add by shiang for usb printing-on-the-fly 2004/11/26
+
+#define IOCNR_GET_DEVICE_UID		8
+//---Add by shiang for usb printing-on-the-fly 2004/11/26
 /* Get device_id string: */
 #define LPIOC_GET_DEVICE_ID(len) _IOC(_IOC_READ, 'P', IOCNR_GET_DEVICE_ID, len)
 /* The following ioctls were added for http://hpoj.sourceforge.net: */
@@ -589,6 +593,14 @@ static int usblp_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 				dbg("usblp%d is VID=0x%4.4X, PID=0x%4.4X",
 					usblp->minor, twoints[0], twoints[1]);
 				break;
+//+++Add by shiang for printing-on-the-fly 2004/11/26
+		/*	case IOCNR_SOFT_RESET:
+				if (_IOC_DIR(cmd) != _IOC_NONE) {
+					retval = -EINVAL;
+					goto done;
+				}
+				retval = usblp_reset(usblp);
+				break;*/
 
 			case IOCNR_SOFT_RESET:
 				if (_IOC_DIR(cmd) != _IOC_NONE) {
@@ -597,6 +609,47 @@ static int usblp_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 				}
 				retval = usblp_reset(usblp);
 				break;
+
+			case  IOCNR_GET_DEVICE_UID:
+			{
+				char buf[1024];
+				int len, total = 0;
+				if (_IOC_DIR(cmd) != _IOC_READ) {
+					retval = -EINVAL;
+					goto done;
+				}
+				memset(buf, 0 , 1024);
+				if (usblp->dev->descriptor.iManufacturer)
+					if ( (len = usb_string(usblp->dev, usblp->dev->descriptor.iManufacturer, buf, 256)) > 0)
+						total += len;		
+				buf[total] = ';' ; 
+				total +=1;
+				
+				printk("len =%d, total=%d!\n", len, total);
+				if (usblp->dev->descriptor.iProduct)
+					if ( (len = usb_string(usblp->dev, usblp->dev->descriptor.iProduct, (char *)(buf+total), 256)) > 0 )
+						total += len;					
+				buf[total] = ';' ; 
+				total +=1;
+				printk("len =%d, total=%d!\n", len, total);				
+				if (usblp->dev->descriptor.iSerialNumber)
+					if ( (len = usb_string(usblp->dev, usblp->dev->descriptor.iSerialNumber, (char *)(buf+total), 256)) > 0)
+						total +=len;
+				
+				printk("the buf(size=%d)=%s!\n", total, buf);
+				if (copy_to_user((unsigned char *)arg,
+						(unsigned char *)buf,
+						sizeof(buf))) {
+					retval = -EFAULT;
+					goto done;
+				}
+				
+				break;
+			}
+
+//---Add by shiang for printing-on-the-fly 2004/11/26				
+				
+				
 			default:
 				retval = -ENOTTY;
 		}

@@ -7,7 +7,7 @@
  * it under the terms of the GNU General Public License, as published by
  * the Free Software Foundation, version 2.
  * 
- * $Id: emi62.c,v 1.15 2002/04/23 06:13:59 tapio Exp $
+ * $Id: emi62.c,v 1.1.1.1 2006/04/03 08:41:02 amos_lee Exp $
  */
 #include <linux/kernel.h>
 #include <linux/errno.h>

@@ -70,3 +70,6 @@ obj-$(CONFIG_SGI_IOC4)		+= sn/
 obj-y				+= firmware/
 obj-$(CONFIG_CRYPTO)		+= crypto/
 obj-$(CONFIG_SUPERH)		+= sh/
+#marco
+obj-y += i2c_alpha/
+obj-y += tve200fb/

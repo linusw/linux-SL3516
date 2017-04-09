@@ -3,8 +3,12 @@
 #
 
 # Object files in subdirectories
-
+ifeq "$(strip $(CONFIG_USB_SL2312))" "m"
+CFLAGS+=-DUSB_BUILD_MODULE
+endif
 obj-$(CONFIG_USB)		+= core/
+obj-$(CONFIG_USB_OTG_SL2312)	+= OTG/
+obj-$(CONFIG_USB_OTG_SL2312_1)	+= OTG/
 
 obj-$(CONFIG_USB_MON)		+= mon/
 
@@ -14,7 +18,11 @@ obj-$(CONFIG_USB_ISP116X_HCD)	+= host/
 obj-$(CONFIG_USB_OHCI_HCD)	+= host/
 obj-$(CONFIG_USB_UHCI_HCD)	+= host/
 obj-$(CONFIG_USB_SL811_HCD)	+= host/
+obj-$(CONFIG_USB_SL2312)	+= host/
+obj-$(CONFIG_USB_SL2312_1)	+= host/
 obj-$(CONFIG_ETRAX_USB_HOST)	+= host/
+
+obj-$(CONFIG_USB_GADGET_SL2312_1)	+= gadget/
 
 obj-$(CONFIG_USB_ACM)		+= class/
 obj-$(CONFIG_USB_AUDIO)		+= class/

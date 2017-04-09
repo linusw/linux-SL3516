@@ -49,15 +49,15 @@ gre_in_range(const struct ip_conntrack_tuple *tuple,
 	     const union ip_conntrack_manip_proto *min,
 	     const union ip_conntrack_manip_proto *max)
 {
-	u_int32_t key;
+	__be16 key;
 
 	if (maniptype == IP_NAT_MANIP_SRC)
 		key = tuple->src.u.gre.key;
 	else
 		key = tuple->dst.u.gre.key;
 
-	return ntohl(key) >= ntohl(min->gre.key)
-		&& ntohl(key) <= ntohl(max->gre.key);
+	return ntohs(key) >= ntohs(min->gre.key)
+		&& ntohs(key) <= ntohs(max->gre.key);
 }
 
 /* generate unique tuple ... */
@@ -81,14 +81,14 @@ gre_unique_tuple(struct ip_conntrack_tuple *tuple,
 		min = 1;
 		range_size = 0xffff;
 	} else {
-		min = ntohl(range->min.gre.key);
-		range_size = ntohl(range->max.gre.key) - min + 1;
+		min = ntohs(range->min.gre.key);
+		range_size = ntohs(range->max.gre.key) - min + 1;
 	}
 
 	DEBUGP("min = %u, range_size = %u\n", min, range_size); 
 
 	for (i = 0; i < range_size; i++, key++) {
-		*keyptr = htonl(min + key % range_size);
+		*keyptr = htons(min + key % range_size);
 		if (!ip_nat_used_tuple(tuple, conntrack))
 			return 1;
 	}
@@ -151,42 +151,6 @@ gre_manip_pkt(struct sk_buff **pskb,
 	return 1;
 }
 
-/* print out a nat tuple */
-static unsigned int 
-gre_print(char *buffer, 
-	  const struct ip_conntrack_tuple *match,
-	  const struct ip_conntrack_tuple *mask)
-{
-	unsigned int len = 0;
-
-	if (mask->src.u.gre.key)
-		len += sprintf(buffer + len, "srckey=0x%x ", 
-				ntohl(match->src.u.gre.key));
-
-	if (mask->dst.u.gre.key)
-		len += sprintf(buffer + len, "dstkey=0x%x ",
-				ntohl(match->src.u.gre.key));
-
-	return len;
-}
-
-/* print a range of keys */
-static unsigned int 
-gre_print_range(char *buffer, const struct ip_nat_range *range)
-{
-	if (range->min.gre.key != 0 
-	    || range->max.gre.key != 0xFFFF) {
-		if (range->min.gre.key == range->max.gre.key)
-			return sprintf(buffer, "key 0x%x ",
-					ntohl(range->min.gre.key));
-		else
-			return sprintf(buffer, "keys 0x%u-0x%u ",
-					ntohl(range->min.gre.key),
-					ntohl(range->max.gre.key));
-	} else
-		return 0;
-}
-
 /* nat helper struct */
 static struct ip_nat_protocol gre = { 
 	.name		= "GRE", 
@@ -194,8 +158,6 @@ static struct ip_nat_protocol gre = {
 	.manip_pkt	= gre_manip_pkt,
 	.in_range	= gre_in_range,
 	.unique_tuple	= gre_unique_tuple,
-	.print		= gre_print,
-	.print_range	= gre_print_range,
 #if defined(CONFIG_IP_NF_CONNTRACK_NETLINK) || \
     defined(CONFIG_IP_NF_CONNTRACK_NETLINK_MODULE)
 	.range_to_nfattr	= ip_nat_port_range_to_nfattr,

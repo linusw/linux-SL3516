@@ -23,7 +23,7 @@
  *  History:
  *   0.1  04.01.2000  Created
  *
- *  $Id: usbdevice_fs.h,v 1.1 2000/01/06 18:40:41 tom Exp $
+ *  $Id: usbdevice_fs.h,v 1.1.1.1 2006/04/03 08:41:20 amos_lee Exp $
  */
 
 /*****************************************************************************/
@@ -172,4 +172,7 @@ struct usbdevfs_ioctl32 {
 #define USBDEVFS_CLEAR_HALT        _IOR('U', 21, unsigned int)
 #define USBDEVFS_DISCONNECT        _IO('U', 22)
 #define USBDEVFS_CONNECT           _IO('U', 23)
+//+++Add by shiang for usb printer hotplug detection. 2004/12/08
+#define USBDEVFS_PRINTERDEV_MINOR_ID _IOR('U', 24, unsigned int)
+//---Add by shiang for usb printer hotplug detection. 2004/12/08 
 #endif /* _LINUX_USBDEVICE_FS_H */

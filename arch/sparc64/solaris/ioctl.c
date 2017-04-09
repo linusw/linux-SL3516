@@ -1,4 +1,4 @@
-/* $Id: ioctl.c,v 1.17 2002/02/08 03:57:14 davem Exp $
+/* $Id: ioctl.c,v 1.1.1.1 2006/04/03 08:40:43 amos_lee Exp $
  * ioctl.c: Solaris ioctl emulation.
  *
  * Copyright (C) 1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)

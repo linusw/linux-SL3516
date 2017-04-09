@@ -1,4 +1,4 @@
-/* $Id: gpio.c,v 1.16 2005/06/19 17:06:49 starvik Exp $
+/* $Id: gpio.c,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $
  *
  * ETRAX CRISv32 general port I/O device
  *
@@ -10,6 +10,9 @@
  *                               port to ETRAX FS.
  *
  * $Log: gpio.c,v $
+ * Revision 1.1.1.1  2006/04/03 08:40:32  amos_lee
+ * initial
+ *
  * Revision 1.16  2005/06/19 17:06:49  starvik
  * Merge of Linux 2.6.12.
  *

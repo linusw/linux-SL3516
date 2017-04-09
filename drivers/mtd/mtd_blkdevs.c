@@ -1,5 +1,5 @@
 /*
- * $Id: mtd_blkdevs.c,v 1.27 2005/11/07 11:14:20 gleixner Exp $
+ * $Id: mtd_blkdevs.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  * (C) 2003 David Woodhouse <dwmw2@infradead.org>
  *
@@ -289,19 +289,33 @@ int add_mtd_blktrans_dev(struct mtd_blktrans_dev *new)
 	gd->first_minor = (new->devnum) << tr->part_bits;
 	gd->fops = &mtd_blktrans_ops;
 
-	if (tr->part_bits)
-		if (new->devnum < 26)
+	if (tr->part_bits) {
+		if (new->devnum < 26){
 			snprintf(gd->disk_name, sizeof(gd->disk_name),
 				 "%s%c", tr->name, 'a' + new->devnum);
-		else
+//joel modify we need auto add the devfs
+                        snprintf(gd->devfs_name, sizeof(gd->devfs_name),
+				 "%s/%c", tr->name, 'a' + new->devnum);
+                }
+		else{
 			snprintf(gd->disk_name, sizeof(gd->disk_name),
 				 "%s%c%c", tr->name,
 				 'a' - 1 + new->devnum / 26,
 				 'a' + new->devnum % 26);
-	else
+//joel modify we need auto add the devfs
+			snprintf(gd->devfs_name, sizeof(gd->devfs_name), 
+				 "%s/%c%c", tr->name, 
+				 'a'-1+new->devnum/26, 
+				 'a'+new->devnum%26);	
+		}
+                }
+	else {
 		snprintf(gd->disk_name, sizeof(gd->disk_name),
 			 "%s%d", tr->name, new->devnum);
-
+//joel modify we need auto add the devfs
+		snprintf(gd->devfs_name, sizeof(gd->devfs_name), 
+			 "%s/%d", tr->name, new->devnum);
+	}
 	/* 2.5 has capacity in units of 512 bytes while still
 	   having BLOCK_SIZE_BITS set to 10. Just to keep us amused. */
 	set_capacity(gd, (new->size * new->blksize) >> 9);

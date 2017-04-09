@@ -22,9 +22,9 @@
  USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/ftape/lowlevel/ftape-ecc.c,v $
- * $Revision: 1.3 $
- * $Date: 1997/10/05 19:18:10 $
+ * $Source: /home/cvs/gemini-2.6.15/drivers/char/ftape/lowlevel/ftape-ecc.c,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2006/04/03 08:40:46 $
  *
  *      This file contains the Reed-Solomon error correction code 
  *      for the QIC-40/80 floppy-tape driver for Linux.

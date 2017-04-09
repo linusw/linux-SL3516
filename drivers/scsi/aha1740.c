@@ -1,4 +1,4 @@
-/*  $Id$
+/*  $Id: aha1740.c,v 1.1.1.1 2006/04/03 08:40:58 amos_lee Exp $
  *  1993/03/31
  *  linux/kernel/aha1740.c
  *

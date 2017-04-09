@@ -17,9 +17,9 @@
  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/ftape/lowlevel/fdc-isr.c,v $
- * $Revision: 1.9 $
- * $Date: 1997/10/17 23:01:53 $
+ * $Source: /home/cvs/gemini-2.6.15/drivers/char/ftape/lowlevel/fdc-isr.c,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2006/04/03 08:40:46 $
  *
  *      This file contains the interrupt service routine and
  *      associated code for the QIC-40/80/3010/3020 floppy-tape driver

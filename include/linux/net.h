@@ -23,6 +23,10 @@
 #include <linux/stringify.h>
 #include <asm/socket.h>
 
+#ifdef CONFIG_SL2312_TSO
+struct page_chain;
+#endif
+
 struct poll_table_struct;
 struct inode;
 
@@ -158,6 +162,20 @@ struct proto_ops {
 				      struct vm_area_struct * vma);
 	ssize_t		(*sendpage)  (struct socket *sock, struct page *page,
 				      int offset, size_t size, int flags);
+#ifdef CONFIG_SL2312_TSO
+	ssize_t		(*send_mpages)	(struct socket *sock, struct page_chain *chain,
+					int offset, size_t size, int flags);
+#endif
+#ifdef CONFIG_SL2312_RECVFILE
+	int		(*recvpage)  (struct socket *sock, char* buf,
+				      size_t size, int nonblock, int flags);
+#endif
+#if defined(CONFIG_SL2312_MPAGE) && defined(CONFIG_SL2312_RECVFILE)
+	int		(*recv_mpages) (struct socket* sock, struct page_chain* chain,
+			                //int offset, size_t size, int nonblock, int flags);
+                                        int offset, size_t size, int nonblock, int flags, int *ftpFinFlag);
+#endif
+
 };
 
 struct net_proto_family {

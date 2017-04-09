@@ -52,6 +52,8 @@
 typedef unsigned int (*ata_xlat_func_t)(struct ata_queued_cmd *qc, const u8 *scsicmd);
 static struct ata_device *
 ata_scsi_find_dev(struct ata_port *ap, const struct scsi_device *scsidev);
+extern  void ata_set_mode(struct ata_port *ap);
+extern  void ata_dev_identify(struct ata_port *ap, unsigned int device);
 
 #define RW_RECOVERY_MPAGE 0x1
 #define RW_RECOVERY_MPAGE_LEN 12
@@ -695,6 +697,34 @@ int ata_scsi_slave_config(struct scsi_device *sdev)
 			request_queue_t *q = sdev->request_queue;
 			blk_queue_max_hw_segments(q, q->max_hw_segments - 1);
 		}
+	}
+
+	return 0;	/* scsi layer doesn't check return value, sigh */
+}
+
+/**
+ *	ata_scsi_slave_destroy - Destroy SCSI device attributes
+ *	@sdev: SCSI device to examine
+ *
+ *	This is called before we actually remove device.
+ *	Set class as ATA_DEV_NONE, so that in next add device  
+ *	will re-probe device
+ *
+ *	LOCKING:
+ *	Defined by SCSI layer.  We don't really care.
+ */
+
+int ata_scsi_slave_destroy(struct scsi_device *sdev)
+{
+
+	if (sdev->id < ATA_MAX_DEVICES) {
+		struct ata_port *ap;
+		struct ata_device *dev;
+
+		ap = (struct ata_port *) &sdev->host->hostdata[0];
+		dev = &ap->device[sdev->id];
+
+		dev->class = ATA_DEV_NONE;
 	}
 
 	return 0;	/* scsi layer doesn't check return value, sigh */
@@ -2151,7 +2181,8 @@ static unsigned int atapi_xlat(struct ata_queued_cmd *qc, const u8 *scsicmd)
  *	RETURNS:
  *	Associated ATA device, or %NULL if not found.
  */
-
+unsigned int gemini_sata_probe_flag=0;
+EXPORT_SYMBOL_GPL(gemini_sata_probe_flag);
 static struct ata_device *
 ata_scsi_find_dev(struct ata_port *ap, const struct scsi_device *scsidev)
 {
@@ -2167,8 +2198,28 @@ ata_scsi_find_dev(struct ata_port *ap, const struct scsi_device *scsidev)
 		     (scsidev->lun != 0)))
 		return NULL;
 
-	if (unlikely(!ata_dev_present(dev)))
-		return NULL;
+	if (unlikely(!ata_dev_present(dev))){
+		
+		// soft plug for libata layer <Jason_lee>
+		gemini_sata_probe_flag = 0x80000000 | scsidev->id;
+		wmb();
+		ap->ops->phy_reset(ap);
+		gemini_sata_probe_flag = 0;
+		if ((ap->flags & ATA_FLAG_PORT_DISABLED))
+			return NULL;
+			
+		ata_dev_identify(ap, scsidev->id);
+		if (ata_dev_present(&ap->device[scsidev->id])) {
+			ata_dev_config(ap,scsidev->id);
+			ata_set_mode(ap);
+		}
+		else
+			return NULL;
+		// soft plug for libata layer <Jason_lee>
+		
+		//return NULL;
+	}
+
 
 	if (!atapi_enabled || (ap->flags & ATA_FLAG_NO_ATAPI)) {
 		if (unlikely(dev->class == ATA_DEV_ATAPI)) {

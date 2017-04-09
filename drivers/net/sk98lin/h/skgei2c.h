@@ -2,8 +2,8 @@
  *
  * Name:	skgei2c.h
  * Project:	Gigabit Ethernet Adapters, TWSI-Module
- * Version:	$Revision: 1.25 $
- * Date:	$Date: 2003/10/20 09:06:05 $
+ * Version:	$Revision: 1.3 $
+ * Date:	$Date: 2008/03/25 10:02:37 $
  * Purpose:	Special defines for TWSI
  *
  ******************************************************************************/

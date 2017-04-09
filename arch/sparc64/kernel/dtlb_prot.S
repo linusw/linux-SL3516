@@ -1,4 +1,4 @@
-/* $Id: dtlb_prot.S,v 1.22 2001/04/11 23:40:32 davem Exp $
+/* $Id: dtlb_prot.S,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * dtlb_prot.S: DTLB protection trap strategy.
  *              This is included directly into the trap table.
  *

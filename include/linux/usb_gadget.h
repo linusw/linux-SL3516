@@ -513,14 +513,42 @@ struct usb_gadget {
 	unsigned			b_hnp_enable:1;
 	unsigned			a_hnp_support:1;
 	unsigned			a_alt_hnp_support:1;
+#if defined  (CONFIG_USB_SL2312) || defined (CONFIG_USB_SL2312_MODULE)
+        int	                        (*udc_isr)(void);
+#else
+#if defined  (CONFIG_USB_SL2312_1) || defined (CONFIG_USB_SL2312_1_MODULE)
+        int	                        (*udc_isr)(void);
+#endif
+#endif
 	const char			*name;
+/*#ifdef  CONFIG_USB_SL2312
+        struct __gadget_device {
+		const char		*bus_id;
+		void			*driver_data;
+	} dev; 
+#else*/
 	struct device			dev;
+//#endif
 };
 
+#if defined  (CONFIG_USB_SL2312) || defined (CONFIG_USB_SL2312_MODULE)
+static inline void set_gadget_data (struct usb_gadget *gadget, void *data)
+	{ gadget->dev.driver_data = data; }
+static inline void *get_gadget_data (struct usb_gadget *gadget)
+	{ return gadget->dev.driver_data; }
+#else
+#if defined  (CONFIG_USB_SL2312_1) || defined (CONFIG_USB_SL2312_1_MODULE)
+static inline void set_gadget_data (struct usb_gadget *gadget, void *data)
+	{ gadget->dev.driver_data = data; }
+static inline void *get_gadget_data (struct usb_gadget *gadget)
+	{ return gadget->dev.driver_data; }
+#else
 static inline void set_gadget_data (struct usb_gadget *gadget, void *data)
 	{ dev_set_drvdata (&gadget->dev, data); }
 static inline void *get_gadget_data (struct usb_gadget *gadget)
 	{ return dev_get_drvdata (&gadget->dev); }
+#endif
+#endif
 
 /* iterates the non-control endpoints; 'tmp' is a struct usb_ep pointer */
 #define gadget_for_each_ep(tmp,gadget) \

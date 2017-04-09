@@ -59,6 +59,10 @@ struct ip_nat_info
 {
 	struct list_head bysource;
 	struct ip_nat_seq seq[IP_CT_DIR_MAX];
+//#if  defined (ALPHA_PORT_RESTRICTED_CONE)  || defined (ALPHA_RESTRICTED_CONE) //marco added
+// mark by siyou, if you want to enable #if, you need define them in Global place.
+	struct list_head bydest; //marco added, for ALPHA_PORT_RESTRICTED_CONE
+//#endif		
 };
 
 struct ip_conntrack;

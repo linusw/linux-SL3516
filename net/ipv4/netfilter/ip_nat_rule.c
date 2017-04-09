@@ -28,6 +28,24 @@
 #include <linux/netfilter_ipv4/ip_nat_rule.h>
 #include <linux/netfilter_ipv4/listhelp.h>
 
+#if defined (ALPHA_RESTRICTED_CONE) || defined (ALPHA_FULL_CONE)//marco	
+#include <linux/tcp.h>
+extern unsigned long ip_ct_tcp_timeout_syn_sent ;
+extern unsigned long ip_ct_tcp_timeout_syn_recv ;
+extern unsigned long ip_ct_tcp_timeout_established ;
+extern unsigned long ip_ct_tcp_timeout_fin_wait ;
+extern unsigned long ip_ct_tcp_timeout_close_wait ;
+extern unsigned long ip_ct_tcp_timeout_last_ack ;
+extern unsigned long ip_ct_tcp_timeout_time_wait ;
+extern unsigned long ip_ct_tcp_timeout_close ;
+extern unsigned long ip_ct_tcp_timeout_max_retrans ; 
+extern const unsigned long * tcp_timeouts[];
+extern struct ip_conntrack *find_appropriate_conntrack(const struct ip_conntrack_tuple *tuple);
+extern enum tcp_conntrack tcp_conntracks[2][5][TCP_CONNTRACK_MAX];	
+extern unsigned int get_conntrack_index(const struct tcphdr *tcph);
+#define UDP_TIMEOUT (90*HZ)
+#define UDP_STREAM_TIMEOUT (180*HZ)
+#endif
 #if 0
 #define DEBUGP printk
 #else
@@ -148,9 +166,17 @@ static unsigned int ipt_dnat_target(struct sk_buff **pskb,
 				    void *userinfo)
 {
 	struct ip_conntrack *ct;
+#if defined (ALPHA_RESTRICTED_CONE) || defined (ALPHA_FULL_CONE)//marco	
+	struct ip_conntrack *found_ct=NULL;
+	struct ip_nat_range mod_range[2];//marco, the mr->range[0] is const, so we create another one to mod. its content
+	struct ip_conntrack_tuple curr_tuple;//marco
+	unsigned int index;//for tcp conntrack timeout refresh
+	enum ip_conntrack_dir dir;//for tcp conntrack timeout refresh
+	enum tcp_conntrack new_state, old_state;	//for tcp conntrack timeout refresh
+#endif
 	enum ip_conntrack_info ctinfo;
 	const struct ip_nat_multi_range_compat *mr = targinfo;
-
+	
 	IP_NF_ASSERT(hooknum == NF_IP_PRE_ROUTING
 		     || hooknum == NF_IP_LOCAL_OUT);
 
@@ -164,7 +190,105 @@ static unsigned int ipt_dnat_target(struct sk_buff **pskb,
 		warn_if_extra_mangle((*pskb)->nh.iph->daddr,
 				     mr->range[0].min_ip);
 
+#if defined (ALPHA_RESTRICTED_CONE) || defined (ALPHA_FULL_CONE)//marco	
+		
+	memcpy(&mod_range,&mr->range[0],sizeof(struct ip_nat_range)*2 );			     
+ 	//if the range ip is 0,we start restricted nat
+	if(mr->range[0].min_ip==0 || mr->range[0].max_ip==0)
+	{
+		invert_tuplepr(&curr_tuple,&ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple);
+		
+		found_ct=find_appropriate_conntrack( (struct ip_conntrack_tuple*)&curr_tuple);
+		if( found_ct)//find out conntrack, and replace the range ip and port	 
+		{
+			mod_range[0].min_ip=found_ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.ip;
+			mod_range[0].max_ip=found_ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.ip;		
+			mod_range[0].min=found_ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.u;
+			mod_range[0].max=found_ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.u;
+			atomic_inc(&ct->ct_general.use);
+			
+			if(ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.protonum==IPPROTO_UDP)//udp
+			{
+				if (ct->status & IPS_SEEN_REPLY) 
+				{
+					 ip_ct_refresh_acct(ct, ctinfo,*pskb,UDP_STREAM_TIMEOUT);
+					set_bit(IPS_ASSURED_BIT, &ct->status); 
+				}
+				else
+					 ip_ct_refresh_acct(ct, ctinfo,*pskb,UDP_TIMEOUT); 				
+			}
+			else if(ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.protonum==IPPROTO_TCP)//tcp
+			{
+				struct sk_buff * tmp_buf=*pskb;		
+				int timeout=0;		
+				extern int ip_ct_tcp_max_retrans ;				
+				struct tcphdr *th, _tcph;
+				struct iphdr *iph = tmp_buf->nh.iph;
+				th = skb_header_pointer(*pskb, iph->ihl * 4,sizeof(_tcph), &_tcph);				
+				old_state = ct->proto.tcp.state;
+				dir = CTINFO2DIR(ctinfo);
+				index = get_conntrack_index(th);
+				new_state = tcp_conntracks[dir][index][old_state];	
+				
+				timeout = ct->proto.tcp.retrans >= ip_ct_tcp_max_retrans
+		  && *tcp_timeouts[new_state] > ip_ct_tcp_timeout_max_retrans
+		  ? ip_ct_tcp_timeout_max_retrans : *tcp_timeouts[new_state];
+
+				 ip_ct_refresh_acct(ct, ctinfo,*pskb,timeout);			
+			}
+		}
+		else
+			return IPT_CONTINUE;	
+	}
+		//full cone will start if iptables have range ip 255.255.255.255
+	else if(mr->range[0].min_ip==0xffffffff || mr->range[0].max_ip==0xffffffff)
+	{
+		invert_tuplepr(&curr_tuple,&ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple);
+		
+		found_ct=find_appropriate_conntrack_for_fullcone( (struct ip_conntrack_tuple*)&curr_tuple);
+		if( found_ct)//find out conntrack, and replace the range ip and port	 
+		{
+			mod_range[0].min_ip=found_ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.ip;
+			mod_range[0].max_ip=found_ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.ip;		
+			mod_range[0].min=found_ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.u;
+			mod_range[0].max=found_ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.u;
+			atomic_inc(&ct->ct_general.use);			
+			if(ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.protonum==IPPROTO_UDP)//udp
+			{
+				if (ct->status & IPS_SEEN_REPLY) 
+				{
+					ip_ct_refresh_acct(ct, ctinfo,*pskb,UDP_STREAM_TIMEOUT);
+					set_bit(IPS_ASSURED_BIT, &ct->status); 
+				}
+				else
+					 ip_ct_refresh_acct(ct, ctinfo,*pskb,UDP_TIMEOUT); 				
+			}
+			else if(ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.protonum==IPPROTO_TCP)//tcp
+			{
+				struct sk_buff * tmp_buf=*pskb;	
+				int timeout=0;		
+				extern int ip_ct_tcp_max_retrans ;				
+				struct tcphdr *th, _tcph;
+				struct iphdr *iph = tmp_buf->nh.iph;
+				th = skb_header_pointer(*pskb, iph->ihl * 4,sizeof(_tcph), &_tcph);				
+				old_state = ct->proto.tcp.state;
+				dir = CTINFO2DIR(ctinfo);
+				index = get_conntrack_index(th);
+				new_state = tcp_conntracks[dir][index][old_state];																
+				timeout = ct->proto.tcp.retrans >= ip_ct_tcp_max_retrans
+		  && *tcp_timeouts[new_state] > ip_ct_tcp_timeout_max_retrans
+		  ? ip_ct_tcp_timeout_max_retrans : *tcp_timeouts[new_state];
+
+				 ip_ct_refresh_acct(ct, ctinfo,*pskb,timeout);						 
+			}       
+		}
+		else
+			return IPT_CONTINUE;	
+	}
+ 	return ip_nat_setup_info(ct, &mod_range[0], hooknum);
+#else 	
 	return ip_nat_setup_info(ct, &mr->range[0], hooknum);
+#endif	
 }
 
 static int ipt_snat_checkentry(const char *tablename,

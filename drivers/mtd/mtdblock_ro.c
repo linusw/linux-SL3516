@@ -1,5 +1,5 @@
 /*
- * $Id: mtdblock_ro.c,v 1.19 2004/11/16 18:28:59 dwmw2 Exp $
+ * $Id: mtdblock_ro.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  * (C) 2003 David Woodhouse <dwmw2@infradead.org>
  *

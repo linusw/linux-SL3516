@@ -7,7 +7,7 @@
  *  2000-06-20  Pentium III FXSR, SSE support by Gareth Hughes
  *  2000-12-*   x86-64 compatibility mode signal handling by Andi Kleen
  * 
- *  $Id: ia32_signal.c,v 1.22 2002/07/29 10:34:03 ak Exp $
+ *  $Id: ia32_signal.c,v 1.1.1.1 2006/04/03 08:40:44 amos_lee Exp $
  */
 
 #include <linux/sched.h>

@@ -5,7 +5,7 @@
  *	Authors:
  *	Lennert Buytenhek		<buytenh@gnu.org>
  *
- *	$Id: br_stp_if.c,v 1.4 2001/04/14 21:14:39 davem Exp $
+ *	$Id: br_stp_if.c,v 1.2 2006/06/28 10:37:00 aaron Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License
@@ -142,10 +142,14 @@ static void br_stp_change_bridge_id(struct net_bridge *br,
 
 	}
 
-	br_configuration_update(br);
-	br_port_state_selection(br);
-	if (br_is_root_bridge(br) && !wasroot)
-		br_become_root_bridge(br);
+	 //debug_Aaron on 2006/06/28, only stp is enabled need to call
+        if (br->stp_enabled)
+        {
+		br_configuration_update(br);
+		br_port_state_selection(br);
+		if (br_is_root_bridge(br) && !wasroot)
+			br_become_root_bridge(br);
+	}
 }
 
 static const unsigned char br_mac_zero[6];
@@ -157,8 +161,15 @@ void br_stp_recalculate_bridge_id(struct net_bridge *br)
 	struct net_bridge_port *p;
 
 	list_for_each_entry(p, &br->port_list, list) {
+
+//debug_Aaron
+printk("%s: p->dev->dev_addr[0]-[5]=%2x:%2x:%2x:%2x:%2x:%2x\r\n", __func__, p->dev->dev_addr[0], p->dev->dev_addr[1],
+            p->dev->dev_addr[2], p->dev->dev_addr[3], p->dev->dev_addr[4], p->dev->dev_addr[5]);
+
+#if 0 //joel patch from elbox,just let the bridge mac as 1st add in mac
 		if (addr == br_mac_zero ||
 		    compare_ether_addr(p->dev->dev_addr, addr) < 0)
+#endif		    
 			addr = p->dev->dev_addr;
 
 	}

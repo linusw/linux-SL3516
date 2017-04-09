@@ -1,4 +1,4 @@
-/* $Id: bbc.h,v 1.2 2001/03/26 23:47:18 davem Exp $
+/* $Id: bbc.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $
  * bbc.h: Defines for BootBus Controller found on UltraSPARC-III
  *        systems.
  *

@@ -188,6 +188,12 @@ static int ct_seq_show(struct seq_file *s, void *v)
 		return -ENOSPC;
 #endif
 
+#if defined(CONFIG_IP_NF_MATCH_LAYER7) || defined(CONFIG_IP_NF_MATCH_LAYER7_MODULE)
+	if(conntrack->layer7.app_proto)
+		if (seq_printf(s, "l7proto=%s ",conntrack->layer7.app_proto))
+			return 1;
+#endif
+
 	if (seq_printf(s, "use=%u\n", atomic_read(&conntrack->ct_general.use)))
 		return -ENOSPC;
 
@@ -418,6 +424,7 @@ static unsigned int ip_conntrack_help(unsigned int hooknum,
 	ct = ip_conntrack_get(*pskb, &ctinfo);
 	if (ct && ct->helper) {
 		unsigned int ret;
+		(*pskb)->cb[40] = 0;	// Gary Chen
 		ret = ct->helper->help(pskb, ct, ctinfo);
 		if (ret != NF_ACCEPT)
 			return ret;

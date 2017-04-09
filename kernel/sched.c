@@ -2957,6 +2957,7 @@ asmlinkage void __sched schedule(void)
 	 * schedule() atomically, we ignore that path for now.
 	 * Otherwise, whine if we are scheduling when we should not be.
 	 */
+#if 0
 	if (likely(!current->exit_state)) {
 		if (unlikely(in_atomic())) {
 			printk(KERN_ERR "scheduling while atomic: "
@@ -2965,6 +2966,7 @@ asmlinkage void __sched schedule(void)
 			dump_stack();
 		}
 	}
+#endif
 	profile_hit(SCHED_PROFILING, __builtin_return_address(0));
 
 need_resched:

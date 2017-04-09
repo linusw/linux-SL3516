@@ -1,7 +1,7 @@
 #ifndef _ASM_M32R_PGALLOC_H
 #define _ASM_M32R_PGALLOC_H
 
-/* $Id$ */
+/* $Id: pgalloc.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $ */
 
 #include <linux/config.h>
 #include <linux/mm.h>

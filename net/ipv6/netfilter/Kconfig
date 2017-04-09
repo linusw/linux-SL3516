@@ -270,5 +270,61 @@ config IP6_NF_RAW
 	  If you want to compile it as a module, say M here and read
 	  <file:Documentation/modules.txt>.  If unsure, say `N'.
 
+config IP6_NF_MATCH_EXPIRE
+	tristate  'expiring match support'
+	depends on IP6_NF_IPTABLES
+	help
+	  This option adds an expiring match, which allows you to add
+	  rules to your iptables ruleset which will later be removed
+	  automatically.
+
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP6_NF_MATCH_FUZZY
+	tristate  'Fuzzy match support'
+	depends on IP6_NF_FILTER
+	help
+	  This option adds a `fuzzy' match, which allows you to match
+	  packets according to a fuzzy logic based law.
+	
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP6_NF_MATCH_NTH
+	tristate  'Nth match support'
+	depends on IP6_NF_IPTABLES
+	help
+	  This option adds a `Nth' match, which allow you to make
+	  rules that match every Nth packet.  By default there are 
+	  16 different counters.
+	
+	  [options]
+	   --every     Nth              Match every Nth packet
+	  [--counter]  num              Use counter 0-15 (default:0)
+	  [--start]    num              Initialize the counter at the number 'num'
+	                                instead of 0. Must be between 0 and Nth-1
+	  [--packet]   num              Match on 'num' packet. Must be between 0
+	                                and Nth-1.
+	
+	                                If --packet is used for a counter than
+	                                there must be Nth number of --packet
+	                                rules, covering all values between 0 and
+	                                Nth-1 inclusively.
+	 
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP6_NF_MATCH_RANDOM
+	tristate  'Random match support'
+	depends on IP6_NF_IPTABLES
+	help
+	  This option adds a `random' match,
+	  which allow you to match packets randomly
+	  following a given probability.
+	 
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
 endmenu
 

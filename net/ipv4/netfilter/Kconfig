@@ -168,6 +168,26 @@ config IP_NF_PPTP
 	  If you want to compile it as a module, say M here and read
 	  Documentation/modules.txt.  If unsure, say `N'.
 
+config IP_NF_H323
+	tristate  'H.323 protocol support'
+	depends on IP_NF_CONNTRACK
+	help
+	  H.323 is a VoIP signalling protocol from ITU-T. As one of the most
+	  important VoIP protocols, it is widely used by voice hardware and
+	  software including voice gateways, IP phones, Netmeeting, OpenPhone,
+	  Gnomemeeting, etc.
+
+	  With this module you can support H.323 on a connection tracking/NAT
+	  firewall.
+
+	  This module supports RAS, Fast Start, H.245 Tunnelling, Call
+	  Forwarding, RTP/RTCP and T.120 based audio, video, fax, chat,
+	  whiteboard, file transfer, etc. For more information, please
+	  visit http://nath323.sourceforge.net/.
+
+	  If you want to compile it as a module, say 'M' here and read
+	  Documentation/modules.txt.  If unsure, say 'N'.
+
 config IP_NF_QUEUE
 	tristate "IP Userspace queueing via NETLINK (OBSOLETE)"
 	help
@@ -241,6 +261,24 @@ config IP_NF_MATCH_MARK
 
 	  To compile it as a module, choose M here.  If unsure, say N.
 
+config IP_NF_MATCH_LAYER7
+	tristate "Layer 7 match support (EXPERIMENTAL)"
+	depends on IP_NF_IPTABLES && IP_NF_CT_ACCT && IP_NF_CONNTRACK && EXPERIMENTAL
+	help
+	  Say Y if you want to be able to classify connections (and their 
+	  packets) based on regular expression matching of their application 
+	  layer data.   This is one way to classify applications such as 
+	  peer-to-peer filesharing systems that do not always use the same 
+	  port.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config IP_NF_MATCH_LAYER7_DEBUG
+	bool "Layer 7 debugging output"
+	depends on IP_NF_MATCH_LAYER7
+	help
+	  Say Y to get lots of debugging output.
+
 config IP_NF_MATCH_MULTIPORT
 	tristate "Multiple port match support"
 	depends on IP_NF_IPTABLES
@@ -251,6 +289,16 @@ config IP_NF_MATCH_MULTIPORT
 
 	  To compile it as a module, choose M here.  If unsure, say N.
 
+config IP_NF_MATCH_MPORT
+    tristate  'Multiple port with ranges match support'
+	depends on IP_NF_IPTABLES
+	help
+	  This is an enhanced multiport match which supports port
+	  ranges as well as single ports.
+	  
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+								  
 config IP_NF_MATCH_TOS
 	tristate "TOS match support"
 	depends on IP_NF_IPTABLES
@@ -487,6 +535,19 @@ config IP_NF_MATCH_STRING
 
 	  To compile it as a module, choose M here.  If unsure, say N.
 
+config IP_NF_MATCH_STRING_DEBUG
+	bool  'Enable debug message'
+	depends on IP_NF_MATCH_STRING
+	help
+		Enable/Print debug messages. 
+
+config IP_NF_MATCH_STRING_ENHANCE
+	bool  'URL/DNS string match support'
+	depends on IP_NF_MATCH_STRING
+	help
+	  iptables string support.
+	  This option is used to do URL/Domain Blocking.
+
 # `filter', generic and specific targets
 config IP_NF_FILTER
 	tristate "Packet filtering"
@@ -679,6 +740,12 @@ config IP_NF_NAT_PPTP
 	default IP_NF_NAT if IP_NF_PPTP=y
 	default m if IP_NF_PPTP=m
 
+config IP_NF_NAT_H323
+	tristate
+	depends on IP_NF_IPTABLES!=n && IP_NF_CONNTRACK!=n && IP_NF_NAT!=n
+	default IP_NF_NAT if IP_NF_H323=y
+	default m if IP_NF_H323=m
+
 # mangle + specific targets
 config IP_NF_MANGLE
 	tristate "Packet mangling"
@@ -841,6 +908,273 @@ config IP_NF_ARP_MANGLE
 	help
 	  Allows altering the ARP packet payload: source and destination
 	  hardware and network addresses.
+
+config IP_NF_TARGET_IPV4OPTSSTRIP
+	tristate  'IPV4OPTSSTRIP target support'
+	depends on IP_NF_MANGLE
+	help
+	  This option adds an IPV4OPTSSTRIP target.
+	  This target allows you to strip all IP options in a packet.
+	 
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP_NF_MATCH_CONNLIMIT
+	tristate  'Connections/IP limit match support'
+	depends on IP_NF_IPTABLES
+	help
+	  This match allows you to restrict the number of parallel TCP
+	  connections to a server per client IP address (or address block).
+	
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP_NF_MATCH_EXPIRE
+	tristate  'expiring match support'
+	depends on IP_NF_IPTABLES
+	help
+	  This option adds an expiring match, which allows you to add
+	  rules to your iptables ruleset which will later be removed
+	  automatically.
+
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP_NF_MATCH_FUZZY
+	tristate  'fuzzy match support'
+	depends on IP_NF_IPTABLES
+	help
+	  This option adds a `fuzzy' match, which allows you to match
+	  packets according to a fuzzy logic based law.
+	
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP_NF_MATCH_IPV4OPTIONS
+	tristate  'IPV4OPTIONS match support'
+	depends on IP_NF_IPTABLES
+	help
+	  This option adds a IPV4OPTIONS match.
+	  It allows you to filter options like source routing,
+	  record route, timestamp and router-altert.
+	
+	  If you say Y here, try iptables -m ipv4options --help for more information.
+	 
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP_NF_MATCH_NTH
+	tristate  'Nth match support'
+	depends on IP_NF_IPTABLES
+	help
+	  This option adds a `Nth' match, which allow you to make
+	  rules that match every Nth packet.  By default there are 
+	  16 different counters.
+	
+	  [options]
+	   --every     Nth              Match every Nth packet
+	  [--counter]  num              Use counter 0-15 (default:0)
+	  [--start]    num              Initialize the counter at the number 'num'
+	                                instead of 0. Must be between 0 and Nth-1
+	  [--packet]   num              Match on 'num' packet. Must be between 0
+	                                and Nth-1.
+	
+	                                If --packet is used for a counter than
+	                                there must be Nth number of --packet
+	                                rules, covering all values between 0 and
+	                                Nth-1 inclusively.
+	 
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP_NF_MATCH_OSF
+	tristate  'OSF match support'
+	depends on IP_NF_IPTABLES
+	help
+	
+	  The idea of passive OS fingerprint matching exists for quite a long time,
+	  but was created as extension fo OpenBSD pf only some weeks ago.
+	  Original idea was lurked in some OpenBSD mailing list (thanks
+	  grange@open...) and than adopted for Linux netfilter in form of this code.
+	
+	  Original table was created by Michal Zalewski <lcamtuf@coredump.cx> for
+	  his excellent p0f and than changed a bit for more convenience.
+	
+	  This module compares some data(WS, MSS, options and it's order, ttl,
+	  df and others) from first SYN packet (actually from packets with SYN
+	  bit set) with hardcoded in fingers[] table ones.
+	
+	  If you say Y here, try iptables -m osf --help for more information.
+	 
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP_NF_MATCH_PSD
+	tristate  'psd match support'
+	depends on IP_NF_IPTABLES
+	help
+	  This option adds a `psd' match, which allows you to create rules in
+	  any iptables table wich will detect TCP and UDP port scans.
+	 
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP_NF_MATCH_QUOTA
+	tristate  'quota match support'
+	depends on IP_NF_IPTABLES
+	help
+	  This match implements network quotas.
+	
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+	
+
+config IP_NF_MATCH_RANDOM
+	tristate  'random match support'
+	depends on IP_NF_IPTABLES
+	help
+	  This option adds a `random' match,
+	  which allow you to match packets randomly
+	  following a given probability.
+	 
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP_NF_SET
+	tristate "IP set support"
+	depends on INET && NETFILTER
+	help
+	  This option adds IP set support to the kernel.
+	  In order to define and use sets, you need the userspace utility
+	  ipset(8).
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config IP_NF_SET_MAX
+	int "Maximum number of IP sets"
+	default 256
+	range 2 65534
+	depends on IP_NF_SET
+	help
+	  You can define here default value of the maximum number 
+	  of IP sets for the kernel.
+
+	  The value can be overriden by the 'max_sets' module
+	  parameter of the 'ip_set' module.
+
+config IP_NF_SET_HASHSIZE
+	int "Hash size for bindings of IP sets"
+	default 1024
+	depends on IP_NF_SET
+	help
+	  You can define here default value of the hash size for
+	  bindings of IP sets.
+
+	  The value can be overriden by the 'hash_size' module
+	  parameter of the 'ip_set' module.
+
+config IP_NF_SET_IPMAP
+	tristate "ipmap set support"
+	depends on IP_NF_SET
+	help
+	  This option adds the ipmap set type support.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config IP_NF_SET_MACIPMAP
+	tristate "macipmap set support"
+	depends on IP_NF_SET
+	help
+	  This option adds the macipmap set type support.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config IP_NF_SET_PORTMAP
+	tristate "portmap set support"
+	depends on IP_NF_SET
+	help
+	  This option adds the portmap set type support.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config IP_NF_SET_IPHASH
+	tristate "iphash set support"
+	depends on IP_NF_SET
+	help
+	  This option adds the iphash set type support.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config IP_NF_SET_NETHASH
+	tristate "nethash set support"
+	depends on IP_NF_SET
+	help
+	  This option adds the nethash set type support.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config IP_NF_SET_IPPORTHASH
+	tristate "ipporthash set support"
+	depends on IP_NF_SET
+	help
+	  This option adds the ipporthash set type support.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config IP_NF_SET_IPTREE
+	tristate "iptree set support"
+	depends on IP_NF_SET
+	help
+	  This option adds the iptree set type support.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config IP_NF_MATCH_SET
+	tristate "set match support"
+	depends on IP_NF_SET
+	help
+	  Set matching matches against given IP sets.
+	  You need the ipset utility to create and set up the sets.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config IP_NF_TARGET_SET
+	tristate "SET target support"
+	depends on IP_NF_SET
+	help
+	  The SET target makes possible to add/delete entries
+	  in IP sets.
+	  You need the ipset utility to create and set up the sets.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+
+config IP_NF_MATCH_TIME
+	tristate  'TIME match support'
+	depends on IP_NF_IPTABLES
+	help
+	  This option adds a `time' match, which allows you
+	  to match based on the packet arrival time/date
+	  (arrival time/date at the machine which netfilter is running on) or
+	  departure time/date (for locally generated packets).
+	
+	  If you say Y here, try iptables -m time --help for more information.
+	 
+	  If you want to compile it as a module, say M here and read
+	  Documentation/modules.txt.  If unsure, say `N'.
+
+config IP_NF_MATCH_U32
+	tristate  'U32 match support'
+	depends on IP_NF_IPTABLES
+	help
+	  U32 allows you to extract quantities of up to 4 bytes from a packet,
+	  AND them with specified masks, shift them by specified amounts and
+	  test whether the results are in any of a set of specified ranges.
+	  The specification of what to extract is general enough to skip over
+	  headers with lengths stored in the packet, as in IP or TCP header
+	  lengths.
+	
+	  Details and examples are in the kernel module source.
 
 endmenu
 

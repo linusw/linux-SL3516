@@ -1,6 +1,6 @@
 /* Driver for USB Mass Storage compliant devices
  *
- * $Id: usb.c,v 1.75 2002/04/22 03:39:43 mdharm Exp $
+ * $Id: usb.c,v 1.1.1.1 2006/04/03 08:41:02 amos_lee Exp $
  *
  * Current development and maintenance by:
  *   (c) 1999-2003 Matthew Dharm (mdharm-usb@one-eyed-alien.net)
@@ -123,9 +123,10 @@ static DECLARE_COMPLETION(threads_gone);
 { USB_DEVICE_VER(id_vendor, id_product, bcdDeviceMin,bcdDeviceMax) }
 
 static struct usb_device_id storage_usb_ids [] = {
-
-#	include "unusual_devs.h"
+/* hendry modify : unless 3g card, we omit other unusual devices (04/16/2009)*/
+//#	include "unusual_devs.h"
 #undef UNUSUAL_DEV
+
 	/* Control/Bulk transport for all SubClass values */
 	{ USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, US_SC_RBC, US_PR_CB) },
 	{ USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, US_SC_8020, US_PR_CB) },
@@ -181,7 +182,8 @@ MODULE_DEVICE_TABLE (usb, storage_usb_ids);
 }
 
 static struct us_unusual_dev us_unusual_dev_list[] = {
-#	include "unusual_devs.h" 
+/* hendry modify : unless 3g card, we omit other unusual devices (04/16/2009)*/
+//#	include "unusual_devs.h" 
 #	undef UNUSUAL_DEV
 	/* Control/Bulk transport for all SubClass values */
 	{ .useProtocol = US_SC_RBC,
@@ -484,8 +486,25 @@ static int associate_dev(struct us_data *us, struct usb_interface *intf)
 	return 0;
 }
 
+/* those matched in alpha device id list will not use usb storage as driver*/
+static int alpha_match_id(struct usb_device_id *id)
+{
+	extern struct usb_device_id option_ids[];
+	struct usb_device_id *device_id_list=option_ids;
+	
+	while( device_id_list && device_id_list->idVendor != 0 && device_id_list->idProduct != 0 )
+	{
+		if( id->idVendor == device_id_list->idVendor 
+			&& id->idProduct == device_id_list->idProduct )
+			return 1;
+		device_id_list++;
+	}
+	
+	return 0;
+}
+
 /* Get the unusual_devs entries and the string descriptors */
-static void get_device_info(struct us_data *us, int id_index)
+static int get_device_info(struct us_data *us, int id_index)
 {
 	struct usb_device *dev = us->pusb_dev;
 	struct usb_interface_descriptor *idesc =
@@ -502,14 +521,16 @@ static void get_device_info(struct us_data *us, int id_index)
 			idesc->bInterfaceProtocol :
 			unusual_dev->useTransport;
 	us->flags = unusual_dev->flags;
-
+	
 	/*
 	 * This flag is only needed when we're in high-speed, so let's
 	 * disable it if we're in full-speed
 	 */
 	if (dev->speed != USB_SPEED_HIGH)
 		us->flags &= ~US_FL_GO_SLOW;
-
+	
+	if(alpha_match_id(id))
+		return -1;
 	/* Log a message if a non-generic unusual_dev entry contains an
 	 * unnecessary subclass or protocol override.  This may stimulate
 	 * reports from users that will help us remove unneeded entries
@@ -542,6 +563,7 @@ static void get_device_info(struct us_data *us, int id_index)
 				idesc->bInterfaceProtocol,
 				msgs[msg]);
 	}
+	return 0;
 }
 
 /* Get the transport settings */
@@ -957,7 +979,13 @@ static int storage_probe(struct usb_interface *intf,
 	 * of the match from the usb_device_id table, so we can find the
 	 * corresponding entry in the private table.
 	 */
-	get_device_info(us, id_index);
+#ifdef USB_BUILD_MODULE
+	result = get_device_info(us, id_index);
+	if (result)
+		goto BadDevice;
+#else
+get_device_info(us, id_index);
+#endif
 
 #ifdef CONFIG_USB_STORAGE_SDDR09
 	if (us->protocol == US_PR_EUSB_SDDR09 ||

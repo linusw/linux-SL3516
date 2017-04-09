@@ -7,6 +7,9 @@
  *  Authors:  Bjorn Wesen (bjornw@axis.com)
  *
  *  $Log: init.c,v $
+ *  Revision 1.1.1.1  2006/04/03 08:40:32  amos_lee
+ *  initial
+ *
  *  Revision 1.11  2004/05/28 09:28:56  starvik
  *  Calculation of loops_per_usec moved because initalization order has changed
  *  in Linux 2.6.

@@ -1,5 +1,5 @@
 /*
- * $Id: netiucv.c,v 1.66 2005/05/11 08:10:17 holzheu Exp $
+ * $Id: netiucv.c,v 1.1.1.1 2006/04/03 08:40:57 amos_lee Exp $
  *
  * IUCV network driver
  *
@@ -30,7 +30,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * RELEASE-TAG: IUCV network driver $Revision: 1.66 $
+ * RELEASE-TAG: IUCV network driver $Revision: 1.1.1.1 $
  *
  */
 
@@ -2076,7 +2076,7 @@ DRIVER_ATTR(remove, 0200, NULL, remove_write);
 static void
 netiucv_banner(void)
 {
-	char vbuf[] = "$Revision: 1.66 $";
+	char vbuf[] = "$Revision: 1.1.1.1 $";
 	char *version = vbuf;
 
 	if ((version = strchr(version, ':'))) {

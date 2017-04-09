@@ -1,4 +1,4 @@
-/* $Id: sh-sci.h,v 1.4 2004/02/19 16:43:56 lethal Exp $
+/* $Id: sh-sci.h,v 1.1.1.1 2006/04/03 08:41:00 amos_lee Exp $
  *
  *  linux/drivers/serial/sh-sci.h
  *

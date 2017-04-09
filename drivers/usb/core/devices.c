@@ -47,7 +47,7 @@
  *   Converted file reading routine to dump to buffer once
  *   per device, not per bus
  *
- * $Id: devices.c,v 1.5 2000/01/11 13:58:21 tom Exp $
+ * $Id: devices.c,v 1.1.1.1 2006/04/03 08:41:01 amos_lee Exp $
  */
 
 #include <linux/fs.h>
@@ -68,8 +68,15 @@
 #define ALLOW_SERIAL_NUMBER
 
 static char *format_topo =
-/* T:  Bus=dd Lev=dd Prnt=dd Port=dd Cnt=dd Dev#=ddd Spd=ddd MxCh=dd */
-"\nT:  Bus=%2.2d Lev=%2.2d Prnt=%2.2d Port=%2.2d Cnt=%2.2d Dev#=%3d Spd=%3s MxCh=%2d\n";
+/* T:  Bus=dd Lev=dd Prnt=dd Port=dd Cnt=dd Dev#=ddd Spd=ddd MxCh=dd 
+"\nT:  Bus=%2.2d Lev=%2.2d Prnt=%2.2d Port=%2.2d Cnt=%2.2d Dev#=%3d Spd=%3s MxCh=%2d\n";*/
+//+++Modify by shiang for devpath support! 2005/06/28
+#if 0  
+  "T:  Bus=%2.2d Lev=%2.2d Prnt=%2.2d Port=%2.2d Cnt=%2.2d Dev#=%3d Spd=%3s MxCh=%2d\n";
+#else
+  "T:  Bus=%2.2d Lev=%2.2d Prnt=%2.2d Port=%2.2d Cnt=%2.2d Dev#=%3d Spd=%3s MxCh=%2d Pth=%s\n";
+#endif
+//---Modify by shiang for devpath support! 2005/06/28
 
 static char *format_string_manufacturer =
 /* S:  Manufacturer=xxxx */
@@ -483,10 +490,20 @@ static ssize_t usb_device_dump(char __user **buffer, size_t *nbytes, loff_t *ski
 	default:
 		speed = "?? ";
 	}
+//+++Modify by shiang for devpath support! 2005/06/28
+#if 0 
 	data_end = pages_start + sprintf(pages_start, format_topo,
 			bus->busnum, level, parent_devnum,
 			index, count, usbdev->devnum,
 			speed, usbdev->maxchild);
+
+#else
+	data_end = pages_start + sprintf(pages_start, format_topo,
+			bus->busnum, level, parent_devnum,
+			index, count, usbdev->devnum,
+			speed, usbdev->maxchild, usbdev->devpath);	
+#endif
+//---Modify by shiang for devpath support! 2005/06/28
 	/*
 	 * level = topology-tier level;
 	 * parent_devnum = parent device number;

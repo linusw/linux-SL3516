@@ -1,5 +1,5 @@
 /*
- * $Id: chipreg.c,v 1.17 2004/11/16 18:29:00 dwmw2 Exp $
+ * $Id: chipreg.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  * Registration for chip drivers
  *

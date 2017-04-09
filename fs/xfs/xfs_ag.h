@@ -24,6 +24,9 @@
  * buffers after a copy of the superblock (also in a 512-byte buffer).
  */
 
+//debug_Aaron on 08/18/2006 fix bug of XFS internal error xfs_da_do_buf(2) at line 2221 of file fs/xfs/xfs_da_btree.c
+#define JZ_PACKED __attribute__ ((packed))
+
 struct xfs_buf;
 struct xfs_mount;
 struct xfs_trans;
@@ -192,7 +195,9 @@ typedef struct xfs_perag
 #endif
 	int		pagb_count;	/* pagb slots in use */
 	xfs_perag_busy_t *pagb_list;	/* unstable blocks */
-} xfs_perag_t;
+//debug_Aaron
+//} xfs_perag_t;
+} JZ_PACKED xfs_perag_t;
 
 #define	XFS_AG_MAXLEVELS(mp)		((mp)->m_ag_maxlevels)
 #define	XFS_MIN_FREELIST_RAW(bl,cl,mp)	\

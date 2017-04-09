@@ -1737,6 +1737,9 @@ void __init vfs_caches_init(unsigned long mempages)
 	mnt_init(mempages);
 	bdev_cache_init();
 	chrdev_init();
+#ifdef CONFIG_SL2312_TSO
+	page_chain_cachep_init();
+#endif
 }
 
 EXPORT_SYMBOL(d_alloc);

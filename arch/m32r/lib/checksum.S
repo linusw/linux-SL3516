@@ -25,7 +25,7 @@
  *		as published by the Free Software Foundation; either version
  *		2 of the License, or (at your option) any later version.
  */
-/* $Id$ */
+/* $Id: checksum.S,v 1.1.1.1 2006/04/03 08:40:34 amos_lee Exp $ */
 
 
 #include <linux/config.h>

@@ -31,7 +31,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: mthca_provider.h 1349 2004-12-16 21:09:43Z roland $
+ * $Id: mthca_provider.h,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 
 #ifndef MTHCA_PROVIDER_H

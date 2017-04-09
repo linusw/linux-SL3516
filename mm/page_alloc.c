@@ -707,7 +707,7 @@ void fastcall free_hot_page(struct page *page)
 {
 	free_hot_cold_page(page, 0);
 }
-	
+
 void fastcall free_cold_page(struct page *page)
 {
 	free_hot_cold_page(page, 1);
@@ -1009,6 +1009,9 @@ got_pg:
 }
 
 EXPORT_SYMBOL(__alloc_pages);
+
+//debug_Aaron
+EXPORT_SYMBOL(free_cold_page);
 
 /*
  * Common helper functions.
@@ -2461,9 +2464,13 @@ void setup_per_zone_pages_min(void)
 			 */
 			zone->pages_min = tmp;
 		}
-
+#if 0 //joel test for fast cache timeout
+		zone->pages_low   = zone->pages_min + tmp / 4 + 4000;//joel modify for fast cache out
+		zone->pages_high  = zone->pages_min + tmp / 2 + 8000;
+#else		
 		zone->pages_low   = zone->pages_min + tmp / 4;
 		zone->pages_high  = zone->pages_min + tmp / 2;
+#endif		
 		spin_unlock_irqrestore(&zone->lru_lock, flags);
 	}
 }

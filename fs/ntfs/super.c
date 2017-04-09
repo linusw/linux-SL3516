@@ -833,7 +833,8 @@ static BOOL parse_ntfs_boot_sector(ntfs_volume *vol, const NTFS_BOOT_SECTOR *b)
 	 * volume size to 2TiB (2^41). On a 64-bit architecture, the compiler
 	 * will hopefully optimize the whole check away.
 	 */
-	if (sizeof(unsigned long) < 8) {
+	//debug_Aaron on 08/16/2007 support file system size above 2TB
+	if (sizeof(unsigned long long) < 8) {
 		if ((ll << vol->cluster_size_bits) >= (1ULL << 41)) {
 			ntfs_error(vol->sb, "Volume size (%lluTiB) is too "
 					"large for this architecture.  "

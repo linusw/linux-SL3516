@@ -863,8 +863,12 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
 	pr_debug("PCI: Scanning bus %04x:%02x\n", pci_domain_nr(bus), bus->number);
 
 	/* Go find them, Rover! */
-	for (devfn = 0; devfn < 0x100; devfn += 8)
-		pci_scan_slot(bus, devfn);
+	for (devfn = 0; devfn < 0x100; devfn += 8){
+#ifdef CONFIG_DUAL_PCI
+		if((devfn>=(9*8))&&(devfn<=(10*8)))
+#endif
+			pci_scan_slot(bus, devfn);		
+	}
 
 	/*
 	 * After performing arch-dependent fixup of the bus, look behind

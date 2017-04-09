@@ -12,6 +12,9 @@
 *!                                 don't use PB_I2C if DS1302 uses same bits,
 *!                                 use PB.
 *! $Log: i2c.c,v $
+*! Revision 1.1.1.1  2006/04/03 08:40:32  amos_lee
+*! initial
+*!
 *! Revision 1.13  2005/03/07 13:13:07  starvik
 *! Added spinlocks to protect states etc
 *!
@@ -84,7 +87,7 @@
 *! (C) Copyright 1999-2002 Axis Communications AB, LUND, SWEDEN
 *!
 *!***************************************************************************/
-/* $Id: i2c.c,v 1.13 2005/03/07 13:13:07 starvik Exp $ */
+/* $Id: i2c.c,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $ */
 
 /****************** INCLUDE FILES SECTION ***********************************/
 

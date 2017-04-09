@@ -1534,11 +1534,17 @@ struct request_queue *scsi_alloc_queue(struct scsi_device *sdev)
 	 */
 	if (shost->ordered_tag)
 		blk_queue_ordered(q, QUEUE_ORDERED_TAG);
+	
+	/*
+	* remove by jason for scsi_cmd_cache leakage issue 
+	*/
+#if 0
 	else if (shost->ordered_flush) {
 		blk_queue_ordered(q, QUEUE_ORDERED_FLUSH);
 		q->prepare_flush_fn = scsi_prepare_flush_fn;
 		q->end_flush_fn = scsi_end_flush_fn;
 	}
+#endif
 
 	if (!shost->use_clustering)
 		clear_bit(QUEUE_FLAG_CLUSTER, &q->queue_flags);

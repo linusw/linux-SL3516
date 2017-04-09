@@ -1,5 +1,5 @@
 # drivers/mtd/nand/Kconfig
-# $Id: Kconfig,v 1.35 2005/11/07 11:14:30 gleixner Exp $
+# $Id: Kconfig,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
 
 menu "NAND Flash Device Drivers"
 	depends on MTD!=n
@@ -29,6 +29,13 @@ config MTD_NAND_AUTCPU12
 	help
 	  This enables the driver for the autronix autcpu12 board to
 	  access the SmartMediaCard.
+
+config MTD_NAND_SL2312
+	tristate "NAND Flash device on Storlink board"
+	depends on ARM && MTD_NAND && ARCH_SL2312
+	help
+	  This enables the driver for the Storlink board to 
+	  access the nand device.
 
 config MTD_NAND_EDB7312
 	tristate "Support for Cirrus Logic EBD7312 evaluation board"

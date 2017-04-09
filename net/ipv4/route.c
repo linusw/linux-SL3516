@@ -5,7 +5,7 @@
  *
  *		ROUTE - implementation of the IP router.
  *
- * Version:	$Id: route.c,v 1.103 2002/01/12 07:44:09 davem Exp $
+ * Version:	$Id: route.c,v 1.2 2008/02/29 03:32:49 cxc Exp $
  *
  * Authors:	Ross Biro
  *		Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
@@ -1588,6 +1588,45 @@ static void rt_set_nexthop(struct rtable *rt, struct fib_result *res, u32 itag)
 #endif
         rt->rt_type = res->type;
 }
+
+/* Used by Fast-NET. Michael Wu */
+#ifdef CONFIG_SL351x_FAST_NET
+int sl_ip_route_cache(struct sk_buff *skb, u32 daddr, u32 saddr,
+				u8 tos, struct net_device *dev, int iif, int oif)
+{
+	struct rtable *rth;
+	unsigned	hash;
+
+	tos &= IPTOS_RT_MASK;
+	hash = rt_hash_code(daddr, saddr ^ (iif << 5), tos);
+	rcu_read_lock();
+
+	for (rth = rcu_dereference(rt_hash_table[hash].chain); rth;
+		rth = rcu_dereference(rth->u.rt_next)) {
+		if (rth->fl.fl4_dst == daddr &&
+			rth->fl.fl4_src == saddr &&
+			rth->fl.iif == iif &&
+			rth->fl.oif == oif &&
+#ifdef CONFIG_IP_ROUTE_FWMARK
+			rth->fl.fl4_fwmark == skb->nfmark &&
+#endif
+			rth->fl.fl4_tos == tos &&
+			((struct dst_entry*)rth)->hh // only hold the dst of there exist hh cache. added by Michael Wu
+			) {
+			rth->u.dst.lastuse = jiffies;
+			dst_hold(&rth->u.dst);
+			rth->u.dst.__use++;
+			RT_CACHE_STAT_INC(in_hit);
+			rcu_read_unlock();
+			skb->dst = (struct dst_entry*)rth;
+			return 1;
+		}
+		RT_CACHE_STAT_INC(in_hlist_search);
+	}
+	rcu_read_unlock();
+	return 0;
+}
+#endif
 
 static int ip_route_input_mc(struct sk_buff *skb, u32 daddr, u32 saddr,
 				u8 tos, struct net_device *dev, int our)

@@ -1,4 +1,4 @@
-/* $Id: copy_page.S,v 1.8 2003/08/25 17:03:10 lethal Exp $
+/* $Id: copy_page.S,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  *
  * copy_page, __copy_user_page, __copy_user implementation of SuperH
  *

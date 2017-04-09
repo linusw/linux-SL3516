@@ -1,4 +1,4 @@
-/* $Id: visasm.h,v 1.5 2001/04/24 01:09:12 davem Exp $ */
+/* $Id: visasm.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $ */
 #ifndef _SPARC64_VISASM_H
 #define _SPARC64_VISASM_H
 

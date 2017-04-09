@@ -669,6 +669,62 @@ void add_disk_randomness(struct gendisk *disk)
 
 EXPORT_SYMBOL(add_disk_randomness);
 
+/*
+ * random_input_words - add bulk entropy to pool
+ *
+ * @buf: buffer to add
+ * @wordcount: number of __u32 words to add
+ * @ent_count: total amount of entropy (in bits) to credit
+ *
+ * this provides bulk input of entropy to the input pool
+ *
+ */
+void random_input_words(__u32 *buf, size_t wordcount, int ent_count)
+{
+	add_entropy_words(&input_pool, buf, wordcount);
+
+	credit_entropy_store(&input_pool, ent_count);
+
+	DEBUG_ENT("crediting %d bits => %d\n",
+		  ent_count, input_pool.entropy_count);
+	/*
+	 * Wake up waiting processes if we have enough
+	 * entropy.
+	 */
+	if (input_pool.entropy_count >= random_read_wakeup_thresh)
+		wake_up_interruptible(&random_read_wait);
+}
+EXPORT_SYMBOL(random_input_words);
+
+/*
+ * random_input_wait - wait until random needs entropy
+ *
+ * this function sleeps until the /dev/random subsystem actually
+ * needs more entropy, and then return the amount of entropy
+ * that it would be nice to have added to the system.
+ */
+int random_input_wait(void)
+{
+	int count;
+
+	wait_event_interruptible(random_write_wait, 
+			 input_pool.entropy_count < random_write_wakeup_thresh);
+
+	count = random_write_wakeup_thresh - input_pool.entropy_count;
+
+        /* likely we got woken up due to a signal */
+	if (count <= 0) count = random_read_wakeup_thresh; 
+
+	DEBUG_ENT("requesting %d bits from input_wait()er %d<%d\n",
+		  count,
+		  input_pool.entropy_count, random_write_wakeup_thresh);
+
+	return count;
+}
+EXPORT_SYMBOL(random_input_wait);
+
+
+
 #define EXTRACT_SIZE 10
 
 /*********************************************************************

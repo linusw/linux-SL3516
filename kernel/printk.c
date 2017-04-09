@@ -32,6 +32,11 @@
 #include <linux/bootmem.h>
 #include <linux/syscalls.h>
 
+#ifdef CONFIG_STOR_PRINTK
+#include <linux/sysctl_storlink.h>
+#include <asm/cacheflush.h>
+#endif
+
 #include <asm/uaccess.h>
 
 #define __LOG_BUF_LEN	(1 << CONFIG_LOG_BUF_SHIFT)
@@ -490,6 +495,74 @@ __attribute__((weak)) unsigned long long printk_clock(void)
 {
 	return sched_clock();
 }
+
+#ifdef CONFIG_STOR_PRINTK
+
+int stor_printk_index=0;
+
+static int buffer_index=0;
+
+#define ARROW_SIGN			"@@@"
+
+asmlinkage int _stor_printk(const char *fmt, ...)
+{
+	va_list args;
+	static char printk_buf[1024];
+	int printed_len;
+	int trailer_len;
+	char *out;
+	
+	if (stor_printk_index >10000)
+		stor_printk_index=0;
+
+	if (buffer_index >SYSCTL_STORLINK_DEBUG_BUFFER_SIZE)
+		buffer_index=0;
+
+	va_start(args, fmt);
+
+	
+	/* Emit the output into the temporary buffer */
+	printed_len = vscnprintf(printk_buf, sizeof(printk_buf), fmt, args);
+
+	if ( (buffer_index+printed_len) > SYSCTL_STORLINK_DEBUG_BUFFER_SIZE)
+	{
+		trailer_len = SYSCTL_STORLINK_DEBUG_BUFFER_SIZE -buffer_index;
+		out = sysctl_storlink.debug_buffer + buffer_index;
+		 if (trailer_len)
+			 strncpy(out, printk_buf, trailer_len);
+              buffer_index = 0;
+	}else
+		trailer_len = 0;
+	
+	out = sysctl_storlink.debug_buffer + buffer_index;
+	strncpy(out, printk_buf+trailer_len, printed_len-trailer_len);
+
+	buffer_index +=printed_len-trailer_len;
+
+
+/* @@@*/
+	out = sysctl_storlink.debug_buffer + buffer_index;
+	printed_len = sprintf(printk_buf, ARROW_SIGN);
+	if ((buffer_index +printed_len) >SYSCTL_STORLINK_DEBUG_BUFFER_SIZE)
+	{
+		trailer_len = SYSCTL_STORLINK_DEBUG_BUFFER_SIZE -buffer_index;
+		if (trailer_len)
+			strncpy(out, printk_buf, trailer_len);
+
+		out = sysctl_storlink.debug_buffer;
+	}else
+		trailer_len=0;
+	strncpy(out+trailer_len, printk_buf+trailer_len, printed_len-trailer_len);
+/*@@@*/
+
+	va_end(args);
+flush_cache_all();
+
+	return printed_len;
+}
+
+#endif
+
 
 /**
  * printk - print a kernel message

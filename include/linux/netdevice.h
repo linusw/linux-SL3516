@@ -213,9 +213,9 @@ struct hh_cache
  * relationship HH alignment <= LL alignment.
  */
 #define LL_RESERVED_SPACE(dev) \
-	(((dev)->hard_header_len&~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
+	(((dev)->hard_header_len&~(HH_DATA_MOD - 1)) + HH_DATA_MOD + 4) //2008/9/22 04:46pm Mark: add headroom space for vlan tag
 #define LL_RESERVED_SPACE_EXTRA(dev,extra) \
-	((((dev)->hard_header_len+extra)&~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
+	((((dev)->hard_header_len+extra)&~(HH_DATA_MOD - 1)) + HH_DATA_MOD + 4) //2008/9/22 04:46pm Mark: add headroom space for vlan tag
 
 /* These flag bits are private to the generic network queueing
  * layer, they may not be explicitly referenced by any other

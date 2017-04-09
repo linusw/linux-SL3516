@@ -29,3 +29,13 @@ config BRIDGE
 	  will be called bridge.
 
 	  If unsure, say N.
+
+config BRIDGE_IGMPP_PROCFS
+			bool "Bridge with IGMPProxy procfs support"
+			depends on BRIDGE
+		---help---
+
+config BRIDGE_IGMPP_PROCFS_DEBUG
+			bool "Bridge with IGMPProxy procfs debugging"
+			depends on BRIDGE_IGMPP_PROCFS
+		---help---

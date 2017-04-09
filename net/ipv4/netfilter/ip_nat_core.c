@@ -48,6 +48,11 @@ static unsigned int ip_nat_htable_size;
 
 static struct list_head *bysource;
 
+#if defined (ALPHA_PORT_RESTRICTED_CONE) || defined (ALPHA_RESTRICTED_CONE)
+
+struct list_head *bydest;
+#endif
+
 #define MAX_IP_NAT_PROTO 256
 static struct ip_nat_protocol *ip_nat_protos[MAX_IP_NAT_PROTO];
 
@@ -82,8 +87,9 @@ ip_nat_proto_put(struct ip_nat_protocol *p)
 EXPORT_SYMBOL_GPL(ip_nat_proto_put);
 
 /* We keep an extra hash for each conntrack, for fast searching. */
-static inline unsigned int
-hash_by_src(const struct ip_conntrack_tuple *tuple)
+//static inline unsigned int
+
+inline unsigned int hash_by_src(const struct ip_conntrack_tuple *tuple)
 {
 	/* Original src, to ensure we map it consistently if poss. */
 	return jhash_3words(tuple->src.ip, tuple->src.u.all,
@@ -98,6 +104,10 @@ static void ip_nat_cleanup_conntrack(struct ip_conntrack *conn)
 
 	write_lock_bh(&ip_nat_lock);
 	list_del(&conn->nat.info.bysource);
+#ifdef ALPHA_PORT_RESTRICTED_CONE	
+	if (conn->nat.info.bydest.prev != NULL)
+		list_del(&conn->nat.info.bydest);
+#endif		
 	write_unlock_bh(&ip_nat_lock);
 }
 
@@ -175,10 +185,11 @@ find_appropriate_src(const struct ip_conntrack_tuple *tuple,
 {
 	unsigned int h = hash_by_src(tuple);
 	struct ip_conntrack *ct;
-
 	read_lock_bh(&ip_nat_lock);
-	list_for_each_entry(ct, &bysource[h], nat.info.bysource) {
-		if (same_src(ct, tuple)) {
+	list_for_each_entry(ct, &bysource[h], nat.info.bysource) 
+	{
+		if (same_src(ct, tuple)) 
+		{
 			/* Copy source part from reply tuple. */
 			invert_tuplepr(result,
 				       &ct->tuplehash[IP_CT_DIR_REPLY].tuple);
@@ -193,6 +204,129 @@ find_appropriate_src(const struct ip_conntrack_tuple *tuple,
 	read_unlock_bh(&ip_nat_lock);
 	return 0;
 }
+#define myDUMP_TUPLE(tp)                                          \
+printk("tuple %p: %u %u.%u.%u.%u:%hu -> %u.%u.%u.%u:%hu\n",     \
+       (tp), (tp)->dst.protonum,                                \
+       NIPQUAD((tp)->src.ip), ntohs((tp)->src.u.all),           \
+       NIPQUAD((tp)->dst.ip), ntohs((tp)->dst.u.all))
+
+#if  defined (ALPHA_PORT_RESTRICTED_CONE)  || defined (ALPHA_RESTRICTED_CONE) //marco added
+/*
+This function is for PORT RESTRICTED CONE and RESTRICTED CONE.
+We used it to compare the WAN IP,PORT and PROTO
+*/
+static inline int same_dst(const struct ip_conntrack *ct,
+	 const struct ip_conntrack_tuple *tuple)
+{
+	return (ct->tuplehash[IP_CT_DIR_REPLY].tuple.dst.protonum
+		== tuple->dst.protonum
+		&& ct->tuplehash[IP_CT_DIR_REPLY].tuple.dst.ip
+		== tuple->src.ip
+		&& ct->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u.all
+		== tuple->src.u.all)		;	
+}
+/*
+This function is for PORT RESTRICTED CONE.
+If we got the same WAN,IP,PROTO, we wll return 1
+Otherwise ,return 0
+*/
+static int find_appropriate_dest(const struct ip_conntrack_tuple *tuple,const struct ip_conntrack_tuple *orig_tuple)
+{
+
+	unsigned int h = hash_by_src(tuple);
+	struct ip_conntrack *ct;
+	read_lock_bh(&ip_nat_lock);
+	list_for_each_entry(ct, &bydest[h], nat.info.bydest) 
+	{
+	
+		if( same_dst(ct, tuple)
+		&&
+		!(ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.protonum
+		== orig_tuple->dst.protonum
+		&& ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.ip
+		== orig_tuple->src.ip
+		&& ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.src.u.all
+		== orig_tuple->src.u.all)
+		) 
+		{
+			read_unlock_bh(&ip_nat_lock);
+			return 1;			
+		}		
+	}
+	read_unlock_bh(&ip_nat_lock);
+	return 0;
+}
+
+#endif
+#ifdef ALPHA_RESTRICTED_CONE //marco
+#define myDUMP_range(range)                                          \
+printk("Min : %u.%u.%u.%u:%hu Max: %u.%u.%u.%u:%hu\n",     \
+       NIPQUAD((range).min_ip), ntohs((range).min.all),           \
+       NIPQUAD((range).max_ip), ntohs((range).max.all))
+/*We use same ip to compare the destination ip is the same or not
+We haven't compared the port since it is for restricted cone
+The tuple is inverted ORIGINAL from destination to Wan
+*/
+static inline int same_ip(const struct ip_conntrack *ct,
+	 const struct ip_conntrack_tuple *tuple)
+{
+	return (ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.protonum
+		== tuple->dst.protonum
+		&& ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.ip
+		== tuple->dst.ip);	
+}
+/*
+This function is for restricted cone.
+This helps to find out the appropriate conntrack related to our connection
+The tuple is inverted ORIGINAL from destination to Wan
+We use same ip to compare the destination ip is the same or not
+and the same_dst to compare the WAN IP,PORT,and PROTO is the same or not
+Once it matched, it will return the conntrack 
+Otherwise, return NULL.
+*/      
+struct ip_conntrack *find_appropriate_conntrack(const struct ip_conntrack_tuple *tuple,const struct ip_conntrack_tuple *orig_tuple)
+{
+
+	unsigned int h = hash_by_src(tuple);
+
+	struct ip_conntrack *ct;	
+	read_lock_bh(&ip_nat_lock);
+	list_for_each_entry(ct, &bydest[h], nat.info.bydest) 
+	{
+		if (same_ip(ct, tuple) && same_dst(ct,tuple)) 
+		{
+			read_unlock_bh(&ip_nat_lock);
+			return ct;			
+		}		
+	}
+	read_unlock_bh(&ip_nat_lock);
+
+	return NULL;
+}      
+EXPORT_SYMBOL(find_appropriate_conntrack);
+struct ip_conntrack *find_appropriate_conntrack_for_fullcone(const struct ip_conntrack_tuple *tuple)
+{
+	unsigned int h = hash_by_src(tuple);
+	struct ip_conntrack *ct;	
+	read_lock_bh(&ip_nat_lock);
+	list_for_each_entry(ct, &bydest[h], nat.info.bydest) 
+	{
+		if (same_dst(ct,tuple)) 
+		{
+			read_unlock_bh(&ip_nat_lock);
+			return ct;			
+		}		
+	}
+	read_unlock_bh(&ip_nat_lock);
+
+	return NULL;
+}  
+EXPORT_SYMBOL(find_appropriate_conntrack_for_fullcone);
+
+#endif  
+      
+
+
 
 /* For [FUTURE] fragmentation handling, we want the least-used
    src-ip/dst-ip/proto triple.  Fairness doesn't come into it.  Thus
@@ -277,6 +411,45 @@ get_unique_tuple(struct ip_conntrack_tuple *tuple,
 
 	proto = ip_nat_proto_find_get(orig_tuple->dst.protonum);
 
+#ifdef ALPHA_PORT_RESTRICTED_CONE//marco added
+	//To here, the tuple's source ip has modify to wan ip.
+	//we need to check if the tuple source port used or not.
+	//The bysource[] cache help us a lot, that we don't need to maintain who use the wan port.
+	
+	if ((maniptype == IP_NAT_MANIP_SRC ) && 
+		(tuple->dst.protonum == IPPROTO_TCP||tuple->dst.protonum == IPPROTO_UDP))
+	{
+TRY_ANOTHER_PORT:			
+		//check if the wan port used or not.
+
+		if ( find_appropriate_dest(tuple,orig_tuple) )
+		{	//wan port be used, change to other port.
+			//let's change the wan port to next one.
+			tuple->src.u.all=htons( ntohs(tuple->src.u.all)+1000 );
+			if( (range->flags & IP_NAT_RANGE_PROTO_SPECIFIED)&&
+			 !(proto->in_range(tuple, maniptype, &range->min, &range->max)) )
+			 	printk("Not in range tuple->src.u.all %d range->min %d &range->max %d \n",tuple->src.u.all,range->min, range->max);
+			//now let's really get a wan port.
+		//	proto->unique_tuple(tuple, range, maniptype, conntrack);
+			goto TRY_ANOTHER_PORT;
+		}
+		else
+		{	
+			if(ip_nat_used_tuple(tuple,conntrack) )
+			{
+				tuple->src.u.all=htons( ntohs(tuple->src.u.all)+1000 );
+				goto TRY_ANOTHER_PORT;
+			}
+			else
+			{
+				ip_nat_proto_put(proto);
+				return;
+			}
+			
+		}
+	}
+#endif
+
 	/* Only bother mapping if it's not already in range and unique */
 	if ((!(range->flags & IP_NAT_RANGE_PROTO_SPECIFIED)
 	     || proto->in_range(tuple, maniptype, &range->min, &range->max))
@@ -338,21 +511,37 @@ ip_nat_setup_info(struct ip_conntrack *conntrack,
 				      .tuple);
 		write_lock_bh(&ip_nat_lock);
 		list_add(&info->bysource, &bysource[srchash]);
+		
 		write_unlock_bh(&ip_nat_lock);
 	}
-
+#ifdef ALPHA_PORT_RESTRICTED_CONE		
+	//marco it will have dead loop in find appropriate_conntrack if we add the same
+	//conntrack to the list
+	//we will add list only when it is src nat and it is not done	
+	if ( conntrack->status & IPS_SRC_NAT && !(conntrack->status &  IPS_SRC_NAT_DONE_BIT) )
+	{
+		unsigned int dsthash = hash_by_src(&new_tuple);
+		write_lock_bh(&ip_nat_lock);
+		list_add(&info->bydest, &bydest[dsthash]);
+		write_unlock_bh(&ip_nat_lock);
+	}
+	else
+		conntrack->nat.info.bydest.prev = NULL;
+#endif
 	/* It's done. */
 	if (maniptype == IP_NAT_MANIP_DST)
 		set_bit(IPS_DST_NAT_DONE_BIT, &conntrack->status);
 	else
 		set_bit(IPS_SRC_NAT_DONE_BIT, &conntrack->status);
-
 	return NF_ACCEPT;
 }
 EXPORT_SYMBOL(ip_nat_setup_info);
 
 /* Returns true if succeeded. */
-static int
+#ifndef CONFIG_SL351x_FAST_NET
+static
+#endif
+int
 manip_pkt(u_int16_t proto,
 	  struct sk_buff **pskb,
 	  unsigned int iphdroff,
@@ -600,7 +789,11 @@ static int __init ip_nat_init(void)
 	bysource = vmalloc(sizeof(struct list_head) * ip_nat_htable_size);
 	if (!bysource)
 		return -ENOMEM;
-
+#ifdef ALPHA_PORT_RESTRICTED_CONE
+	bydest = vmalloc(sizeof(struct list_head) * ip_nat_htable_size);
+	if (!bydest)
+		return -ENOMEM;
+#endif
 	/* Sew in builtin protocols. */
 	write_lock_bh(&ip_nat_lock);
 	for (i = 0; i < MAX_IP_NAT_PROTO; i++)
@@ -613,7 +806,11 @@ static int __init ip_nat_init(void)
 	for (i = 0; i < ip_nat_htable_size; i++) {
 		INIT_LIST_HEAD(&bysource[i]);
 	}
-
+#ifdef ALPHA_PORT_RESTRICTED_CONE	
+	for (i = 0; i < ip_nat_htable_size; i++) {
+		INIT_LIST_HEAD(&bydest[i]);
+	}
+#endif
 	/* FIXME: Man, this is a hack.  <SIGH> */
 	IP_NF_ASSERT(ip_conntrack_destroyed == NULL);
 	ip_conntrack_destroyed = &ip_nat_cleanup_conntrack;
@@ -636,6 +833,9 @@ static void __exit ip_nat_cleanup(void)
 	ip_ct_iterate_cleanup(&clean_nat, NULL);
 	ip_conntrack_destroyed = NULL;
 	vfree(bysource);
+#ifdef ALPHA_PORT_RESTRICTED_CONE		
+	vfree(bydest);
+#endif	
 }
 
 MODULE_LICENSE("GPL");
