@@ -2,8 +2,8 @@
  *
  * Name:	sklm80.c
  * Project:	Gigabit Ethernet Adapters, TWSI-Module
- * Version:	$Revision: 1.22 $
- * Date:	$Date: 2003/10/20 09:08:21 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2006/04/03 08:40:55 $
  * Purpose:	Functions to access Voltage and Temperature Sensor (LM80)
  *
  ******************************************************************************/
@@ -27,7 +27,7 @@
 */
 #if (defined(DEBUG) || ((!defined(LINT)) && (!defined(SK_SLIM))))
 static const char SysKonnectFileId[] =
-	"@(#) $Id: sklm80.c,v 1.22 2003/10/20 09:08:21 rschmidt Exp $ (C) Marvell. ";
+	"@(#) $Id: sklm80.c,v 1.1.1.1 2006/04/03 08:40:55 amos_lee Exp $ (C) Marvell. ";
 #endif
 
 #include "h/skdrv1st.h"		/* Driver Specific Definitions */

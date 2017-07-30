@@ -38,6 +38,23 @@
 /* 4K page size, but our output routines, use some slack for overruns */
 #define PROC_BLOCK_SIZE (3*1024)
 
+//+++++defines copied from sd.c
+struct scsi_disk {
+	struct scsi_driver *driver;	/* always &sd_template */
+	struct scsi_device *device;
+	struct kref	kref;
+	struct gendisk	*disk;
+	unsigned int	openers;	/* protected by BKL for now, yuck */
+	sector_t	capacity;	/* size in 512-byte sectors */
+	u32		index;
+	u8		media_present;
+	u8		write_prot;
+	unsigned	WCE : 1;	/* state of disk WCE bit */
+	unsigned	RCD : 1;	/* state of disk RCD bit, unused */
+};
+
+//++++++
+
 static struct proc_dir_entry *proc_scsi;
 
 /* Protect sht->present and sht->proc_dir */
@@ -146,8 +163,18 @@ static int proc_print_scsidevice(struct device *dev, void *data)
 {
 	struct scsi_device *sdev = to_scsi_device(dev);
 	struct seq_file *s = data;
+	struct Scsi_Host *shost=sdev->host;
+	struct scsi_disk *sdkp;
+	struct gendisk *gd;	
 	int i;
 
+  sdkp=(struct scsi_disk*)dev->driver_data;
+  gd=sdkp->disk;
+  
+  seq_printf(s, "BusType: %s Diskname: %s ", 
+                shost->hostt->name,
+                gd->disk_name);
+	   	
 	seq_printf(s,
 		"Host: scsi%d Channel: %02d Id: %02d Lun: %02d\n  Vendor: ",
 		sdev->host->host_no, sdev->channel, sdev->id, sdev->lun);

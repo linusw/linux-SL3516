@@ -9,7 +9,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: compr.c,v 1.46 2005/11/07 11:14:38 gleixner Exp $
+ * $Id: compr.c,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $
  *
  */
 

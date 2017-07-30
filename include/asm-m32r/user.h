@@ -1,7 +1,7 @@
 #ifndef _ASM_M32R_USER_H
 #define _ASM_M32R_USER_H
 
-/* $Id$ */
+/* $Id: user.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $ */
 
 /* orig : sh 2.4.18
  * mod  : remove fpu registers

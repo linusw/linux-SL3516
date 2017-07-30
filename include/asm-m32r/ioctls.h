@@ -1,7 +1,7 @@
 #ifndef __ARCH_M32R_IOCTLS_H__
 #define __ARCH_M32R_IOCTLS_H__
 
-/* $Id$ */
+/* $Id: ioctls.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $ */
 
 /* orig : i386 2.5.67 */
 

@@ -8,7 +8,7 @@
    Changed (and renamed) for OnStream SCSI drives garloff@suse.de
    2000-06-21
 
-   $Header: /cvsroot/osst/Driver/osst_options.h,v 1.6 2003/12/23 14:22:12 wriede Exp $
+   $Header: /home/cvs/gemini-2.6.15/drivers/scsi/osst_options.h,v 1.1.1.1 2006/04/03 08:40:58 amos_lee Exp $
 */
 
 #ifndef _OSST_OPTIONS_H

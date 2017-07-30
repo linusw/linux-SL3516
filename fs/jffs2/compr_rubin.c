@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: compr_rubin.c,v 1.20 2004/06/23 16:34:40 havasi Exp $
+ * $Id: compr_rubin.c,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $
  *
  */
 

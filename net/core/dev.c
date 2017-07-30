@@ -1248,6 +1248,16 @@ int dev_queue_xmit(struct sk_buff *skb)
 	struct Qdisc *q;
 	int rc = -ENOMEM;
 
+#ifdef CONFIG_BRIDGE
+	int retval;
+	if((skb->dev->name[0]=='b') && (skb->dev->name[1]=='r')){
+		retval = br_fdb_check_eth0(skb->data);
+		if(retval){	// Gmac
+			goto SKIP_CHECK;
+		}
+	}
+#endif
+
 	if (skb_shinfo(skb)->frag_list &&
 	    !(dev->features & NETIF_F_FRAGLIST) &&
 	    __skb_linearize(skb, GFP_ATOMIC))
@@ -1272,6 +1282,7 @@ int dev_queue_xmit(struct sk_buff *skb)
 	      	if (skb_checksum_help(skb, 0))
 	      		goto out_kfree_skb;
 
+SKIP_CHECK:
 	spin_lock_prefetch(&dev->queue_lock);
 
 	/* Disable soft irqs for various locks below. Also 

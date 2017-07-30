@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: background.c,v 1.54 2005/05/20 21:37:12 gleixner Exp $
+ * $Id: background.c,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $
  *
  */
 

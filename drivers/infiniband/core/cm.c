@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: cm.c 2821 2005-07-08 17:07:28Z sean.hefty $
+ * $Id: cm.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 #include <linux/dma-mapping.h>
 #include <linux/err.h>

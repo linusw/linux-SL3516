@@ -2,8 +2,8 @@
  *
  * Name:	skdim.c
  * Project:	GEnesis, PCI Gigabit Ethernet Adapter
- * Version:	$Revision: 1.5 $
- * Date:	$Date: 2003/11/28 12:55:40 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2006/04/03 08:40:54 $
  * Purpose:	All functions to maintain interrupt moderation
  *
  ******************************************************************************/
@@ -38,7 +38,7 @@
 
 #ifndef	lint
 static const char SysKonnectFileId[] =
-	"@(#) $Id: skdim.c,v 1.5 2003/11/28 12:55:40 rroesler Exp $ (C) SysKonnect.";
+	"@(#) $Id: skdim.c,v 1.1.1.1 2006/04/03 08:40:54 amos_lee Exp $ (C) SysKonnect.";
 #endif
 
 #define __SKADDR_C

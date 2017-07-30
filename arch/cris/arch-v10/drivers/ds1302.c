@@ -7,6 +7,9 @@
 *! Functions exported: ds1302_readreg, ds1302_writereg, ds1302_init
 *!
 *! $Log: ds1302.c,v $
+*! Revision 1.1.1.1  2006/04/03 08:40:32  amos_lee
+*! initial
+*!
 *! Revision 1.18  2005/01/24 09:11:26  mikaelam
 *! Minor changes to get DS1302 RTC chip driver to work
 *!
@@ -135,7 +138,7 @@
 *!
 *! (C) Copyright 1999, 2000, 2001, 2002, 2003, 2004  Axis Communications AB, LUND, SWEDEN
 *!
-*! $Id: ds1302.c,v 1.18 2005/01/24 09:11:26 mikaelam Exp $
+*! $Id: ds1302.c,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $
 *!
 *!***************************************************************************/
 

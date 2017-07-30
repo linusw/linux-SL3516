@@ -1,4 +1,4 @@
-/*    $Id: processor.c,v 1.1 2002/07/20 16:27:06 rhirst Exp $
+/*    $Id: processor.c,v 1.1.1.1 2006/04/03 08:40:39 amos_lee Exp $
  *
  *    Initial setup-routines for HP 9000 based hardware.
  *

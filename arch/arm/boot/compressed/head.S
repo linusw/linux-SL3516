@@ -53,6 +53,17 @@
 		mov	\rb, #0x50000000
 		add	\rb, \rb, #0x4000 * CONFIG_S3C2410_LOWLEVEL_UART_PORT
 		.endm
+/*****************************************************
+ *      for Storlink SoC
+ *****************************************************/		
+#elif defined(CONFIG_ARCH_SL2312)
+		.macro	loadsp, rb
+		mov	\rb, #0x16000000
+		.endm
+		.macro	writeb, rb
+		strb	\rb, [r3, #0]
+		.endm	
+/****************************************************/		
 #else
 		.macro	loadsp,	rb
 		addruart \rb
@@ -110,7 +121,28 @@ start:
 		.rept	8
 		mov	r0, r0
 		.endr
-
+/*****************************************************************************
+ *  for Storlink Soc -- on chip UART
+ *****************************************************************************/
+#ifndef CONFIG_SERIAL_IT8712		// Jason test
+@                mov     r3, #0x22000000
+                mov     r3, #0x42000000 
+                mov     r11, #0x80
+                strb    r11, [r3, #0xc]
+                mov     r11, #0x0
+                strb    r11, [r3, #0x4]
+#ifndef CONFIG_SL3516_ASIC
+                mov     r11, #0x9C		/*0x9c->19200 0x4E->38400 0x34->57600 */
+#else
+		mov 	r11, #0x9C		/* 0x61 for 30MHz on GeminiA chip*/
+#endif
+                strb    r11, [r3, #0x0]
+                mov     r11, #0x03
+                strb    r11, [r3, #0xc]
+		        mov     r11, #0xFB
+                strb    r11, [r3, #0x18]
+#endif          
+/*****************************************************************************/
 		b	1f
 		.word	0x016f2818		@ Magic numbers to help the loader
 		.word	start			@ absolute load/run zImage address
@@ -370,6 +402,39 @@ __armv4_cache_on:
 		mcr	p15, 0, r0, c8, c7, 0	@ flush I,D TLBs
 		mov	pc, r12
 
+/*****************************************************************************
+ *  for Storlink Soc -- CPU cache
+ *****************************************************************************/
+__fa526_cache_on:
+                mov     r12, lr
+                bl      __setup_mmu
+                mov     r0, #0
+                mcr     p15, 0, r0, c7, c6, 0   @ Invalidate D cache
+                mcr     p15, 0, r0, c7, c5, 0   @ Invalidate I cache
+                mcr     p15, 0, r0, c7, c10, 4  @ drain write buffer
+                mcr     p15, 0, r0, c8, c7, 0   @ flush I,D TLBs
+                mcr     p15, 0, r3, c2, c0, 0   @ load page table pointer
+                mov     r0, #-1
+                mcr     p15, 0, r0, c3, c0, 0   @ load domain access register
+                mrc     p15, 0, r0, c1, c0, 0
+                mov     r0, r0
+                mov     r0, r0
+#ifndef CONFIG_CPU_DCACHE_DISABLE
+        orr     r0, r0, #0x0004                 @ .... .... .... .1..
+#endif
+#ifndef CONFIG_CPU_ICACHE_DISABLE
+        orr     r0, r0, #0x1000                 @ ...1 .... .... ....
+#endif
+
+#ifndef DEBUG
+                orr     r0, r0, #0x0039         @ Write buffer, mmu
+#endif
+                mcr     p15, 0, r0, c1, c0
+                mov     r0, r0
+                mov     r0, r0
+                mov     pc, r12
+/********************************************************************************/
+
 __arm6_cache_on:
 		mov	r12, lr
 		bl	__setup_mmu
@@ -514,6 +579,16 @@ proc_types:
 
 		@ These match on the architecture ID
 
+/*****************************************************************************
+ *  for Storlink Soc -- CPU architecture ID
+ *****************************************************************************/
+        .word   0x66015261              @ FA526
+        .word   0xff01fff1
+        b       __fa526_cache_on
+        b       __fa526_cache_off
+        b       __fa526_cache_flush
+/*****************************************************************************/
+
 		.word	0x00020000		@ ARMv4T
 		.word	0x000f0000
 		b	__armv4_cache_on
@@ -566,6 +641,22 @@ __armv4_cache_off:
 		mcr	p15, 0, r0, c7, c7	@ invalidate whole cache v4
 		mcr	p15, 0, r0, c8, c7	@ invalidate whole TLB v4
 		mov	pc, lr
+
+/*****************************************************************************
+ *  for Storlink Soc -- CPU cache
+ *****************************************************************************/
+__fa526_cache_off:
+        mrc     p15, 0, r0, c1, c0
+        bic     r0, r0, #0x000d
+        mov     r1, #0
+        mcr     p15, 0, r1, c7, c14, 0  @ clean and invalidate D cache
+        mcr     p15, 0, r1, c7, c10, 4  @ drain WB
+        mcr     p15, 0, r0, c1, c0      @ turn MMU and cache off
+        mov     r0, #0
+        mcr     p15, 0, r0, c7, c5, 0   @ invalidate whole cache v4
+        mcr     p15, 0, r0, c8, c7, 0   @ invalidate whole TLB v4
+        mov     pc, lr
+/*****************************************************************************/
 
 __arm6_cache_off:
 		mov	r0, #0x00000030		@ ARM6 control reg.
@@ -632,6 +723,17 @@ no_cache_id:
 		mcr	p15, 0, r1, c7, c6, 0	@ flush D cache
 		mcr	p15, 0, r1, c7, c10, 4	@ drain WB
 		mov	pc, lr
+
+/*****************************************************************************
+ *  for Storlink Soc -- CPU cache
+ *****************************************************************************/
+__fa526_cache_flush:
+                mov     r1, #0
+                mcr     p15, 0, r1, c7, c14, 0  @ clean and invalidate D cache
+                mcr     p15, 0, r1, c7, c5, 0   @ flush I cache
+                mcr     p15, 0, r1, c7, c10, 4  @ drain WB
+                mov     pc, lr
+/*****************************************************************************/
 
 __armv3_cache_flush:
 		mov	r1, #0

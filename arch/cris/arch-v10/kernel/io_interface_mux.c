@@ -1,6 +1,6 @@
 /* IO interface mux allocator for ETRAX100LX.
  * Copyright 2004, Axis Communications AB
- * $Id: io_interface_mux.c,v 1.2 2004/12/21 12:08:38 starvik Exp $
+ * $Id: io_interface_mux.c,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $
  */
 
 

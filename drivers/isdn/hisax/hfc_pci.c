@@ -1,4 +1,4 @@
-/* $Id: hfc_pci.c,v 1.48.2.4 2004/02/11 13:21:33 keil Exp $
+/* $Id: hfc_pci.c,v 1.1.1.1 2006/04/03 08:40:49 amos_lee Exp $
  *
  * low level driver for CCD´s hfc-pci based cards
  *
@@ -25,7 +25,7 @@
 
 extern const char *CardType[];
 
-static const char *hfcpci_revision = "$Revision: 1.48.2.4 $";
+static const char *hfcpci_revision = "$Revision: 1.1.1.1 $";
 
 /* table entry in the PCI devices list */
 typedef struct {

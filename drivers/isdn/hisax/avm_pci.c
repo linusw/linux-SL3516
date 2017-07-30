@@ -1,4 +1,4 @@
-/* $Id: avm_pci.c,v 1.29.2.4 2004/02/11 13:21:32 keil Exp $
+/* $Id: avm_pci.c,v 1.1.1.1 2006/04/03 08:40:49 amos_lee Exp $
  *
  * low level stuff for AVM Fritz!PCI and ISA PnP isdn cards
  *
@@ -22,7 +22,7 @@
 #include <linux/interrupt.h>
 
 extern const char *CardType[];
-static const char *avm_pci_rev = "$Revision: 1.29.2.4 $";
+static const char *avm_pci_rev = "$Revision: 1.1.1.1 $";
 
 #define  AVM_FRITZ_PCI		1
 #define  AVM_FRITZ_PNP		2

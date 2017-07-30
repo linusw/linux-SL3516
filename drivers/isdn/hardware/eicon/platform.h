@@ -1,4 +1,4 @@
-/* $Id: platform.h,v 1.37.4.6 2005/01/31 12:22:20 armin Exp $
+/* $Id: platform.h,v 1.1.1.1 2006/04/03 08:40:49 amos_lee Exp $
  *
  * platform.h
  * 

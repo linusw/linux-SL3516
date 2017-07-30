@@ -7,7 +7,7 @@
  *                            Hitoshi Yamamoto
  */
 
-/* $Id$ */
+/* $Id: head.S,v 1.1.1.1 2006/04/03 08:40:34 amos_lee Exp $ */
 
 #include <linux/init.h>
 __INIT

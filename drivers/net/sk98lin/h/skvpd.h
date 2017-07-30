@@ -2,8 +2,8 @@
  *
  * Name:	skvpd.h
  * Project:	GEnesis, PCI Gigabit Ethernet Adapter
- * Version:	$Revision: 1.15 $
- * Date:	$Date: 2003/01/13 10:39:38 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2006/04/03 08:40:55 $
  * Purpose:	Defines and Macros for VPD handling
  *
  ******************************************************************************/

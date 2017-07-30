@@ -33,6 +33,8 @@
 #define TLB_V6_D_ASID	(1 << 17)
 #define TLB_V6_I_ASID	(1 << 18)
 
+#define TLB_DINVAL      (1 << 28)
+#define TLB_BTB         (1 << 29)
 #define TLB_DCLEAN	(1 << 30)
 #define TLB_WB		(1 << 31)
 
@@ -46,6 +48,7 @@
  *	  v4wb  - ARMv4 with write buffer without I TLB flush entry instruction
  *	  v4wbi - ARMv4 with write buffer with I TLB flush entry instruction
  *	  v6wbi - ARMv6 with write buffer with I TLB flush entry instruction
+ *    fa    - ARMv4 with write buffer with UTLB and branch target buffer (BTB)
  */
 #undef _TLB
 #undef MULTI_TLB
@@ -78,6 +81,44 @@
 #else
 # define v4_possible_flags	0
 # define v4_always_flags	(-1UL)
+#endif
+
+#ifdef CONFIG_CPU_FA_BTB
+#define __TLB_BTB      TLB_BTB
+#else
+#define __TLB_BTB      0
+#endif
+
+#ifdef CONFIG_CPU_FA_WB_DISABLE
+#define __TLB_WB       0
+#else
+#define __TLB_WB       TLB_WB
+#endif
+
+/* Fix buggy CPU which doesn't invalidate Dcache properly */
+#ifdef CONFIG_CPU_FA520
+#define __TLB_DINVAL   TLB_DINVAL
+#elif defined(CONFIG_CPU_FA526)
+//#define __TLB_DINVAL   TLB_DINVAL
+#define __TLB_DINVAL   0
+#else
+#define __TLB_DINVAL   0
+#endif
+
+#define fa_tlb_flags	(__TLB_WB | __TLB_BTB | __TLB_DINVAL | TLB_DCLEAN | \
+                         TLB_V4_U_FULL | TLB_V4_U_PAGE)
+
+#ifdef CONFIG_CPU_TLB_FA
+# define fa_possible_flags	fa_tlb_flags
+# define fa_always_flags	fa_tlb_flags
+# ifdef _TLB
+#  define MULTI_TLB 1
+# else
+#  define _TLB fa
+# endif
+#else
+# define fa_possible_flags	0
+# define fa_always_flags	(-1UL)
 #endif
 
 #define v4wbi_tlb_flags	(TLB_WB | TLB_DCLEAN | \
@@ -225,12 +266,14 @@ extern struct cpu_tlb_fns cpu_tlb;
 				 v4_possible_flags | \
 				 v4wbi_possible_flags | \
 				 v4wb_possible_flags | \
+                 fa_possible_flags | \
 				 v6wbi_possible_flags)
 
 #define always_tlb_flags	(v3_always_flags & \
 				 v4_always_flags & \
 				 v4wbi_always_flags & \
 				 v4wb_always_flags & \
+                 fa_always_flags & \
 				 v6wbi_always_flags)
 
 #define tlb_flag(f)	((always_tlb_flags & (f)) || (__tlb_flag & possible_tlb_flags & (f)))
@@ -239,6 +282,9 @@ static inline void local_flush_tlb_all(void)
 {
 	const int zero = 0;
 	const unsigned int __tlb_flag = __cpu_tlb_flags;
+
+	if (tlb_flag(TLB_DINVAL)) 
+	        asm("mcr%? p15, 0, %0, c7, c14, 0" : : "r" (zero));
 
 	if (tlb_flag(TLB_WB))
 		asm("mcr%? p15, 0, %0, c7, c10, 4" : : "r" (zero));
@@ -251,6 +297,14 @@ static inline void local_flush_tlb_all(void)
 		asm("mcr%? p15, 0, %0, c8, c6, 0" : : "r" (zero));
 	if (tlb_flag(TLB_V4_I_FULL | TLB_V6_I_FULL))
 		asm("mcr%? p15, 0, %0, c8, c5, 0" : : "r" (zero));
+
+	if (tlb_flag(TLB_BTB))
+	{
+        asm("mcr%? p15, 0, %0, c7, c5, 6" : : "r" (zero));
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
+
 }
 
 static inline void local_flush_tlb_mm(struct mm_struct *mm)
@@ -258,6 +312,9 @@ static inline void local_flush_tlb_mm(struct mm_struct *mm)
 	const int zero = 0;
 	const int asid = ASID(mm);
 	const unsigned int __tlb_flag = __cpu_tlb_flags;
+
+	if (tlb_flag(TLB_DINVAL)) 
+	        asm("mcr%? p15, 0, %0, c7, c14, 0" : : "r" (zero));
 
 	if (tlb_flag(TLB_WB))
 		asm("mcr%? p15, 0, %0, c7, c10, 4" : : "r" (zero));
@@ -279,6 +336,14 @@ static inline void local_flush_tlb_mm(struct mm_struct *mm)
 		asm("mcr%? p15, 0, %0, c8, c6, 2" : : "r" (asid));
 	if (tlb_flag(TLB_V6_I_ASID))
 		asm("mcr%? p15, 0, %0, c8, c5, 2" : : "r" (asid));
+
+	if (tlb_flag(TLB_BTB)) 
+	{
+        asm("mcr%? p15, 0, %0, c7, c5, 6" : : "r" (zero));
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
+
 }
 
 static inline void
@@ -288,6 +353,9 @@ local_flush_tlb_page(struct vm_area_struct *vma, unsigned long uaddr)
 	const unsigned int __tlb_flag = __cpu_tlb_flags;
 
 	uaddr = (uaddr & PAGE_MASK) | ASID(vma->vm_mm);
+
+	if (tlb_flag(TLB_DINVAL))
+        asm("mcr%? p15, 0, %0, c7, c14, 0" : : "r" (zero)); // clean & invalidate data cache all
 
 	if (tlb_flag(TLB_WB))
 		asm("mcr%? p15, 0, %0, c7, c10, 4" : : "r" (zero));
@@ -311,6 +379,13 @@ local_flush_tlb_page(struct vm_area_struct *vma, unsigned long uaddr)
 		asm("mcr%? p15, 0, %0, c8, c6, 1" : : "r" (uaddr));
 	if (tlb_flag(TLB_V6_I_PAGE))
 		asm("mcr%? p15, 0, %0, c8, c5, 1" : : "r" (uaddr));
+
+	if (tlb_flag(TLB_BTB)) 
+	{
+        asm("mcr%? p15, 0, %0, c7, c5, 6" : : "r" (zero));
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
 }
 
 static inline void local_flush_tlb_kernel_page(unsigned long kaddr)
@@ -319,6 +394,9 @@ static inline void local_flush_tlb_kernel_page(unsigned long kaddr)
 	const unsigned int __tlb_flag = __cpu_tlb_flags;
 
 	kaddr &= PAGE_MASK;
+
+	if (tlb_flag(TLB_DINVAL)) 
+        asm("mcr%? p15, 0, %0, c7, c14, 0" : : "r" (zero));
 
 	if (tlb_flag(TLB_WB))
 		asm("mcr%? p15, 0, %0, c7, c10, 4" : : "r" (zero));
@@ -340,6 +418,13 @@ static inline void local_flush_tlb_kernel_page(unsigned long kaddr)
 		asm("mcr%? p15, 0, %0, c8, c6, 1" : : "r" (kaddr));
 	if (tlb_flag(TLB_V6_I_PAGE))
 		asm("mcr%? p15, 0, %0, c8, c5, 1" : : "r" (kaddr));
+
+	if (tlb_flag(TLB_BTB)) 
+	{
+        asm("mcr%? p15, 0, %0, c7, c5, 6" : : "r" (zero));
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
 }
 
 /*
@@ -366,15 +451,31 @@ static inline void flush_pmd_entry(pmd_t *pmd)
 	if (tlb_flag(TLB_WB))
 		asm("mcr%?	p15, 0, %0, c7, c10, 4	@ flush_pmd"
 			: : "r" (zero));
+
+	if (tlb_flag(TLB_BTB)) // Luke Lee 05/16/2005 
+	{
+        asm("mcr%? p15, 0, %0, c7, c5, 6" : : "r" (zero));
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
+
 }
 
 static inline void clean_pmd_entry(pmd_t *pmd)
 {
+    const unsigned int zero = 0; // Luke Lee 05/16/2005 ins 1
 	const unsigned int __tlb_flag = __cpu_tlb_flags;
 
 	if (tlb_flag(TLB_DCLEAN))
 		asm("mcr%?	p15, 0, %0, c7, c10, 1	@ flush_pmd"
 			: : "r" (pmd));
+
+	if (tlb_flag(TLB_BTB)) // Luke Lee 05/16/2005
+	{
+        asm("mcr%? p15, 0, %0, c7, c5, 6" : : "r" (zero));
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
 }
 
 #undef tlb_flag

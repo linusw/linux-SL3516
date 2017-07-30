@@ -1,4 +1,4 @@
-/* $Id: fore200e.h,v 1.4 2000/04/14 10:10:34 davem Exp $ */
+/* $Id: fore200e.h,v 1.1.1.1 2006/04/03 08:40:44 amos_lee Exp $ */
 #ifndef _FORE200E_H
 #define _FORE200E_H
 

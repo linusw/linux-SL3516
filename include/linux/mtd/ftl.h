@@ -1,5 +1,5 @@
 /*
- * $Id: ftl.h,v 1.7 2005/11/07 11:14:54 gleixner Exp $
+ * $Id: ftl.h,v 1.1.1.1 2006/04/03 08:41:20 amos_lee Exp $
  *
  * Derived from (and probably identical to):
  * ftl.h 1.7 1999/10/25 20:23:17

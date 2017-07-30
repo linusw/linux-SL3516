@@ -30,7 +30,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: mthca_eq.c 1382 2004-12-24 02:21:02Z roland $
+ * $Id: mthca_eq.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 
 #include <linux/init.h>

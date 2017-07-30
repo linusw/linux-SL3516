@@ -1,4 +1,4 @@
-/* $Id: starfire.c,v 1.10 2001/04/14 21:13:45 davem Exp $
+/* $Id: starfire.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * starfire.c: Starfire/E10000 support.
  *
  * Copyright (C) 1998 David S. Miller (davem@redhat.com)

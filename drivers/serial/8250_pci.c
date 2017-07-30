@@ -11,7 +11,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License.
  *
- *  $Id: 8250_pci.c,v 1.28 2002/11/02 11:14:18 rmk Exp $
+ *  $Id: 8250_pci.c,v 1.1.1.1 2006/04/03 08:41:00 amos_lee Exp $
  */
 #include <linux/module.h>
 #include <linux/init.h>

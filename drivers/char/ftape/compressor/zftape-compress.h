@@ -19,9 +19,9 @@
  USA.
 
  *
- * $Source: /homes/cvs/ftape-stacked/ftape/compressor/zftape-compress.h,v $
- * $Revision: 1.1 $
- * $Date: 1997/10/05 19:12:32 $
+ * $Source: /home/cvs/gemini-2.6.15/drivers/char/ftape/compressor/zftape-compress.h,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2006/04/03 08:40:46 $
  *
  * This file contains macros and definitions for zftape's
  * builtin compression code.

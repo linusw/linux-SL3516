@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.5 1995/11/25 00:59:48 davem Exp $
+# $Id: Makefile,v 1.1.1.1 2006/04/03 08:40:36 amos_lee Exp $
 # Makefile for the Sun Boot PROM interface library under
 # Linux.
 #

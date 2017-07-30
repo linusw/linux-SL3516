@@ -3,7 +3,7 @@
  *
  *  Copyright (C) 2000 Andrea Arcangeli <andrea@suse.de> SuSE
  *
- *  $Id: head64.c,v 1.22 2001/07/06 14:28:20 ak Exp $
+ *  $Id: head64.c,v 1.1.1.1 2006/04/03 08:40:44 amos_lee Exp $
  */
 
 #include <linux/init.h>

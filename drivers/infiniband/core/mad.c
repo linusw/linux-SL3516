@@ -31,7 +31,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: mad.c 2817 2005-07-07 11:29:26Z halr $
+ * $Id: mad.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 #include <linux/dma-mapping.h>
 

@@ -40,10 +40,11 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 	int			status;
 
 	init_completion(&done); 	
+//	printk("***done %x\n",&done);
 	urb->context = &done;
 	urb->actual_length = 0;
 	status = usb_submit_urb(urb, GFP_NOIO);
-
+//        printk("******status %x \n",status);
 	if (status == 0) {
 		if (timeout > 0) {
 			init_timer(&timer);
@@ -53,8 +54,11 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 			/* grr.  timeout _should_ include submit delays. */
 			add_timer(&timer);
 		}
+//		printk("wait_for_completion begin done %x\n",&done);
 		wait_for_completion(&done);
+//		printk("wait_for_completion end done %x\n",&done);
 		status = urb->status;
+//		printk("usb_start_wait_urb status %x timeout %x \n",status,timeout);
 		/* note:  HCDs return ETIMEDOUT for other reasons too */
 		if (status == -ECONNRESET) {
 			dev_dbg(&urb->dev->dev,
@@ -65,18 +69,19 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 				urb->actual_length,
 				urb->transfer_buffer_length
 				);
-			if (urb->actual_length > 0)
-				status = 0;
-			else
+//			if (urb->actual_length > 0)
+//				status = 0;
+//			else
 				status = -ETIMEDOUT;
 		}
 		if (timeout > 0)
 			del_timer_sync(&timer);
 	}
-
+//        printk("actual_length %x\n",actual_length); 
 	if (actual_length)
 		*actual_length = urb->actual_length;
 	usb_free_urb(urb);
+//	printk("******status %x end\n",status);
 	return status;
 }
 
@@ -139,7 +144,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request, __u
 	
 	if (!dr)
 		return -ENOMEM;
-
+//        printk("data %x\n",data);
 	dr->bRequestType= requesttype;
 	dr->bRequest = request;
 	dr->wValue = cpu_to_le16p(&value);
@@ -149,7 +154,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request, __u
 	//dbg("usb_control_msg");	
 
 	ret = usb_internal_control_msg(dev, pipe, dr, data, size, timeout);
-
+//        printk("data1 %x\n",data);
 	kfree(dr);
 
 	return ret;
@@ -957,19 +962,31 @@ void usb_disable_endpoint(struct usb_device *dev, unsigned int epaddr)
 {
 	unsigned int epnum = epaddr & USB_ENDPOINT_NUMBER_MASK;
 	struct usb_host_endpoint *ep;
-
+//        printk("1\n");
 	if (!dev)
 		return;
-
+//        printk("2\n");
 	if (usb_endpoint_out(epaddr)) {
+//        printk("3\n");
 		ep = dev->ep_out[epnum];
+//        printk("4\n");
 		dev->ep_out[epnum] = NULL;
+//printk("5\n");
 	} else {
+//printk("6\n");
 		ep = dev->ep_in[epnum];
+//printk("7\n");
 		dev->ep_in[epnum] = NULL;
+//printk("8\n");
 	}
+//printk("9\n");
 	if (ep && dev->bus && dev->bus->op && dev->bus->op->disable)
+	     {
+//printk("10\n");
 		dev->bus->op->disable(dev, ep);
+//printk("11\n");
+	      }	
+//printk("12\n");
 }
 
 /**
@@ -1006,12 +1023,17 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
 
 	dev_dbg(&dev->dev, "%s nuking %s URBs\n", __FUNCTION__,
 			skip_ep0 ? "non-ep0" : "all");
+	
 	for (i = skip_ep0; i < 16; ++i) {
+		
 		usb_disable_endpoint(dev, i);
+//		printk("1-2 dev %x i %x\n",dev,i);
 		usb_disable_endpoint(dev, i + USB_DIR_IN);
+		
 	}
+	
 	dev->toggle[0] = dev->toggle[1] = 0;
-
+         
 	/* getting rid of interfaces will disconnect
 	 * any drivers bound to them (a key side effect)
 	 */
@@ -1023,10 +1045,17 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
 			interface = dev->actconfig->interface[i];
 			if (!device_is_registered(&interface->dev))
 				continue;
+			
 			dev_dbg (&dev->dev, "unregistering interface %s\n",
 				interface->dev.bus_id);
 			usb_remove_sysfs_intf_files(interface);
+			
+			kfree(interface->cur_altsetting->string);
+			
+			interface->cur_altsetting->string = NULL;
+			
 			device_del (&interface->dev);
+			
 		}
 
 		/* Now that the interfaces are unbound, nobody should
@@ -1034,12 +1063,15 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
 		 */
 		for (i = 0; i < dev->actconfig->desc.bNumInterfaces; i++) {
 			put_device (&dev->actconfig->interface[i]->dev);
+			
 			dev->actconfig->interface[i] = NULL;
 		}
 		dev->actconfig = NULL;
 		if (dev->state == USB_STATE_CONFIGURED)
 			usb_set_device_state(dev, USB_STATE_ADDRESS);
+			
 	}
+	
 }
 
 

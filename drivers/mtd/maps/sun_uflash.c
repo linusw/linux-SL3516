@@ -1,4 +1,4 @@
-/* $Id: sun_uflash.c,v 1.13 2005/11/07 11:14:28 gleixner Exp $
+/* $Id: sun_uflash.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  * sun_uflash - Driver implementation for user-programmable flash
  * present on many Sun Microsystems SME boardsets.

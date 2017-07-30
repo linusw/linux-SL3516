@@ -29,7 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id$
+ * $Id: mthca_uar.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 
 #include <asm/page.h>		/* PAGE_SHIFT */

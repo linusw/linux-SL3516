@@ -1,7 +1,7 @@
 #ifndef _ASM_M32R_SHMBUF_H
 #define _ASM_M32R_SHMBUF_H
 
-/* $Id$ */
+/* $Id: shmbuf.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $ */
 
 /* orig : i386 2.4.18 */
 

@@ -1,5 +1,5 @@
 /*
- *  acpi_ec.c - ACPI Embedded Controller Driver ($Revision: 38 $)
+ *  acpi_ec.c - ACPI Embedded Controller Driver ($Revision: 1.1.1.1 $)
  *
  *  Copyright (C) 2004 Luming Yu <luming.yu@intel.com>
  *  Copyright (C) 2001, 2002 Andy Grover <andrew.grover@intel.com>

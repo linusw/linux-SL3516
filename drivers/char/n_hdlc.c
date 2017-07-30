@@ -10,7 +10,7 @@
  *	Paul Mackerras <Paul.Mackerras@cs.anu.edu.au>
  *
  * Original release 01/11/99
- * $Id: n_hdlc.c,v 4.8 2003/05/06 21:18:51 paulkf Exp $
+ * $Id: n_hdlc.c,v 1.1.1.1 2006/04/03 08:40:46 amos_lee Exp $
  *
  * This code is released under the GNU General Public License (GPL)
  *
@@ -79,7 +79,7 @@
  */
 
 #define HDLC_MAGIC 0x239e
-#define HDLC_VERSION "$Revision: 4.8 $"
+#define HDLC_VERSION "$Revision: 1.1.1.1 $"
 
 #include <linux/config.h>
 #include <linux/module.h>

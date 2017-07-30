@@ -7,7 +7,7 @@
 #
 FONTMAPFILE = cp437.uni
 
-obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o
+obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o 
 
 obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
 obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
@@ -57,6 +57,18 @@ obj-$(CONFIG_R3964) += n_r3964.o
 obj-$(CONFIG_APPLICOM) += applicom.o
 obj-$(CONFIG_SONYPI) += sonypi.o
 obj-$(CONFIG_RTC) += rtc.o
+
+###  for Storlink SoC ###
+obj-$(CONFIG_SL2312_RTC) += sl2312_rtc.o
+obj-$(CONFIG_SL2312_LCD) += lcd_sl2312.o
+obj-$(CONFIG_IT8712_GPIO)   += it8712_gpio.o
+obj-$(CONFIG_GEMINI_GPIO)   += gemini_gpio.o
+obj-$(CONFIG_GEMINI_PWC) += gemini_pwr.o
+obj-$(CONFIG_GEMINI_CIR)    += gemini_cir.o
+obj-$(CONFIG_GEMINI_I2S)    += gemini_i2s.o
+obj-$(CONFIG_SL2312_WATCHDOG) += sl2312_wd.o
+obj-$(CONFIG_SL2312_IPSEC) += gemini_crypto.o
+
 obj-$(CONFIG_HPET) += hpet.o
 obj-$(CONFIG_GEN_RTC) += genrtc.o
 obj-$(CONFIG_EFI_RTC) += efirtc.o

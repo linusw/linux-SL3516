@@ -1061,7 +1061,13 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 					BUG();
 				}
 			}
-			if (pages) {
+			if (pages) 
+			{
+				//debug_Aaron on 09/15/2006 , even page is Anonymous do flush also
+                        	if (PageAnon(page))
+                                {
+                                	flush_cache_page(vma, start, page_to_pfn(page));
+                                }
 				pages[i] = page;
 				flush_dcache_page(page);
 			}

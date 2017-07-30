@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: scan.c,v 1.125 2005/09/30 13:59:13 dedekind Exp $
+ * $Id: scan.c,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $
  *
  */
 #include <linux/kernel.h>

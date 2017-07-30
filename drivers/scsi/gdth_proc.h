@@ -2,7 +2,7 @@
 #define _GDTH_PROC_H
 
 /* gdth_proc.h 
- * $Id: gdth_proc.h,v 1.16 2004/01/14 13:09:01 achim Exp $
+ * $Id: gdth_proc.h,v 1.1.1.1 2006/04/03 08:40:58 amos_lee Exp $
  */
 
 static int gdth_set_info(char *buffer,int length,struct Scsi_Host *host,

@@ -1,4 +1,4 @@
-/* $Id: cache.h,v 1.6 2004/03/11 18:08:05 lethal Exp $
+/* $Id: cache.h,v 1.1.1.1 2006/04/03 08:41:15 amos_lee Exp $
  *
  * include/asm-sh/cache.h
  *

@@ -4,7 +4,7 @@
  * Copyright 2000,2001 David A. Schleef <ds@schleef.org>
  *           2000,2001 Lineo, Inc.
  *
- * $Id: sharp.c,v 1.17 2005/11/29 14:28:28 gleixner Exp $
+ * $Id: sharp.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  * Devices supported:
  *   LH28F016SCT Symmetrical block flash memory, 2Mx8

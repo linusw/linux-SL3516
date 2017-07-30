@@ -295,8 +295,11 @@ __create_page_tables:
 	add	r3, r3, #1 << 20
 	str	r3, [r0, #4]!			@ KERNEL + 2MB
 	add	r3, r3, #1 << 20
-	str	r3, [r0, #4]			@ KERNEL + 3MB
-
+	str	r3, [r0, #4]!			@ KERNEL + 3MB
+#ifdef CONFIG_ARCH_SL2312
+	add	r3, r3, #1 << 20
+	str	r3, [r0, #4]			@ for enormous kernel  (Exceed 0x3FC000 KB)
+#endif
 	/*
 	 * Then map first 1MB of ram in case it contains our boot params.
 	 */

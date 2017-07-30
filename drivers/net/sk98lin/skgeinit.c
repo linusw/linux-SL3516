@@ -2,8 +2,8 @@
  *
  * Name:	skgeinit.c
  * Project:	Gigabit Ethernet Adapters, Common Modules
- * Version:	$Revision: 1.97 $
- * Date:	$Date: 2003/10/02 16:45:31 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2006/04/03 08:40:55 $
  * Purpose:	Contains functions to initialize the adapter
  *
  ******************************************************************************/
@@ -31,7 +31,7 @@
 
 #if (defined(DEBUG) || ((!defined(LINT)) && (!defined(SK_SLIM))))
 static const char SysKonnectFileId[] =
-	"@(#) $Id: skgeinit.c,v 1.97 2003/10/02 16:45:31 rschmidt Exp $ (C) Marvell.";
+	"@(#) $Id: skgeinit.c,v 1.1.1.1 2006/04/03 08:40:55 amos_lee Exp $ (C) Marvell.";
 #endif
 
 struct s_QOffTab {

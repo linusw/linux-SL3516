@@ -16,14 +16,14 @@
   Copyright 1992 - 2002 Kai Makisara / 2000 - 2004 Willem Riede
 	 email osst@riede.org
 
-  $Header: /cvsroot/osst/Driver/osst.c,v 1.73 2005/01/01 21:13:34 wriede Exp $
+  $Header: /home/cvs/gemini-2.6.15/drivers/scsi/osst.c,v 1.1.1.1 2006/04/03 08:40:58 amos_lee Exp $
 
   Microscopic alterations - Rik Ling, 2000/12/21
   Last st.c sync: Tue Oct 15 22:01:04 2002 by makisara
   Some small formal changes - aeb, 950809
 */
 
-static const char * cvsid = "$Id: osst.c,v 1.73 2005/01/01 21:13:34 wriede Exp $";
+static const char * cvsid = "$Id: osst.c,v 1.1.1.1 2006/04/03 08:40:58 amos_lee Exp $";
 static const char * osst_version = "0.99.3";
 
 /* The "failure to reconnect" firmware bug */

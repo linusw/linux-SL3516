@@ -1,4 +1,4 @@
-/* $Id: irq.c,v 1.1.2.4 2002/11/04 20:33:56 lethal Exp $
+/* $Id: irq.c,v 1.1.1.1 2006/04/03 08:40:41 amos_lee Exp $
  *
  * arch/sh/boards/cqreek/irq.c
  *

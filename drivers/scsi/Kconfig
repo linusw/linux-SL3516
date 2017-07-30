@@ -469,6 +469,14 @@ config SCSI_SATA
 
 	  If unsure, say N.
 
+config SCSI_SATA_LEPUS
+	tristate "STORLINK SATA support"
+	depends on SCSI_SATA && ARCH_SL2312
+	help
+	  This option enables support for LEPUS Serial ATA.
+
+	  If unsure, say N.
+
 config SCSI_SATA_AHCI
 	tristate "AHCI SATA support"
 	depends on SCSI_SATA && PCI

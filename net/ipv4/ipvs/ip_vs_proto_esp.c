@@ -1,7 +1,7 @@
 /*
  * ip_vs_proto_esp.c:	ESP IPSec load balancing support for IPVS
  *
- * Version:     $Id: ip_vs_proto_esp.c,v 1.1 2003/07/04 15:04:37 wensong Exp $
+ * Version:     $Id: ip_vs_proto_esp.c,v 1.1.1.1 2006/04/03 08:41:30 amos_lee Exp $
  *
  * Authors:	Julian Anastasov <ja@ssi.bg>, February 2002
  *		Wensong Zhang <wensong@linuxvirtualserver.org>

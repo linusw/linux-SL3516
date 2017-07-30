@@ -30,7 +30,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: sa_query.c 2811 2005-07-06 18:11:43Z halr $
+ * $Id: sa_query.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 
 #include <linux/module.h>

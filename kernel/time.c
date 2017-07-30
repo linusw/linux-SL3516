@@ -39,6 +39,11 @@
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
 
+#ifdef CONFIG_SL2312_RTC	
+extern void rtc_set_time_second(unsigned int second);
+extern unsigned int rtc_get_time_second(void);
+#endif
+
 /* 
  * The timezone where the local system is located.  Used as a default by some
  * programs who obtain this value by using gettimeofday.
@@ -62,7 +67,10 @@ asmlinkage long sys_time(time_t __user * tloc)
 
 	do_gettimeofday(&tv);
 	i = tv.tv_sec;
-
+#ifdef CONFIG_SL2312_RTC	
+    i = rtc_get_time_second();
+#endif
+    
 	if (tloc) {
 		if (put_user(i,tloc))
 			i = -EFAULT;
@@ -86,6 +94,10 @@ asmlinkage long sys_stime(time_t __user *tptr)
 		return -EFAULT;
 
 	tv.tv_nsec = 0;
+
+#ifdef CONFIG_SL2312_RTC	
+    rtc_set_time_second(tv.tv_sec);
+#endif    
 
 	err = security_settime(&tv, NULL);
 	if (err)
@@ -194,6 +206,10 @@ asmlinkage long sys_settimeofday(struct timeval __user *tv,
 		if (copy_from_user(&new_tz, tz, sizeof(*tz)))
 			return -EFAULT;
 	}
+
+#ifdef CONFIG_SL2312_RTC	
+    rtc_set_time_second(new_ts.tv_sec);
+#endif    
 
 	return do_sys_settimeofday(tv ? &new_ts : NULL, tz ? &new_tz : NULL);
 }

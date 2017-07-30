@@ -1,7 +1,7 @@
 /* Driver for USB Mass Storage compliant devices
  * Transport Functions Header File
  *
- * $Id: transport.h,v 1.18 2002/04/21 02:57:59 mdharm Exp $
+ * $Id: transport.h,v 1.1.1.1 2006/04/03 08:41:02 amos_lee Exp $
  *
  * Current development and maintenance by:
  *   (c) 1999, 2000 Matthew Dharm (mdharm-usb@one-eyed-alien.net)

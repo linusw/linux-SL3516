@@ -12,7 +12,7 @@
 #ifndef __QETH_FS_H__
 #define __QETH_FS_H__
 
-#define VERSION_QETH_FS_H "$Revision: 1.10 $"
+#define VERSION_QETH_FS_H "$Revision: 1.1.1.1 $"
 
 extern const char *VERSION_QETH_PROC_C;
 extern const char *VERSION_QETH_SYS_C;

@@ -1,4 +1,4 @@
-/* $Id: reg_rdwr.h,v 1.6 2005/04/24 18:30:58 starvik Exp $
+/* $Id: reg_rdwr.h,v 1.1.1.1 2006/04/03 08:41:10 amos_lee Exp $
  *
  * Read/write register macros used by *_defs.h
  */

@@ -2,8 +2,8 @@
  *
  * Name:        skethtool.c
  * Project:     GEnesis, PCI Gigabit Ethernet Adapter
- * Version:     $Revision: 1.7 $
- * Date:        $Date: 2004/09/29 13:32:07 $
+ * Version:     $Revision: 1.1.1.1 $
+ * Date:        $Date: 2006/04/03 08:40:54 $
  * Purpose:     All functions regarding ethtool handling
  *
  ******************************************************************************/

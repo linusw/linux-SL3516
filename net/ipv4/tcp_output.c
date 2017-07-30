@@ -5,7 +5,7 @@
  *
  *		Implementation of the Transmission Control Protocol(TCP).
  *
- * Version:	$Id: tcp_output.c,v 1.146 2002/02/01 22:01:04 davem Exp $
+ * Version:	$Id: tcp_output.c,v 1.2 2007/11/05 06:55:24 aaron Exp $
  *
  * Authors:	Ross Biro
  *		Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
@@ -41,6 +41,10 @@
 #include <linux/compiler.h>
 #include <linux/module.h>
 #include <linux/smp_lock.h>
+
+#ifdef CONFIG_SL2312_TSO
+extern int MSS_NOW;
+#endif
 
 /* People can turn this off for buggy TCP's found in printers etc. */
 int sysctl_tcp_retrans_collapse = 1;
@@ -691,6 +695,10 @@ unsigned int tcp_current_mss(struct sock *sk, int large_allowed)
 	    (sk->sk_route_caps & NETIF_F_TSO) &&
 	    !tp->urg_mode)
 		doing_tso = 1;
+#ifdef CONFIG_BRIDGE
+	if(sk->tss_flag)
+		doing_tso = 1;
+#endif
 
 	if (dst) {
 		u32 mtu = dst_mtu(dst);
@@ -1096,10 +1104,14 @@ void tcp_push_one(struct sock *sk, unsigned int mss_now)
 	struct sk_buff *skb = sk->sk_send_head;
 	unsigned int tso_segs, cwnd_quota;
 
-	BUG_ON(!skb || skb->len < mss_now);
+//printk("%s: sk->sk_send_head=%x skb=%x skb->len=%d mss_now=%d \n",__func__,sk->sk_send_head,skb,skb->len,mss_now);
+//	BUG_ON(!skb || skb->len < mss_now);
 
+//printk("<<< 1 >>>\n");
 	tso_segs = tcp_init_tso_segs(sk, skb, mss_now);
+//printk("<<< tso_segs=%d >>>\n",tso_segs);
 	cwnd_quota = tcp_snd_test(sk, skb, mss_now, TCP_NAGLE_PUSH);
+//printk("mss_now=%d tso_segs=%d cwnd_quota=%d \n",mss_now,tso_segs,cwnd_quota);
 
 	if (likely(cwnd_quota)) {
 		unsigned int limit;
@@ -1110,6 +1122,7 @@ void tcp_push_one(struct sock *sk, unsigned int mss_now)
 		if (tso_segs > 1) {
 			limit = tcp_window_allows(tp, skb,
 						  mss_now, cwnd_quota);
+//printk("limit=%d skb->len=%d \n",limit,skb->len);
 
 			if (skb->len < limit) {
 				unsigned int trim = skb->len % mss_now;
@@ -2030,13 +2043,29 @@ int tcp_write_wakeup(struct sock *sk)
 			if (before(tp->pushed_seq, TCP_SKB_CB(skb)->end_seq))
 				tp->pushed_seq = TCP_SKB_CB(skb)->end_seq;
 
+#ifdef CONFIG_SL2312_TSO
+			if (skb_shinfo(skb)->nr_frags) {
+				int tmp_cnt = (seg_size >> 12) << 12;
+				if (tmp_cnt < 4096)
+					tmp_cnt = 4096;
+				seg_size = tmp_cnt;
+			}
+#endif
 			/* We are probing the opening of a window
 			 * but the window size is != 0
 			 * must have been a result SWS avoidance ( sender )
 			 */
 			if (seg_size < TCP_SKB_CB(skb)->end_seq - TCP_SKB_CB(skb)->seq ||
+#ifdef CONFIG_SL2312_TSO 
+				skb->len > MSS_NOW) {
+#else
 			    skb->len > mss) {
+#endif
+#ifdef CONFIG_SL2312_TSO 
+				seg_size = min(seg_size, MSS_NOW);
+#else
 				seg_size = min(seg_size, mss);
+#endif
 				TCP_SKB_CB(skb)->flags |= TCPCB_FLAG_PSH;
 				if (tcp_fragment(sk, skb, seg_size, mss))
 					return -1;

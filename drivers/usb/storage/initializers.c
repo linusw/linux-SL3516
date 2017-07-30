@@ -1,6 +1,6 @@
 /* Special Initializers for certain USB Mass Storage devices
  *
- * $Id: initializers.c,v 1.2 2000/09/06 22:35:57 mdharm Exp $
+ * $Id: initializers.c,v 1.1.1.1 2006/04/03 08:41:02 amos_lee Exp $
  *
  * Current development and maintenance by:
  *   (c) 1999, 2000 Matthew Dharm (mdharm-usb@one-eyed-alien.net)

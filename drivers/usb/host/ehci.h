@@ -48,6 +48,7 @@ struct ehci_stats {
 
 struct ehci_hcd {			/* one per controller */
 	/* glue to PCI and HCD framework */
+	struct usb_hcd		hcd;
 	struct ehci_caps __iomem *caps;
 	struct ehci_regs __iomem *regs;
 	struct ehci_dbg_port __iomem *debug;

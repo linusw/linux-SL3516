@@ -35,7 +35,9 @@ MODULE_AUTHOR("Herbert Valerio Riedel <hvr@gnu.org>");
 
 #define LOOP_IV_SECTOR_BITS 9
 #define LOOP_IV_SECTOR_SIZE (1 << LOOP_IV_SECTOR_BITS)
-
+#ifdef CONFIG_SL2312_IPSEC
+extern unsigned long crypto_go;
+#endif
 static int
 cryptoloop_init(struct loop_device *lo, const struct loop_info64 *info)
 {
@@ -101,6 +103,7 @@ cryptoloop_transfer_ecb(struct loop_device *lo, int cmd,
 	encdec_ecb_t encdecfunc;
 	struct page *in_page, *out_page;
 	unsigned in_offs, out_offs;
+	unsigned int ret;
 
 	if (cmd == READ) {
 		in_page = raw_page;
@@ -127,7 +130,22 @@ cryptoloop_transfer_ecb(struct loop_device *lo, int cmd,
 		sg_out.offset = out_offs;
 		sg_out.length = sz;
 
+#ifdef CONFIG_SL2312_IPSEC
+		 						ret = -1;
+                while (ret)
+                {
+                        ret = encdecfunc(tfm, &sg_out, &sg_in, sz);
+
+                        if (ret)
+                        {
+                                msleep(1);
+        //                      printk("%s () failed flags=%x\n", __func__, tfm->crt_flags);
+                        }
+                }
+                crypto_go = 1;
+#else	
 		encdecfunc(tfm, &sg_out, &sg_in, sz);
+#endif
 
 		size -= sz;
 		in_offs += sz;
@@ -155,6 +173,7 @@ cryptoloop_transfer_cbc(struct loop_device *lo, int cmd,
 	encdec_cbc_t encdecfunc;
 	struct page *in_page, *out_page;
 	unsigned in_offs, out_offs;
+	unsigned int ret;
 
 	if (cmd == READ) {
 		in_page = raw_page;
@@ -183,7 +202,23 @@ cryptoloop_transfer_cbc(struct loop_device *lo, int cmd,
 		sg_out.offset = out_offs;
 		sg_out.length = sz;
 
+#ifdef CONFIG_SL2312_IPSEC
+		 						ret = -1;
+                while (ret)
+                {
+                        ret = encdecfunc(tfm, &sg_out, &sg_in, sz, (u8 *)iv);
+
+                        if (ret)
+                        {
+                                msleep(1);
+        //                      printk("%s () failed flags=%x\n", __func__, tfm->crt_flags);
+                        }
+                }
+                crypto_go = 1;
+#else	
 		encdecfunc(tfm, &sg_out, &sg_in, sz, (u8 *)iv);
+#endif
+		
 
 		IV++;
 		size -= sz;

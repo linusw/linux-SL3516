@@ -1,4 +1,4 @@
-/* $Id: pgtable.h,v 1.110 2001/12/21 04:56:17 davem Exp $ */
+/* $Id: pgtable.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $ */
 #ifndef _SPARC_PGTABLE_H
 #define _SPARC_PGTABLE_H
 

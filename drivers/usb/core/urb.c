@@ -227,15 +227,19 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
 
 	if (!urb || urb->hcpriv || !urb->complete)
 		return -EINVAL;
+
 	if (!(dev = urb->dev) ||
 	    (dev->state < USB_STATE_DEFAULT) ||
 	    (!dev->bus) || (dev->devnum <= 0))
 		return -ENODEV;
+	         
 	if (dev->bus->controller->power.power_state.event != PM_EVENT_ON
 			|| dev->state == USB_STATE_SUSPENDED)
 		return -EHOSTUNREACH;
+	         
 	if (!(op = dev->bus->op) || !op->submit_urb)
-		return -ENODEV;
+	       return -ENODEV;
+	         
 
 	urb->status = -EINPROGRESS;
 	urb->actual_length = 0;
@@ -249,8 +253,8 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
 	is_out = usb_pipeout (pipe);
 
 	if (!usb_pipecontrol (pipe) && dev->state < USB_STATE_CONFIGURED)
-		return -ENODEV;
-
+	       return -ENODEV;
+               
 	/* FIXME there should be a sharable lock protecting us against
 	 * config/altsetting changes and disconnects, kicking in here.
 	 * (here == before maxpacket, and eventually endpoint type,
@@ -281,7 +285,8 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
 		}
 
 		if (urb->number_of_packets <= 0)		    
-			return -EINVAL;
+		      return -EINVAL;
+		         
 		for (n = 0; n < urb->number_of_packets; n++) {
 			len = urb->iso_frame_desc [n].length;
 			if (len < 0 || len > max) 
@@ -293,7 +298,8 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
 
 	/* the I/O buffer must be mapped/unmapped, except when length=0 */
 	if (urb->transfer_buffer_length < 0)
-		return -EMSGSIZE;
+	        return -EMSGSIZE;
+	        
 
 #ifdef DEBUG
 	/* stuff that drivers shouldn't do, but which shouldn't
@@ -345,7 +351,8 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
 	case PIPE_INTERRUPT:
 		/* too small? */
 		if (urb->interval <= 0)
-			return -EINVAL;
+		      return -EINVAL;
+		    
 		/* too big? */
 		switch (dev->speed) {
 		case USB_SPEED_HIGH:	/* units are microframes */
@@ -369,14 +376,15 @@ int usb_submit_urb(struct urb *urb, gfp_t mem_flags)
 			}
 			break;
 		default:
-			return -EINVAL;
+		        return -EINVAL;
+		        
 		}
 		/* power of two? */
 		while (temp > urb->interval)
 			temp >>= 1;
 		urb->interval = temp;
 	}
-
+//        printk("usb_submit_urb %x\n",op->submit_urb (urb, mem_flags));
 	return op->submit_urb (urb, mem_flags);
 }
 

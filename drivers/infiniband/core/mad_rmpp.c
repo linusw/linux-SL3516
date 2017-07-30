@@ -30,7 +30,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: mad_rmpp.c 1921 2005-03-02 22:58:44Z sean.hefty $
+ * $Id: mad_rmpp.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  */
 
 #include <linux/dma-mapping.h>

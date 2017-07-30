@@ -1,4 +1,4 @@
-/* $Id: palloc.c,v 1.4 1996/04/25 06:09:48 davem Exp $
+/* $Id: palloc.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * palloc.c:  Memory allocation from the Sun PROM.
  *
  * Copyright (C) 1995 David S. Miller (davem@caip.rutgers.edu)

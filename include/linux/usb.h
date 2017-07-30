@@ -270,7 +270,16 @@ struct usb_bus {
 	u8 otg_port;			/* 0, or number of OTG/HNP port */
 	unsigned is_b_host:1;		/* true during some HNP roleswitches */
 	unsigned b_hnp_enable:1;	/* OTG: did A-Host enable HNP? */
+#ifdef  CONFIG_USB_SL2312
+        unsigned A_Disable_Set_Feature_HNP:1;	
+	int (*hcd_isr)  (struct usb_bus	*bus);//For Faraday 
+#else
+#ifdef  CONFIG_USB_SL2312_1
+        unsigned A_Disable_Set_Feature_HNP:1;	
+	int (*hcd_isr)  (struct usb_bus	*bus);//For Faraday 
+#endif
 
+#endif
 	int devnum_next;		/* Next open device number in
 					 * round-robin allocation */
 
@@ -291,6 +300,15 @@ struct usb_bus {
 	int bandwidth_isoc_reqs;	/* number of Isoc. requests */
 
 	struct dentry *usbfs_dentry;	/* usbfs dentry entry for the bus */
+#ifdef CONFIG_USB_SL2312
+       struct list_head inodes;
+       atomic_t refcnt;
+#else 
+#ifdef CONFIG_USB_SL2312_1
+       struct list_head inodes;
+       atomic_t refcnt; 
+#endif
+#endif
 
 	struct class_device *class_dev;	/* class device for this bus */
 	struct kref kref;		/* reference counting for this bus */
@@ -328,7 +346,13 @@ struct usb_device {
 
 	struct usb_tt	*tt; 		/* low/full speed dev, highspeed hub */
 	int		ttport;		/* device port on that tt hub */
-
+#ifdef  CONFIG_USB_SL2312
+        atomic_t refcnt;  
+#else 
+#ifdef  CONFIG_USB_SL2312_1
+        atomic_t refcnt; 
+#endif
+#endif
 	struct semaphore serialize;
 
 	unsigned int toggle[2];		/* one bit for each endpoint
@@ -352,10 +376,21 @@ struct usb_device {
 	int have_langid;		/* whether string_langid is valid */
 	int string_langid;		/* language ID for strings */
 
+
 	/* static strings from the device */
 	char *product;			/* iProduct string, if present */
 	char *manufacturer;		/* iManufacturer string, if present */
 	char *serial;			/* iSerialNumber string, if present */
+#ifdef  CONFIG_USB_SL2312
+        void *hcpriv; 
+        struct list_head inodes;
+#else
+#ifdef  CONFIG_USB_SL2312_1
+        void *hcpriv; 
+        struct list_head inodes;
+#endif
+
+#endif
 
 	struct list_head filelist;
 	struct class_device *class_dev;

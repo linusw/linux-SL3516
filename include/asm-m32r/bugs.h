@@ -1,7 +1,7 @@
 #ifndef _ASM_M32R_BUGS_H
 #define _ASM_M32R_BUGS_H
 
-/* $Id$ */
+/* $Id: bugs.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $ */
 
 /*
  * This is included by init/main.c to check for architecture-dependent bugs.

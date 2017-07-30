@@ -1,6 +1,6 @@
 /* drivers/char/ser_a2232fw.h */
 
-/* $Id: ser_a2232fw.h,v 0.4 2000/01/25 12:00:00 ehaase Exp $ */
+/* $Id: ser_a2232fw.h,v 1.1.1.1 2006/04/03 08:40:46 amos_lee Exp $ */
 
 /*
  * Copyright (c) 1995 Jukka Marin <jmarin@jmp.fi>.

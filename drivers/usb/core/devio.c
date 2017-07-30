@@ -19,7 +19,7 @@
  *      along with this program; if not, write to the Free Software
  *      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- *  $Id: devio.c,v 1.7 2000/02/01 17:28:48 fliegl Exp $
+ *  $Id: devio.c,v 1.2 2007/10/25 05:33:24 stone Exp $
  *
  *  This file implements the usbfs/x/y files, where
  *  x is the bus number and y the device number.
@@ -1590,7 +1590,7 @@ static void usbdev_add(struct usb_device *dev)
 	dev->class_dev->class_data = dev;
 }
 
-static void usbdev_remove(struct usb_device *dev)
+void usbdev_remove(struct usb_device *dev)
 {
 	class_device_unregister(dev->class_dev);
 }

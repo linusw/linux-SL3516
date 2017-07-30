@@ -252,7 +252,7 @@ struct sk_buff {
 	 * want to keep them across layers you have to do a skb_clone()
 	 * first. This is owned by whoever has the skb queued ATM.
 	 */
-	char			cb[40];
+	char			cb[64];
 
 	unsigned int		len,
 				data_len,
@@ -1046,9 +1046,15 @@ static inline void __skb_queue_purge(struct sk_buff_head *list)
 static inline struct sk_buff *__dev_alloc_skb(unsigned int length,
 					      gfp_t gfp_mask)
 {
+#ifdef CONFIG_SL351X_IPSEC
+	struct sk_buff *skb = alloc_skb(length + 64, gfp_mask);
+	if (likely(skb))
+		skb_reserve(skb, 64);
+#else
 	struct sk_buff *skb = alloc_skb(length + 16, gfp_mask);
 	if (likely(skb))
 		skb_reserve(skb, 16);
+#endif
 	return skb;
 }
 #else

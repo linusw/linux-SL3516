@@ -1,4 +1,4 @@
-$Id: input-programming.txt,v 1.4 2001/05/04 09:47:14 vojtech Exp $
+$Id: input-programming.txt,v 1.1.1.1 2006/04/03 08:40:30 amos_lee Exp $
 
 Programming input drivers
 ~~~~~~~~~~~~~~~~~~~~~~~~~

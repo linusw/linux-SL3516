@@ -40,7 +40,7 @@
 #include "z90crypt.h"
 #include "z90common.h"
 
-#define VERSION_Z90MAIN_C "$Revision: 1.62 $"
+#define VERSION_Z90MAIN_C "$Revision: 1.1.1.1 $"
 
 static char z90main_version[] __initdata =
 	"z90main.o (" VERSION_Z90MAIN_C "/"
