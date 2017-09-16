@@ -59,6 +59,18 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
 extern void dma_cache_maint(const void *kaddr, size_t size, int rw);
 
 /*
+ * DMA-consistent sync functions.  It sync a region of
+ * uncached, unwrite-buffered mapped memory space for use with DMA
+ * devices.  This is the "generic" version.  The PCI specific version
+ * is in pci.h
+ *
+ * Note: Drivers should NOT use this function directly, as it will break
+ * platforms with CONFIG_DMABOUNCE.
+ * Use the driver DMA support - see dma-mapping.h (dma_sync_*)
+ */
+extern void dma_consistent_sync(unsigned long phys, void __iomem *vaddr, size_t size, int direction);
+
+/*
  * Return whether the given device DMA address mask can be supported
  * properly.  For example, if your device can only drive the low 24-bits
  * during bus mastering, then you would pass 0x00ffffff as the mask

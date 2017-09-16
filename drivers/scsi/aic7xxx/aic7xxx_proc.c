@@ -37,7 +37,7 @@
  * String handling code courtesy of Gerard Roudier's <groudier@club-internet.fr>
  * sym driver.
  *
- * $Id: //depot/aic7xxx/linux/drivers/scsi/aic7xxx/aic7xxx_proc.c#29 $
+ * $Id: aic7xxx_proc.c,v 1.7 2009/02/17 06:24:57 lichun_c Exp $
  */
 #include "aic7xxx_osm.h"
 #include "aic7xxx_inline.h"

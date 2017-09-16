@@ -2,7 +2,7 @@
 ** hp100.c
 ** HP CASCADE Architecture Driver for 100VG-AnyLan Network Adapters
 **
-** $Id: hp100.c,v 1.58 2001/09/24 18:03:01 perex Exp perex $
+** $Id: hp100.c,v 1.12 2009/02/16 11:31:04 lichun_c Exp $
 **
 ** Based on the HP100 driver written by Jaroslav Kysela <perex@jcu.cz>
 ** Extended for new busmaster capable chipsets by

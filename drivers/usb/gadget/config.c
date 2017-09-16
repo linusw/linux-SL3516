@@ -115,6 +115,8 @@ int usb_gadget_config_buf(
 	return len;
 }
 
+EXPORT_SYMBOL(usb_gadget_config_buf);
+
 /**
  * usb_copy_descriptors - copy a vector of USB descriptors
  * @src: null-terminated vector to copy

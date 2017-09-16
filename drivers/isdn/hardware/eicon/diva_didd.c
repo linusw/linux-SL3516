@@ -1,4 +1,4 @@
-/* $Id: diva_didd.c,v 1.13.6.4 2005/02/11 19:40:25 armin Exp $
+/* $Id: diva_didd.c,v 1.5 2009/02/13 09:25:27 lichun_c Exp $
  *
  * DIDD Interface module for Eicon active cards.
  * 
@@ -23,7 +23,7 @@
 #include "divasync.h"
 #include "did_vers.h"
 
-static char *main_revision = "$Revision: 1.13.6.4 $";
+static char *main_revision = "$Revision: 1.5 $";
 
 static char *DRIVERNAME =
     "Eicon DIVA - DIDD table (http://www.melware.net)";

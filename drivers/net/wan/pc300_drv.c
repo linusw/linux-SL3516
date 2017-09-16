@@ -18,6 +18,9 @@ static char rcsid[] =
  *	Using tabstop = 4.
  * 
  * $Log: pc300_drv.c,v $
+ * Revision 1.10  2009/02/18 01:39:22  lichun_c
+ * patch 2.6.27
+ *
  * Revision 3.23  2002/03/20 13:58:40  henrique
  * Fixed ortographic mistakes
  *

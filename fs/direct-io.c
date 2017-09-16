@@ -792,6 +792,9 @@ static int do_direct_IO(struct dio *dio)
 
 	/* The I/O can start at any block offset within the first page */
 	block_in_page = dio->first_block_in_page;
+	/* Flush D-cache content before mapping it, since there may be
+	   aliases in block cache   */
+	__cpuc_flush_user_all();
 
 	while (dio->block_in_file < dio->final_block_in_request) {
 		page = dio_get_page(dio);

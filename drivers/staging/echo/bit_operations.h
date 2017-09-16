@@ -22,7 +22,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * $Id: bit_operations.h,v 1.11 2006/11/28 15:37:03 steveu Exp $
+ * $Id: bit_operations.h,v 1.1 2009/02/19 00:54:24 lichun_c Exp $
  */
 
 /*! \file */

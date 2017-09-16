@@ -190,6 +190,30 @@ static struct mem_type mem_types[] = {
 		.prot_sect	= PROT_SECT_DEVICE | PMD_SECT_S,
 		.domain		= DOMAIN_IO,
 	},
+        [MT_DEVICE_NCB] = {	  /* for Autospec */
+                .prot_pte	= L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_DIRTY |
+				  L_PTE_WRITE | L_PTE_BUFFERABLE,
+                .prot_l1	= PMD_TYPE_TABLE,
+                .prot_sect	= PMD_TYPE_SECT | PMD_SECT_UNCACHED | PMD_SECT_BUFFERABLE |
+				  PMD_SECT_AP_WRITE,
+                .domain		= DOMAIN_IO,
+        },
+        [MT_DEVICE_CNB] = {	  /* for Autospec */
+                .prot_pte	= L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_DIRTY |
+				  L_PTE_WRITE | L_PTE_CACHEABLE,
+                .prot_l1	= PMD_TYPE_TABLE,
+                .prot_sect	= PMD_TYPE_SECT | PMD_SECT_CACHEABLE |
+				  PMD_SECT_AP_WRITE,
+                .domain		= DOMAIN_IO,
+        },
+        [MT_DEVICE_CB] = {	  /* for Autospec */
+                .prot_pte	= L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_DIRTY |
+				  L_PTE_WRITE | L_PTE_CACHEABLE | L_PTE_BUFFERABLE,
+                .prot_l1	= PMD_TYPE_TABLE,
+                .prot_sect	= PMD_TYPE_SECT | PMD_SECT_CACHEABLE | PMD_SECT_BUFFERABLE |
+				  PMD_SECT_AP_WRITE,
+                .domain		= DOMAIN_IO,
+        },
 	[MT_DEVICE_NONSHARED] = { /* ARMv6 non-shared device */
 		.prot_pte	= PROT_PTE_DEVICE | L_PTE_MT_DEV_NONSHARED,
 		.prot_l1	= PMD_TYPE_TABLE,
@@ -578,7 +602,11 @@ void __init create_mapping(struct map_desc *md)
 		return;
 	}
 
-	if ((md->type == MT_DEVICE || md->type == MT_ROM) &&
+	/*
+	 * Luke Lee 09/14/2005: for Autospec
+	 * if ((md->type == MT_DEVICE || md->type == MT_ROM) &&
+	 */
+	if ((md->type <= MT_DEVICE_CB || md->type == MT_ROM) &&
 	    md->virtual >= PAGE_OFFSET && md->virtual < VMALLOC_END) {
 		printk(KERN_WARNING "BUG: mapping for 0x%08llx at 0x%08lx "
 		       "overlaps vmalloc space\n",

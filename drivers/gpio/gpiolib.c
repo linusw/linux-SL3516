@@ -1119,6 +1119,116 @@ void gpio_set_value_cansleep(unsigned gpio, int value)
 }
 EXPORT_SYMBOL_GPL(gpio_set_value_cansleep);
 
+#ifdef CONFIG_GPIO_INTERRUPT_API
+/** 
+* @brief clear the specific gpio interrupt, you should call this after handling every ISR triggered by the gpio
+* 
+* @param gpio the gpio pin you want to clear
+* 
+* @return 0 when OK, or non-zero value
+*/
+int gpio_interrupt_clear(unsigned gpio)
+{
+	struct gpio_chip	*chip;
+
+	might_sleep_if(extra_checks);
+	chip = gpio_to_chip(gpio);
+	
+    return chip->int_clr ? chip->int_clr(chip, gpio - chip->base) : -1;
+}
+EXPORT_SYMBOL_GPL(gpio_interrupt_clear);
+
+/** 
+* @brief setup interrupt mode to trigger
+* 
+* @param gpio the gpio interrupt pin
+* @param mode describe the trigger condition
+* 
+* @return 0 when OK, or non-zero value
+*/
+int gpio_interrupt_setup(unsigned gpio, struct gpio_interrupt_mode *mode)
+{
+	struct gpio_chip	*chip;
+
+	might_sleep_if(extra_checks);
+	chip = gpio_to_chip(gpio);
+	
+    return chip->int_setup ? chip->int_setup(chip, gpio - chip->base, mode) : -1;
+}
+EXPORT_SYMBOL_GPL(gpio_interrupt_setup);
+
+/** 
+* @brief enable gpio interrupt
+* 
+* @param gpio the gpio pin to be enable
+* 
+* @return 0 when OK, or non-zero value
+*/
+int gpio_interrupt_enable(unsigned gpio)
+{
+	struct gpio_chip	*chip;
+
+	might_sleep_if(extra_checks);
+	chip = gpio_to_chip(gpio);
+	
+    return chip->int_enable ? chip->int_enable(chip, gpio - chip->base) : -1;
+}
+EXPORT_SYMBOL_GPL(gpio_interrupt_enable);
+
+/** 
+* @brief disable gpio interrupt
+* 
+* @param gpio the gpio pin to be disable
+* 
+* @return 0 when OK, or non-zero value
+*/
+int gpio_interrupt_disable(unsigned gpio)
+{
+	struct gpio_chip	*chip;
+
+	might_sleep_if(extra_checks);
+	chip = gpio_to_chip(gpio);
+	
+    return chip->int_disable ? chip->int_disable(chip, gpio - chip->base) : -1;
+}
+EXPORT_SYMBOL_GPL(gpio_interrupt_disable);
+
+/** 
+* @brief mask gpio interrupt
+* 
+* @param gpio the gpio pin to be masked
+* 
+* @return 0 when OK, or non-zero value
+*/
+int gpio_interrupt_mask(unsigned gpio)
+{
+	struct gpio_chip	*chip;
+
+	might_sleep_if(extra_checks);
+	chip = gpio_to_chip(gpio);
+	
+    return chip->int_mask ? chip->int_mask(chip, gpio - chip->base) : -1;
+}
+EXPORT_SYMBOL_GPL(gpio_interrupt_mask);
+
+/** 
+* @brief unmask gpio interrupt
+* 
+* @param gpio the gpio pin to be unmask
+* 
+* @return 0 when OK, or non-zero value
+*/
+int gpio_interrupt_unmask(unsigned gpio)
+{
+	struct gpio_chip	*chip;
+
+	might_sleep_if(extra_checks);
+	chip = gpio_to_chip(gpio);
+	
+    return chip->int_unmask ? chip->int_unmask(chip, gpio - chip->base) : -1;
+}
+EXPORT_SYMBOL_GPL(gpio_interrupt_unmask);
+#endif /* end of CONFIG_GPIO_INTERRUPT_API */
 
 #ifdef CONFIG_DEBUG_FS
 

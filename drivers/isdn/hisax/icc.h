@@ -1,4 +1,4 @@
-/* $Id: icc.h,v 1.4.2.2 2004/01/12 22:52:26 keil Exp $
+/* $Id: icc.h,v 1.2 2007/06/25 05:04:58 mingfeng Exp $
  *
  * ICC specific routines
  *

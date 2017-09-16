@@ -23,6 +23,9 @@
 
 /*
  * $Log: NCR5380.h,v $
+ * Revision 1.6  2009/02/13 09:27:16  lichun_c
+ * patch 2.6.24
+ *
  */
 
 #ifndef NCR5380_H

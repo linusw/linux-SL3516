@@ -3,7 +3,7 @@
  *
  *  	Copyright (C) 1999,2000 Martin Lucina, Tom Zerucha
  *  
- *  $Id: tgafb.h,v 1.4.2.3 2000/04/04 06:44:56 mato Exp $
+ *  $Id: tgafb.h,v 1.3 2009/02/13 05:36:36 lichun_c Exp $
  *
  *  This file is subject to the terms and conditions of the GNU General Public
  *  License. See the file COPYING in the main directory of this archive for

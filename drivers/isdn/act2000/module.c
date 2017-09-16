@@ -1,4 +1,4 @@
-/* $Id: module.c,v 1.14.6.4 2001/09/23 22:24:32 kai Exp $
+/* $Id: module.c,v 1.4 2009/02/16 11:30:16 lichun_c Exp $
  *
  * ISDN lowlevel-module for the IBM ISDN-S0 Active 2000.
  *

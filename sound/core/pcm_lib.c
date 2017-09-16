@@ -128,6 +128,12 @@ void snd_pcm_playback_silence(struct snd_pcm_substream *substream, snd_pcm_ufram
 static void xrun(struct snd_pcm_substream *substream)
 {
 	snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
+
+    /**
+     * Mars add this on 20110302 to debug underrun issue
+     */
+    printk("Kernel: XRUN %d happen! APs gets bad performance! \n", substream->stream);
+
 #ifdef CONFIG_SND_PCM_XRUN_DEBUG
 	if (substream->pstr->xrun_debug) {
 		snd_printd(KERN_DEBUG "XRUN: pcmC%dD%d%c\n",

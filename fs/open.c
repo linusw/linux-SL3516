@@ -1055,6 +1055,7 @@ asmlinkage long sys_openat(int dfd, const char __user *filename, int flags,
 	asmlinkage_protect(4, ret, dfd, filename, flags, mode);
 	return ret;
 }
+EXPORT_SYMBOL(sys_open);
 
 #ifndef __alpha__
 

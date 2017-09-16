@@ -1,4 +1,4 @@
-/* $Id: avm_cs.c,v 1.4.6.3 2001/09/23 22:24:33 kai Exp $
+/* $Id: avm_cs.c,v 1.8 2009/02/18 10:56:08 lichun_c Exp $
  *
  * A PCMCIA client driver for AVM B1/M1/M2
  *

@@ -322,6 +322,7 @@ static int scan_block_full(struct mtd_info *mtd, struct nand_bbt_descr *bd,
 	return 0;
 }
 
+#define NAND_OWN_BBT
 /*
  * Scan a given block partially
  */
@@ -331,12 +332,24 @@ static int scan_block_fast(struct mtd_info *mtd, struct nand_bbt_descr *bd,
 	struct mtd_oob_ops ops;
 	int j, ret;
 
+#ifdef NAND_OWN_BBT
+    {
+        extern int ftnandc023v2_read_bbt(struct mtd_info *mtd, loff_t offs);
+        
+        /*
+         * In romcode stage, we already built a block status table. So we need 
+         * to redirect the checking function to own checking function.
+         */
+        return ftnandc023v2_read_bbt(mtd, offs);
+    }
+#endif
+
 	ops.ooblen = mtd->oobsize;
 	ops.oobbuf = buf;
 	ops.ooboffs = 0;
-	ops.datbuf = NULL;
+	ops.datbuf = NULL;	
 	ops.mode = MTD_OOB_PLACE;
-
+        
 	for (j = 0; j < len; j++) {
 		/*
 		 * Read the full oob until read_oob is fixed to
@@ -348,7 +361,7 @@ static int scan_block_fast(struct mtd_info *mtd, struct nand_bbt_descr *bd,
 			return ret;
 
 		if (check_short_pattern(buf, bd))
-			return 1;
+			return 1; /* bad block */
 
 		offs += mtd->writesize;
 	}
@@ -413,7 +426,8 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf,
 		numblocks += startblock;
 		from = startblock << (this->bbt_erase_shift - 1);
 	}
-
+    
+    /* start to scan bad blocks */
 	for (i = startblock; i < numblocks;) {
 		int ret;
 
@@ -422,10 +436,10 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf,
 					      scanlen, len);
 		else
 			ret = scan_block_fast(mtd, bd, from, buf, len);
-
-		if (ret < 0)
+        
+		if (ret < 0) 
 			return ret;
-
+        
 		if (ret) {
 			this->bbt[i >> 3] |= 0x03 << (i & 0x6);
 			printk(KERN_WARNING "Bad eraseblock %d at 0x%08x\n",
@@ -754,7 +768,7 @@ static int write_bbt(struct mtd_info *mtd, uint8_t *buf,
 static inline int nand_memory_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd)
 {
 	struct nand_chip *this = mtd->priv;
-
+    
 	bd->options &= ~NAND_BBT_SCANEMPTY;
 	return create_bbt(mtd, this->buffers->databuf, bd, -1);
 }
@@ -958,13 +972,14 @@ int nand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd)
 	struct nand_bbt_descr *md = this->bbt_md;
 
 	len = mtd->size >> (this->bbt_erase_shift + 2);
+	
 	/* Allocate memory (2bit per block) and clear the memory bad block table */
 	this->bbt = kzalloc(len, GFP_KERNEL);
 	if (!this->bbt) {
-		printk(KERN_ERR "nand_scan_bbt: Out of memory\n");
+		printk(KERN_ERR "nand_scan_bbt: Out of memory in allocating %d bytes!\n", len);
 		return -ENOMEM;
 	}
-
+    
 	/* If no primary table decriptor is given, scan the device
 	 * to build a memory based bad block table
 	 */
@@ -976,7 +991,7 @@ int nand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd)
 		}
 		return res;
 	}
-
+    
 	/* Allocate a temporary buffer for one eraseblock incl. oob */
 	len = (1 << this->bbt_erase_shift);
 	len += (len >> this->page_shift) * mtd->oobsize;
@@ -987,11 +1002,11 @@ int nand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd)
 		this->bbt = NULL;
 		return -ENOMEM;
 	}
-
+    
 	/* Is the bbt at a given page ? */
 	if (td->options & NAND_BBT_ABSPAGE) {
 		res = read_abs_bbts(mtd, buf, td, md);
-	} else {
+	} else {	        
 		/* Search the bad block table using a pattern in oob */
 		res = search_read_bbts(mtd, buf, td, md);
 	}
@@ -1145,7 +1160,7 @@ static struct nand_bbt_descr bbt_mirror_descr = {
 int nand_default_bbt(struct mtd_info *mtd)
 {
 	struct nand_chip *this = mtd->priv;
-
+    
 	/* Default for AG-AND. We must use a flash based
 	 * bad block table as the devices have factory marked
 	 * _good_ blocks. Erasing those blocks leads to loss
@@ -1198,7 +1213,7 @@ int nand_isbad_bbt(struct mtd_info *mtd, loff_t offs, int allowbbt)
 	uint8_t res;
 
 	/* Get block number * 2 */
-	block = (int)(offs >> (this->bbt_erase_shift - 1));
+	block = (int)(offs) >> (this->bbt_erase_shift - 1);
 	res = (this->bbt[block >> 3] >> (block & 0x06)) & 0x03;
 
 	DEBUG(MTD_DEBUG_LEVEL2, "nand_isbad_bbt(): bbt info for offs 0x%08x: (block %d) 0x%02x\n",

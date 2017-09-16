@@ -19,6 +19,14 @@ ifeq ($(CONFIG_ARCH_SHARK),y)
 OBJS		+= head-shark.o ofw-shark.o
 endif
 
+ifeq ($(CONFIG_ARCH_GM),y)
+OBJS		+= head-GM.o
+endif
+
+ifeq ($(CONFIG_ARCH_FARADAY),y)
+OBJS	        += head-faraday.o
+endif
+
 ifeq ($(CONFIG_ARCH_L7200),y)
 OBJS		+= head-l7200.o
 endif

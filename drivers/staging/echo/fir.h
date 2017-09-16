@@ -22,7 +22,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * $Id: fir.h,v 1.8 2006/10/24 13:45:28 steveu Exp $
+ * $Id: fir.h,v 1.1 2009/02/19 00:54:24 lichun_c Exp $
  */
 
 /*! \page fir_page FIR filtering

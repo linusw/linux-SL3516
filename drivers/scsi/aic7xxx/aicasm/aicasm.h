@@ -37,7 +37,7 @@
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGES.
  *
- * $Id: //depot/aic7xxx/aic7xxx/aicasm/aicasm.h#14 $
+ * $Id: aicasm.h,v 1.1.1.1 2006/03/02 14:48:52 ijsung Exp $
  *
  * $FreeBSD$
  */

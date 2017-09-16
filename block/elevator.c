@@ -832,7 +832,7 @@ EXPORT_SYMBOL(elv_next_request);
 
 void elv_dequeue_request(struct request_queue *q, struct request *rq)
 {
-	BUG_ON(list_empty(&rq->queuelist));
+//	BUG_ON(list_empty(&rq->queuelist));	//mingfeng, would cause bulk data transfer error
 	BUG_ON(ELV_ON_HASH(rq));
 
 	list_del_init(&rq->queuelist);

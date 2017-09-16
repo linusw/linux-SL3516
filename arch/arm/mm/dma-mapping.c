@@ -277,11 +277,13 @@ dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gf
 	void *memory;
 
 	if (dma_alloc_from_coherent(dev, size, handle, &memory))
+	{
 		return memory;
+	}
 
 	if (arch_is_coherent()) {
 		void *virt;
-
+        
 		virt = kmalloc(size, gfp);
 		if (!virt)
 			return NULL;
@@ -289,7 +291,8 @@ dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gf
 
 		return virt;
 	}
-
+    
+    
 	return __dma_alloc(dev, size, handle, gfp,
 			   pgprot_noncached(pgprot_kernel));
 }
@@ -301,7 +304,7 @@ EXPORT_SYMBOL(dma_alloc_coherent);
  */
 void *
 dma_alloc_writecombine(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp)
-{
+{        
 	return __dma_alloc(dev, size, handle, gfp,
 			   pgprot_writecombine(pgprot_kernel));
 }
@@ -374,7 +377,7 @@ void dma_free_coherent(struct device *dev, size_t size, void *cpu_addr, dma_addr
 		kfree(cpu_addr);
 		return;
 	}
-
+    
 	size = PAGE_ALIGN(size);
 
 	spin_lock_irqsave(&consistent_lock, flags);
@@ -512,6 +515,36 @@ void dma_cache_maint(const void *start, size_t size, int direction)
 	}
 }
 EXPORT_SYMBOL(dma_cache_maint);
+
+/*
+ * Make an area consistent for devices.
+ * Note: Drivers should NOT use this function directly, as it will break
+ * platforms with CONFIG_DMABOUNCE.
+ * Use the driver DMA support - see dma-mapping.h (dma_sync_*)
+ */
+void dma_consistent_sync(unsigned long phys, void __iomem *vaddr, size_t size, int direction)
+{
+	void __iomem    *vaddr_end = vaddr + size;
+    unsigned long   phys_end = phys + size;
+    
+	switch (direction) {
+	case DMA_FROM_DEVICE:		/* invalidate only */
+		dmac_inv_range(vaddr, vaddr_end);
+		outer_inv_range(phys, phys_end);
+		break;
+	case DMA_TO_DEVICE:		/* writeback only */
+		dmac_clean_range(vaddr, vaddr_end);
+		outer_clean_range(phys, phys_end);
+		break;
+	case DMA_BIDIRECTIONAL:		/* writeback and invalidate */
+		dmac_flush_range(vaddr, vaddr_end);
+		outer_flush_range(phys, phys_end);
+		break;
+	default:
+		BUG();
+	}
+}
+EXPORT_SYMBOL(dma_consistent_sync);
 
 /**
  * dma_map_sg - map a set of SG buffers for streaming mode DMA

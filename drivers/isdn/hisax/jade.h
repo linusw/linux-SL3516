@@ -1,4 +1,4 @@
-/* $Id: jade.h,v 1.5.2.3 2004/01/14 16:04:48 keil Exp $
+/* $Id: jade.h,v 1.2 2006/04/18 08:04:24 ijsung Exp $
  *
  * JADE specific defines
  *

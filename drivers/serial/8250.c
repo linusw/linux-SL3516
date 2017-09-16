@@ -43,6 +43,7 @@
 #include <asm/irq.h>
 
 #include "8250.h"
+#include <mach/ftpmu010.h>
 
 #ifdef CONFIG_SPARC
 #include "suncore.h"
@@ -279,6 +280,71 @@ static const struct serial8250_config uart_config[] = {
 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
 		.flags		= UART_CAP_FIFO,
 	},
+};
+
+static int uart_fd = -1;
+
+static pmuReg_t regUARTArray[] = {
+    /* reg_off      bit_masks       lock_bits       init_val        init_mask */
+#ifdef CONFIG_PLATFORM_GM8181
+#if CONFIG_SERIAL_8250_RUNTIME_UARTS == 2
+    {0x3C,          (0x1 << 1),     (0x1 << 1),     (0x0 << 1),     (0x1 << 1)},  // uart1 clk on
+    {0x50,          (0x1 << 13),    (0x1 << 13),    (0x0 << 13),    (0x1 << 13)}, // uart1 pinmux
+#endif
+#if CONFIG_SERIAL_8250_RUNTIME_UARTS == 3
+    {0x3C,          (0x3 << 1),     (0x3 << 1),     (0x0 << 1),     (0x3 << 1)},  // uart1~2 clk on
+    {0x50,          (0x7 << 13),    (0x7 << 13),    (0x0 << 13),    (0x7 << 13)}, // uart1~2 pinmux
+#endif
+#if CONFIG_SERIAL_8250_RUNTIME_UARTS == 4
+    {0x3C,          (0x7 << 1),     (0x7 << 1),     (0x0 << 1),     (0x7 << 1)},   // uart1~3 clk on
+    {0x50,          (0x1F << 13),   (0x1F << 13),   (0x0 << 13),    (0x1F << 13)}, // uart1~3 pinmux
+#endif
+#if CONFIG_SERIAL_8250_RUNTIME_UARTS == 5
+    {0x3C,          (0xF << 1),     (0xF << 1),     (0x0 << 1),     (0xF << 1)},   // uart1~4 clk on
+    {0x50,          (0x7F << 13),   (0x7F << 13),   (0x0 << 13),    (0x7F << 13)}, // uart1~4 pinmux
+#endif
+#endif //#ifdef CONFIG_PLATFORM_GM8181
+
+#ifdef CONFIG_PLATFORM_GM8126
+#if CONFIG_SERIAL_8250_RUNTIME_UARTS == 2
+    {0x3C,          (0x1 << 1),     (0x1 << 1),     (0x0 << 1),     (0x1 << 1)},  // uart1 clk on
+    {0x50,          (0xF << 10),    (0xF << 10),    (0x5 << 10),    (0xF << 10)}, // uart1 pinmux
+#endif
+#ifdef UART_FTUART010_2_VA_BASE
+  #if CONFIG_SERIAL_8250_RUNTIME_UARTS == 3
+    {0x3C,          (0x3 << 1),     (0x3 << 1),     (0x0 << 1),     (0x3 << 1)},   // uart1~2 clk on
+    {0x50,          (0xFF << 10),   (0xFF << 10),   (0x55 << 10),   (0xFF << 10)}, // uart1~2 pinmux
+  #endif
+  #if CONFIG_SERIAL_8250_RUNTIME_UARTS == 4
+    {0x3C,          (0x7 << 1),     (0x7 << 1),     (0x0 << 1),     (0x7 << 1)},    // uart1~3 clk on
+    {0x50,          (0xFFF << 10),  (0xFFF << 10),  (0x555 << 10),  (0xFFF << 10)}, // uart1~3 pinmux
+    {0x60,          (0x3F << 0),    (0x00 << 0),    (0x1B << 0),    (0x3F << 0)},   // uart3 pinmux2
+  #endif
+  #if CONFIG_SERIAL_8250_RUNTIME_UARTS == 5
+    {0x3C,          (0xF << 1),     (0xF << 1),     (0x0 << 1),     (0xF << 1)},     // uart1~4 clk on
+    {0x50,          (0xFFFF << 10), (0xFFFF << 10), (0x5555 << 10), (0xFFFF << 10)}, // uart1~4 pinmux
+    {0x60,          (0xFFF << 0),   (0x000 << 0),   (0x6DB << 0),   (0xFFF << 0)},   // uart3~4 pinmux2
+  #endif
+#else
+  #if CONFIG_SERIAL_8250_RUNTIME_UARTS == 3
+    {0x3C,          (0x5 << 1),     (0x5 << 1),     (0x0 << 1),     (0x5 << 1)},    // uart1&3 clk on
+    {0x50,          (0xF0F << 10),  (0xF0F << 10),  (0x505 << 10),  (0xF0F << 10)}, // uart1&3 pinmux
+    {0x60,          (0x3F << 0),    (0x00 << 0),    (0x1B << 0),    (0x3F << 0)},   // uart3 pinmux2
+  #endif
+  #if CONFIG_SERIAL_8250_RUNTIME_UARTS == 4
+    {0x3C,          (0xD << 1),     (0xD << 1),     (0x0 << 1),     (0xD << 1)},     // uart1&3&4 clk on
+    {0x50,          (0xFF0F << 10), (0xFF0F << 10), (0x5505 << 10), (0xFF0F << 10)}, // uart1&3&4 pinmux
+    {0x60,          (0xFFF << 0),   (0x000 << 0),   (0x6DB << 0),   (0xFFF << 0)},   // uart3~4 pinmux2
+  #endif
+#endif //#ifdef UART_FTUART010_2_VA_BASE
+#endif //#ifdef CONFIG_PLATFORM_GM8126
+};
+
+static pmuRegInfo_t uart_clk_pinmux_info = {
+    "uart_clk_pinmux",
+    ARRAY_SIZE(regUARTArray),
+    ATTR_TYPE_NONE,
+    regUARTArray
 };
 
 #if defined (CONFIG_SERIAL_8250_AU1X00)
@@ -652,6 +718,16 @@ static void disable_rsa(struct uart_8250_port *up)
 }
 #endif /* CONFIG_SERIAL_8250_RSA */
 
+// Luke Lee 04/28/2005 ins #if block
+#if defined(CONFIG_ARCH_GM)
+static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
+{
+        up->port.type = PORT_16550A;
+	up->bugs = 0;
+	serial_outp(up, UART_IER, 0x0F);
+        return ;
+}
+#else
 /*
  * This is a quickie test to see how big the FIFO is.
  * It doesn't work at all the time, more's the pity.
@@ -1173,6 +1249,7 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
 	spin_unlock_irqrestore(&up->port.lock, flags);
 	DEBUG_AUTOCONF("type=%s\n", uart_config[up->port.type].name);
 }
+#endif  /* defined(CONFIG_ARCH_GM) */
 
 static void autoconfig_irq(struct uart_8250_port *up)
 {
@@ -1964,7 +2041,12 @@ static int serial8250_startup(struct uart_port *port)
 		 * If the interrupt is not reasserted, setup a timer to
 		 * kick the UART on a regular basis.
 		 */
+/* lichun modify: when kernel boot-up, some last message can't show on terminal */
+#if !defined(CONFIG_ARCH_GM)
 		if (!(iir1 & UART_IIR_NO_INT) && (iir & UART_IIR_NO_INT)) {
+#else
+		if (iir & UART_IIR_NO_INT) {
+#endif
 			up->bugs |= UART_BUG_THRE;
 			pr_debug("ttyS%d - using backup timer\n",
 				 serial_index(port));
@@ -3018,9 +3100,19 @@ static int __init serial8250_init(void)
 	if (nr_uarts > UART_NR)
 		nr_uarts = UART_NR;
 
-	printk(KERN_INFO "Serial: 8250/16550 driver"
+	printk(KERN_INFO "Serial: 8250/16550 driver "
 		"%d ports, IRQ sharing %sabled\n", nr_uarts,
 		share_irqs ? "en" : "dis");
+
+#if CONFIG_SERIAL_8250_RUNTIME_UARTS >= 2
+    /* register UART to pmu core */
+    uart_fd = ftpmu010_register_reg(&uart_clk_pinmux_info);
+    if (unlikely(uart_fd < 0)){
+        printk("UART registers to PMU fail! \n");
+        ret = uart_fd;
+        goto out;
+    }
+#endif
 
 #ifdef CONFIG_SPARC
 	ret = sunserial_register_minors(&serial8250_reg, UART_NR);
@@ -3079,6 +3171,12 @@ static void __exit serial8250_exit(void)
 	sunserial_unregister_minors(&serial8250_reg, UART_NR);
 #else
 	uart_unregister_driver(&serial8250_reg);
+#endif
+
+#if CONFIG_SERIAL_8250_RUNTIME_UARTS >= 2
+    /* unregister UART from pmu core */
+    if (ftpmu010_deregister_reg(uart_fd) < 0)
+        printk(KERN_ERR "Unregister UART from PMU fail! \n");
 #endif
 }
 

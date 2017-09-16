@@ -38,7 +38,7 @@
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGES.
  *
- * $Id: //depot/aic7xxx/aic7xxx/aic79xx_pci.c#92 $
+ * $Id: aic79xx_pci.c,v 1.13 2009/02/18 11:00:13 lichun_c Exp $
  */
 
 #ifdef __linux__

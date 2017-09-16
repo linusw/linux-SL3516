@@ -450,6 +450,13 @@ config MTD_OMAP_NOR
 	  These boards include the Innovator, H2, H3, OSK, Perseus2, and
 	  more.  If you have such a board, say 'Y'.
 
+config MTD_GM
+        tristate "GM NOR flash mappings"
+        depends on ARM && MTD_CFI
+        select MTD_NAND_GM_FTNAND020_PINMUX
+        help
+          This enables access to the NOR flash on the GM board.
+
 # This needs CFI or JEDEC, depending on the cards found.
 config MTD_PCI
 	tristate "PCI MTD driver"

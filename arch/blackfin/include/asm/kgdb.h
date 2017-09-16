@@ -6,7 +6,7 @@
  * Created:
  * Description:
  *
- * Rev:          $Id: kgdb_bfin_linux-2.6.x.patch 4934 2007-02-13 09:32:11Z sonicz $
+ * Rev:          $Id: kgdb.h,v 1.2 2009/02/18 10:51:12 lichun_c Exp $
  *
  * Modified:
  *               Copyright 2005-2006 Analog Devices Inc.

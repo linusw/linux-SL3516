@@ -1,4 +1,4 @@
-/* $Id: scc.h,v 1.29 1997/04/02 14:56:45 jreuter Exp jreuter $ */
+/* $Id: scc.h,v 1.2 2007/06/25 05:06:44 mingfeng Exp $ */
 
 #ifndef	_SCC_H
 #define	_SCC_H

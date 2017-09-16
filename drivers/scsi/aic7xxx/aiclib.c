@@ -27,7 +27,7 @@
  * SUCH DAMAGE.
  *
  * $FreeBSD: src/sys/cam/scsi/scsi_all.c,v 1.38 2002/09/23 04:56:35 mjacob Exp $
- * $Id$
+ * $Id: aiclib.c,v 1.3 2006/04/19 08:06:16 ijsung Exp $
  */
 
 #include "aiclib.h"

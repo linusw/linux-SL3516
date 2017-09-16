@@ -1,7 +1,7 @@
 /*
  * Copyright © 1997-2007 Alacritech, Inc. All rights reserved
  *
- * $Id: sxghif.h,v 1.5 2008/07/24 19:18:22 chris Exp $
+ * $Id: sxghif.h,v 1.1 2009/02/19 00:54:27 lichun_c Exp $
  *
  * sxghif.h:
  *

@@ -2,7 +2,7 @@
  *
  * Copyright © 2000-2008 Alacritech, Inc.  All rights reserved.
  *
- * $Id: sxgdbg.h,v 1.1 2008/06/27 12:49:28 mook Exp $
+ * $Id: sxgdbg.h,v 1.1 2009/02/19 00:54:27 lichun_c Exp $
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

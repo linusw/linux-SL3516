@@ -1,8 +1,8 @@
 /*****************************************************************************
  *                                                                           *
  * File: common.h                                                            *
- * $Revision: 1.21 $                                                         *
- * $Date: 2005/06/22 00:43:25 $                                              *
+ * $Revision: 1.7 $                                                         *
+ * $Date: 2009/02/16 11:31:12 $                                              *
  * Description:                                                              *
  *  part of the Chelsio 10Gb Ethernet Driver.                                *
  *                                                                           *

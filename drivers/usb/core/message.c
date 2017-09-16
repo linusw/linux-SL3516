@@ -51,11 +51,14 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int *actual_length)
 	if (unlikely(retval))
 		goto out;
 
+	// john, actual_length is not initialized, 
+	// once urb failed, may cause series error
+	*actual_length =0;
 	expire = timeout ? msecs_to_jiffies(timeout) : MAX_SCHEDULE_TIMEOUT;
 	if (!wait_for_completion_timeout(&ctx.done, expire)) {
 		usb_kill_urb(urb);
 		retval = (ctx.status == -ENOENT ? -ETIMEDOUT : ctx.status);
-
+                
 		dev_dbg(&urb->dev->dev,
 			"%s timed out on ep%d%s len=%d/%d\n",
 			current->comm,

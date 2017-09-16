@@ -1,4 +1,4 @@
-/* $Id: act2000.h,v 1.8.6.3 2001/09/23 22:24:32 kai Exp $
+/* $Id: act2000.h,v 1.2 2007/06/07 00:53:47 mingfeng Exp $
  *
  * ISDN lowlevel-module for the IBM ISDN-S0 Active 2000.
  *

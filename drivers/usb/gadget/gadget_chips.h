@@ -15,6 +15,12 @@
 #ifndef __GADGET_CHIPS_H
 #define __GADGET_CHIPS_H
 
+#ifdef CONFIG_GM_USB_DEVICE
+#ifndef CONFIG_GM_FUSB220 
+#include "../host/fotg2xx-config.h"
+#endif
+#endif
+
 #ifdef CONFIG_USB_GADGET_NET2280
 #define	gadget_is_net2280(g)	!strcmp("net2280", (g)->name)
 #else
@@ -43,6 +49,18 @@
 #define	gadget_is_goku(g)	!strcmp("goku_udc", (g)->name)
 #else
 #define	gadget_is_goku(g)	0
+#endif
+
+#ifdef CONFIG_GM_FUSB220
+#define	gadget_is_fusb(g)	!strcmp("fusb_udc", (g)->name)
+#else
+#define	gadget_is_fusb(g)	0
+#endif
+
+#ifdef CONFIG_GM_FOTG2XX
+#define	gadget_is_fotg(g)	!strcmp("fotg_udc", (g)->name)
+#else
+#define	gadget_is_fotg(g)	0
 #endif
 
 /* SH3 UDC -- not yet ported 2.4 --> 2.6 */
@@ -225,6 +243,12 @@ static inline int usb_gadget_controller_number(struct usb_gadget *gadget)
 		return 0x21;
 	else if (gadget_is_fsl_qe(gadget))
 		return 0x22;
+#ifdef CONFIG_GM_USB_DEVICE			
+	else if (gadget_is_fusb(gadget))
+		return 0x23;
+	else if (gadget_is_fotg(gadget))
+		return 0x24;
+#endif	
 	return -ENOENT;
 }
 
@@ -252,3 +276,4 @@ static inline bool gadget_supports_altsettings(struct usb_gadget *gadget)
 }
 
 #endif /* __GADGET_CHIPS_H */
+

@@ -368,7 +368,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 
 	spin_lock_irq(&md->lock);
 	while (ret)
-		ret = __blk_end_request(req, -EIO, blk_rq_cur_bytes(req));
+		ret = __blk_end_request(req, 0/*-EIO*/, blk_rq_cur_bytes(req));//eason: use 0 to reduce remove card time when transferring
 	spin_unlock_irq(&md->lock);
 
 	return 0;

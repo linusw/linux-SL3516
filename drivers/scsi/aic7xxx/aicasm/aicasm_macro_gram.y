@@ -38,7 +38,7 @@
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGES.
  *
- * $Id: //depot/aic7xxx/aic7xxx/aicasm/aicasm_macro_gram.y#5 $
+ * $Id: aicasm_macro_gram.y,v 1.2 2009/02/12 06:13:35 lichun_c Exp $
  *
  * $FreeBSD$
  */

@@ -89,6 +89,38 @@
 #   define CPU_NAME cpu_arm922
 #  endif
 # endif
+# ifdef CONFIG_CPU_FA526
+#  ifdef CPU_NAME
+#   undef  MULTI_CPU
+#   define MULTI_CPU
+#  else
+#   define CPU_NAME cpu_fa526
+#  endif
+# endif
+# ifdef CONFIG_CPU_FA626TE
+#  ifdef CPU_NAME
+#   undef  MULTI_CPU
+#   define MULTI_CPU
+#  else
+#   define CPU_NAME cpu_fa626te
+#  endif
+# endif
+# ifdef CONFIG_CPU_FMP626
+#  ifdef CPU_NAME
+#   undef  MULTI_CPU
+#   define MULTI_CPU
+#  else
+#   define CPU_NAME cpu_fmp626
+#  endif
+# endif
+# ifdef CONFIG_CPU_FA726TE
+#  ifdef CPU_NAME
+#   undef  MULTI_CPU
+#   define MULTI_CPU
+#  else
+#   define CPU_NAME cpu_fa726
+#  endif
+# endif
 # ifdef CONFIG_CPU_ARM925T
 #  ifdef CPU_NAME
 #   undef  MULTI_CPU

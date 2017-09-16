@@ -1,10 +1,13 @@
 #ifndef _AHA1542_H
 
-/* $Id: aha1542.h,v 1.1 1992/07/24 06:27:38 root Exp root $
+/* $Id: aha1542.h,v 1.3 2007/06/06 11:46:02 mingfeng Exp $
  *
  * Header file for the adaptec 1542 driver for Linux
  *
  * $Log: aha1542.h,v $
+ * Revision 1.3  2007/06/06 11:46:02  mingfeng
+ * 2007-06-06 For Linux kernel upgrade form 2.6.14 to 2.6.15 on A320D.
+ *
  * Revision 1.1  1992/07/24  06:27:38  root
  * Initial revision
  *

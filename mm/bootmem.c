@@ -31,7 +31,11 @@ unsigned long max_pfn;
 unsigned long saved_max_pfn;
 #endif
 
+#if 1
+bootmem_data_t bootmem_node_data[MAX_NUMNODES];
+#else
 bootmem_data_t bootmem_node_data[MAX_NUMNODES] __initdata;
+#endif
 
 static struct list_head bdata_list __initdata = LIST_HEAD_INIT(bdata_list);
 

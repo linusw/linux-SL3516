@@ -1,5 +1,5 @@
 #define SAHARA_UCODE_VERS_STRING	"$Revision: 1.1 $"
-#define SAHARA_UCODE_VERS_DATE  	"$Date: 2008/06/27 12:58:27 $"
+#define SAHARA_UCODE_VERS_DATE  	"$Date: 2009/02/19 00:54:27 $"
 #define SAHARA_UCODE_HOSTIF_ID  	3
 
 static u32 SNumSections = 0x2;

@@ -25,6 +25,13 @@ config MTD_DEBUG_VERBOSE
 	help
 	  Determines the verbosity level of the MTD debugging messages.
 
+config MTD_USER_PARTION_SIZE
+    int "Size of User's Flash partition(KB) (GM only)"
+    range 1024 17408
+    default "1024"
+    help
+        Grain Media uses this value to set default size of user's partion. 
+
 config MTD_CONCAT
 	tristate "MTD concatenating support"
 	help

@@ -23,7 +23,10 @@
  */
 
 /*
- * $Log: cumana_NCR5380.h,v $
+ * $Log: mac_scsi.h,v $
+ * Revision 1.2  2006/04/18 08:04:48  ijsung
+ * 	Upgraded to FA Linux 2.6.13
+ *
  */
 
 #ifndef MAC_NCR5380_H

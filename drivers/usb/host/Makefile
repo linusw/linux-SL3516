@@ -13,6 +13,11 @@ obj-$(CONFIG_USB_WHCI_HCD)	+= whci/
 obj-$(CONFIG_PCI)		+= pci-quirks.o
 
 obj-$(CONFIG_USB_EHCI_HCD)	+= ehci-hcd.o
+
+obj-$(CONFIG_GM_FUSBH200)	+= fotg2xx_opt.o fotg2xx-ehci-hcd.o
+
+obj-$(CONFIG_GM_FOTG2XX)	+= fotg2xx_opt.o fotg2xx-ehci-hcd.o
+
 obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
 obj-$(CONFIG_USB_OHCI_HCD)	+= ohci-hcd.o
 obj-$(CONFIG_USB_UHCI_HCD)	+= uhci-hcd.o

@@ -112,6 +112,11 @@ static struct stack stacks[NR_CPUS];
 char elf_platform[ELF_PLATFORM_SIZE];
 EXPORT_SYMBOL(elf_platform);
 
+#ifdef CONFIG_ISOLATE_INITRAMFS
+unsigned long __initramfs_start __initdata = 0;
+unsigned long __initramfs_size __initdata = 0;
+#endif
+
 static struct meminfo meminfo __initdata = { 0, };
 static const char *cpu_name;
 static const char *machine_name;
@@ -204,6 +209,11 @@ int cpu_architecture(void)
 		cpu_arch = CPU_ARCH_UNKNOWN;
 	} else if ((read_cpuid_id() & 0x0008f000) == 0x00007000) {
 		cpu_arch = (read_cpuid_id() & (1 << 23)) ? CPU_ARCH_ARMv4T : CPU_ARCH_ARMv3;
+#ifdef CONFIG_CPU_FA726TE
+		cpu_arch = (read_cpuid_id() >> 16) & 7;
+		if (cpu_arch)
+			cpu_arch += CPU_ARCH_ARMv3;
+#endif
 	} else if ((read_cpuid_id() & 0x00080000) == 0x00000000) {
 		cpu_arch = (read_cpuid_id() >> 16) & 7;
 		if (cpu_arch)
@@ -366,6 +376,22 @@ static struct machine_desc * __init setup_machine(unsigned int nr)
 
 	return list;
 }
+
+#ifdef CONFIG_ISOLATE_INITRAMFS
+static void __init early_initramfs(char **p)
+{
+	unsigned long start, size;
+
+	start = memparse(*p, p);
+	if (**p == ',') {
+		size = memparse((*p) + 1, p);
+
+		__initramfs_start = start;
+		__initramfs_size = size;
+	}
+}
+__early_param("initramfs=", early_initramfs);
+#endif
 
 static void __init arm_add_memory(unsigned long start, unsigned long size)
 {

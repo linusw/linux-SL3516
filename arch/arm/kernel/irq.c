@@ -115,6 +115,17 @@ asmlinkage void __exception asm_do_IRQ(unsigned int irq, struct pt_regs *regs)
 
 	irq_enter();
 
+#ifdef	CONFIG_CPU_FA526_IDLE_FIXUP
+	/* ijsung 2006/04/19 change IDLE mode support from entry-armv.S to here.
+	 * now use C-based implementation for FA526
+	 */
+	if ((processor_mode(regs) == SVC_MODE) &&
+		*(unsigned *)(regs->ARM_pc) == 0xee070f90) {
+		/* If in SVC mode and *PC == mcr p15,0,r0,c7,c0,4 */
+		regs->ARM_pc += 4;
+	}
+#endif
+
 	/*
 	 * Some hardware gives randomly wrong interrupts.  Rather
 	 * than crashing, do something sensible.

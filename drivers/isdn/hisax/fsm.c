@@ -1,4 +1,4 @@
-/* $Id: fsm.c,v 1.14.6.4 2001/09/23 22:24:47 kai Exp $
+/* $Id: fsm.c,v 1.2 2007/06/26 03:12:30 mingfeng Exp $
  *
  * Finite state machine
  *

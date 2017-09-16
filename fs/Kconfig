@@ -910,6 +910,7 @@ config EFS_FS
 source "fs/jffs2/Kconfig"
 # UBIFS File system configuration
 source "fs/ubifs/Kconfig"
+source "fs/yaffs/Kconfig"
 
 config CRAMFS
 	tristate "Compressed ROM file system support (cramfs)"
@@ -1556,5 +1557,4 @@ endif
 
 source "fs/nls/Kconfig"
 source "fs/dlm/Kconfig"
-
 endmenu

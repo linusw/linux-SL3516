@@ -45,6 +45,9 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
 		if (aliasing)
 			do_align = filp || flags & MAP_SHARED;
 	}
+#elif defined(CONFIG_CPU_FA626TE) /* FA626TE have Aliasing VIPT */
+#define	aliasing 1
+int	do_align = filp || flags & MAP_SHARED;
 #else
 #define do_align 0
 #define aliasing 0
@@ -114,7 +117,6 @@ full_search:
 			addr = COLOUR_ALIGN(addr, pgoff);
 	}
 }
-
 
 /*
  * You really shouldn't be using read() or write() on /dev/mem.  This

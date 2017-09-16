@@ -36,7 +36,7 @@
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGES.
  *
- * $Id$
+ * $Id: aic79xx_pci.h,v 1.3 2007/06/26 03:12:56 mingfeng Exp $
  *
  */
 #ifndef _AIC79XX_PCI_H_

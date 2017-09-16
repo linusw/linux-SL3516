@@ -10,13 +10,16 @@
 #
 # Copyright (C) 1995-2001 by Russell King
 
-LDFLAGS_vmlinux	:=-p --no-undefined -X
+#Luke Lee mod 1 03/08/2005
+LDFLAGS_vmlinux	:=-p --no-undefined -X -Map vmlinux.map
 CPPFLAGS_vmlinux.lds = -DTEXT_OFFSET=$(TEXT_OFFSET)
 OBJCOPYFLAGS	:=-O binary -R .note -R .note.gnu.build-id -R .comment -S
 GZFLAGS		:=-9
 #KBUILD_CFLAGS	+=-pipe
 # Explicitly specifiy 32-bit ARM ISA since toolchain default can be -mthumb:
 KBUILD_CFLAGS	+=$(call cc-option,-marm,)
+# Luke Lee 04/15/2005 ins 1 04/26/2005 rem 1
+KBUILD_CFLAGS	+= -gdwarf-2
 
 # Do not use arch/arm/defconfig - it's always outdated.
 # Select a platform tht is kept up-to-date
@@ -70,6 +73,7 @@ tune-$(CONFIG_CPU_ARM940T)	:=-mtune=arm9tdmi
 tune-$(CONFIG_CPU_ARM946E)	:=$(call cc-option,-mtune=arm9e,-mtune=arm9tdmi)
 tune-$(CONFIG_CPU_ARM920T)	:=-mtune=arm9tdmi
 tune-$(CONFIG_CPU_ARM922T)	:=-mtune=arm9tdmi
+tune-$(CONFIG_CPU_FA526)	:=-mtune=arm9tdmi
 tune-$(CONFIG_CPU_ARM925T)	:=-mtune=arm9tdmi
 tune-$(CONFIG_CPU_ARM926T)	:=-mtune=arm9tdmi
 tune-$(CONFIG_CPU_SA110)	:=-mtune=strongarm110
@@ -144,6 +148,13 @@ endif
  machine-$(CONFIG_ARCH_MSM)	   := msm
  machine-$(CONFIG_ARCH_LOKI)       := loki
  machine-$(CONFIG_ARCH_MV78XX0)    := mv78xx0
+ machine-$(CONFIG_ARCH_GM)	   := GM
+
+# Luke Lee 09/07/2005 ins begin
+ifeq ($(machine-y),GM)
+include arch/arm/mach-GM/Makefile
+endif
+# Luke Lee 09/07/2005 ins end
 
 ifeq ($(CONFIG_ARCH_EBSA110),y)
 # This is what happens if you forget the IOCS16 line.

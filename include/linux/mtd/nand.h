@@ -116,6 +116,9 @@ extern void nand_wait_ready(struct mtd_info *mtd);
 /*
  * Constants for ECC_MODES
  */
+/* John add,FTNADNC020 Hardware ECC 3 byte ECC per 512 Byte data in controller*/
+#define NAND_AUTOECC_HW3_512	8
+
 typedef enum {
 	NAND_ECC_NONE,
 	NAND_ECC_SOFT,

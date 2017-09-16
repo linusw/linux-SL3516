@@ -1,4 +1,4 @@
-/* $Id: bugs.h,v 1.2 2001/01/17 17:03:18 bjornw Exp $
+/* $Id: bugs.h,v 1.1 2009/02/19 00:54:17 lichun_c Exp $
  *
  *  include/asm-cris/bugs.h
  *

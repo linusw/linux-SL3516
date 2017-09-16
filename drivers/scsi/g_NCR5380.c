@@ -79,7 +79,10 @@
  */
 
 /*
- * $Log: generic_NCR5380.c,v $
+ * $Log: g_NCR5380.c,v $
+ * Revision 1.8  2009/02/13 09:27:18  lichun_c
+ * patch 2.6.24
+ *
  */
 
 /* settings for DTC3181E card with only Mustek scanner attached */

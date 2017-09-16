@@ -1,4 +1,4 @@
-/* $Id: shmem.c,v 1.2.10.1 2001/09/23 22:24:59 kai Exp $
+/* $Id: shmem.c,v 1.5 2009/02/13 09:25:32 lichun_c Exp $
  *
  * Copyright (C) 1996  SpellCaster Telecommunications Inc.
  *

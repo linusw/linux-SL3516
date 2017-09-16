@@ -4,6 +4,9 @@ SUBLEVEL = 28
 EXTRAVERSION =
 NAME = Erotic Pickled Herring
 
+ARCH = arm
+INSTALL_MOD_PATH = $(srctree)/../target/rootfs-cpio/ 
+
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README
@@ -191,7 +194,8 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?= $(SUBARCH)
-CROSS_COMPILE	?=
+#CROSS_COMPILE	?= arm-linux-
+CROSS_COMPILE ?= arm-none-linux-gnueabi-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -461,7 +465,10 @@ init-y		:= init/
 drivers-y	:= drivers/ sound/ firmware/
 net-y		:= net/
 libs-y		:= lib/
+ifdef CONFIG_ISOLATE_INITRAMFS
+else
 core-y		:= usr/
+endif
 endif # KBUILD_EXTMOD
 
 ifeq ($(dot-config),1)

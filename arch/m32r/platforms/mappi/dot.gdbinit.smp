@@ -1,5 +1,5 @@
 # .gdbinit file
-# $Id$
+# $Id: dot.gdbinit.smp,v 1.1 2009/02/13 06:24:47 lichun_c Exp $
 
 # setting
 set width 0d70

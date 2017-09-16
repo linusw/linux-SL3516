@@ -250,6 +250,27 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 		return 0;
 
 	tsk = current;
+#ifdef CONFIG_CPU_FA626_VIPT_FIXUP
+	/* Below is a fixup for faulting mcr p15, 0, rd, c7, c14, op2,
+	 * which is used to clear D-cache entry. Since we can't easily
+         * detect (physically unmapped) "old" pages (which is used by ARM
+         * port to emulate LRU) inside the flushing code, we do it here. */
+	mm=NULL;
+	if(!user_mode(regs)) {
+		extern void fa_flush_user_cache_all(void);
+		unsigned instr=*(volatile unsigned *)regs->ARM_pc;
+		/* is the faulting instruction mcr p15, 0, rd, c7, c14, op2 */
+		if((instr& 0x0fff0f0f)==0x0e070f0e) {
+#if 0
+			printk("\n%s: fixup cache clear@%08X\n",
+				__func__,regs->ARM_r0);
+#endif
+			fa_flush_user_cache_all();
+			regs->ARM_pc=regs->ARM_lr;
+			return 0;
+		}
+	}
+#endif
 	mm  = tsk->mm;
 
 	/*

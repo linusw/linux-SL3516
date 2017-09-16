@@ -1,4 +1,4 @@
-/* $Id: divert_procfs.c,v 1.11.6.2 2001/09/23 22:24:36 kai Exp $
+/* $Id: divert_procfs.c,v 1.10 2009/02/17 06:22:45 lichun_c Exp $
  *
  * Filesystem handling for the diversion supplementary services.
  *

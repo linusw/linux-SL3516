@@ -26,7 +26,11 @@
  */
 
 /*
- * $Log: generic_NCR5380.h,v $
+ * $Log: g_NCR5380.h,v $
+ * Revision 1.5  2007/06/25 05:05:37  mingfeng
+ * 2007-06-25 Upgrade Linux kernel from 2.6.17 to 2.6.18 on A320D.
+ * Simple test on FA526/FA626 with cache write-through and write back.
+ *
  */
 
 #ifndef GENERIC_NCR5380_H

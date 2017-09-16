@@ -1974,6 +1974,7 @@ void show_free_areas(void)
 
 	show_swap_cache_info();
 }
+EXPORT_SYMBOL(show_free_areas);
 
 static void zoneref_set_zone(struct zone *zone, struct zoneref *zoneref)
 {

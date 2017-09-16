@@ -30,7 +30,13 @@
  */
 
 /*
- * $Log: cumana_NCR5380.h,v $
+ * $Log: sun3_scsi.h,v $
+ * Revision 1.4  2007/06/26 03:12:56  mingfeng
+ * 2007-06-27 Linux kernel upgrade from 2.6.19 to 2.6.20 on A320D.
+ * Simple tests pass with FA526/FA626 with cache write-through and
+ * cache write-back. Also note that drivers/mtd/nand/nand_base.c
+ * is not modified yet. It will be modified until next release.
+ *
  */
 
 #ifndef SUN3_NCR5380_H

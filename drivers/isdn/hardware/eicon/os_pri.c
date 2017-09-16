@@ -1,4 +1,4 @@
-/* $Id: os_pri.c,v 1.32 2004/03/21 17:26:01 armin Exp $ */
+/* $Id: os_pri.c,v 1.3 2007/06/27 13:03:34 mingfeng Exp $ */
 
 #include "platform.h"
 #include "debuglib.h"

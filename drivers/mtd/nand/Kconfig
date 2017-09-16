@@ -138,6 +138,27 @@ config MTD_NAND_PPCHAMELEONEVB
 	help
 	  This enables the NAND flash driver on the PPChameleon EVB Board.
 
+config MTD_NAND_FTNANDC023
+	tristate "NAND Flash support for GM SoC"
+	depends on ARCH_GM
+	help
+	  This enable the NAND flash controller on the GM SoC
+
+config FTNANDC023_USE_AHBDMA
+	bool "Use AHB DMA transfer"
+	depends on MTD_NAND_FTNANDC023
+	help
+	  Use AHB DMA to transfer data instead of PIO
+
+config FTNANDC023_DEBUG
+	int "FTNANDC023 driver debugging verbosity (0 = quiet, 2 = noisy)"
+	depends on MTD_NAND_FTNANDC023
+	range 0 2
+	default "0"
+	help
+	  print debug information for FTNANDC023
+
+
 config MTD_NAND_S3C2410
 	tristate "NAND Flash support for S3C2410/S3C2440 SoC"
 	depends on ARCH_S3C2410

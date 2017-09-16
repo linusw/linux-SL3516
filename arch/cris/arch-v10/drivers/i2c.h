@@ -1,4 +1,4 @@
-/* $Id: i2c.h,v 1.3 2004/05/28 09:26:59 starvik Exp $ */
+/* $Id: i2c.h,v 1.1.1.1 2006/03/02 14:48:56 ijsung Exp $ */
 
 int i2c_init(void);
 

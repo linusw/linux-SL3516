@@ -1,4 +1,4 @@
-/* $Id: isdn_concap.h,v 1.1.2.2 2004/01/12 22:37:19 keil Exp $
+/* $Id: isdn_concap.h,v 1.2 2006/04/18 08:04:25 ijsung Exp $
  *
  * Linux ISDN subsystem, protocol encapsulation
  *

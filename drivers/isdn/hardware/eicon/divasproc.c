@@ -1,4 +1,4 @@
-/* $Id: divasproc.c,v 1.19.4.3 2005/01/31 12:22:20 armin Exp $
+/* $Id: divasproc.c,v 1.5 2009/02/17 06:22:46 lichun_c Exp $
  *
  * Low level driver for Eicon DIVA Server ISDN cards.
  * /proc functions

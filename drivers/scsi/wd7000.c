@@ -1,4 +1,4 @@
-/* $Id: $
+/* $Id: wd7000.c,v 1.8 2009/02/18 01:40:06 lichun_c Exp $
  *  linux/drivers/scsi/wd7000.c
  *
  *  Copyright (C) 1992  Thomas Wuensche

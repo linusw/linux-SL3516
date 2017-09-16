@@ -3,6 +3,9 @@ Memory management for CRIS/MMU
 HISTORY:
 
 $Log: README.mm,v $
+Revision 1.2  2007/06/06 11:45:02  mingfeng
+2007-06-06 For Linux kernel upgrade form 2.6.14 to 2.6.15 on A320D.
+
 Revision 1.1  2001/12/17 13:59:27  bjornw
 Initial revision
 

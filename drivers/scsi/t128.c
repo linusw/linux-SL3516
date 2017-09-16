@@ -104,6 +104,9 @@
  
 /*
  * $Log: t128.c,v $
+ * Revision 1.7  2009/02/13 09:27:23  lichun_c
+ * patch 2.6.24
+ *
  */
 
 #include <asm/system.h>

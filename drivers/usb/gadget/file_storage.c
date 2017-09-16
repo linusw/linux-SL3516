@@ -243,6 +243,7 @@
 #include <linux/usb/gadget.h>
 
 #include "gadget_chips.h"
+#include "fotg2xx-peri-macro.h"
 
 
 
@@ -274,9 +275,13 @@ MODULE_LICENSE("Dual BSD/GPL");
  *
  * DO NOT REUSE THESE IDs with any other driver!!  Ever!!
  * Instead:  allocate your own, using normal USB-IF procedures. */
+#ifdef CONFIG_GM_USB_DEVICE
+#define DRIVER_VENDOR_ID        0x2310  // GM
+#define DRIVER_PRODUCT_ID       0x5678  // Linux-USB File-backed Storage Gadget
+#else
 #define DRIVER_VENDOR_ID	0x0525	// NetChip
 #define DRIVER_PRODUCT_ID	0xa4a5	// Linux-USB File-backed Storage Gadget
-
+#endif
 
 /*
  * This driver assumes self-powered hardware and has no way for users to
@@ -355,10 +360,19 @@ static struct {
 	char		*protocol_name;
 
 } mod_data = {					// Default values
+#ifdef CONFIG_GM_USB_DEVICE
+        .file[0]                 = "/ram.img",
+        .ro[0]                   = 0,
+#endif
 	.transport_parm		= "BBB",
 	.protocol_parm		= "SCSI",
+#ifdef CONFIG_GM_USB_DEVICE
+        .removable              = 1,
+        .can_stall              = 0,
+#else
 	.removable		= 0,
 	.can_stall		= 1,
+#endif	
 	.vendor			= DRIVER_VENDOR_ID,
 	.product		= DRIVER_PRODUCT_ID,
 	.release		= 0xffff,	// Use controller chip type
@@ -4160,5 +4174,7 @@ static void __exit fsg_cleanup(void)
 
 	close_all_backing_files(fsg);
 	kref_put(&fsg->ref, fsg_release);
+#define BIT0 (1<<0)
+	mUsbUnPLGSet();
 }
 module_exit(fsg_cleanup);

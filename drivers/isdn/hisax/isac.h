@@ -1,4 +1,4 @@
-/* $Id: isac.h,v 1.9.2.2 2004/01/12 22:52:27 keil Exp $
+/* $Id: isac.h,v 1.1.1.1 2006/03/02 14:48:50 ijsung Exp $
  *
  * ISAC specific defines
  *

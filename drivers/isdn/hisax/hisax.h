@@ -1,4 +1,4 @@
-/* $Id: hisax.h,v 2.64.2.4 2004/02/11 13:21:33 keil Exp $
+/* $Id: hisax.h,v 1.10 2009/02/17 06:22:47 lichun_c Exp $
  *
  * Basic declarations, defines and prototypes
  *

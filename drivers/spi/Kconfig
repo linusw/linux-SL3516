@@ -40,8 +40,7 @@ config SPI_DEBUG
 #
 
 config SPI_MASTER
-#	boolean "SPI Master Support"
-	boolean
+	boolean "SPI Master Support"
 	default SPI
 	help
 	  If your system has an master-capable SPI controller (which
@@ -204,6 +203,47 @@ config SPI_XILINX
 	  See the "OPB Serial Peripheral Interface (SPI) (v1.00e)"
 	  Product Specification document (DS464) for hardware details.
 
+config SPI_FTSSP010
+    tristate "Grain Media's SPI controller"
+    depends on ARCH_GM
+    help
+        This exposes the SPI controller IP of Grain Media Inc.
+
+config SPI_FTSSP010_CS0
+    boolean "Use CS0 of Grain Media's SPI controller"
+    depends on SPI_FTSSP010
+    help
+        If you attach a SPI device on Grain Media SPI bus with CS0, choose this  
+
+config SPI_FTSSP010_CS1
+    boolean "Use CS1 of Grain Media's SPI controller"
+    depends on SPI_FTSSP010
+    help
+        If you attach a SPI device on Grain Media SPI bus with CS1, choose this  
+
+config SPI_FTSSP010_CS2
+    boolean "Use CS2 of Grain Media's SPI controller"
+    depends on SPI_FTSSP010
+    help    
+        If you attach a SPI device on Grain Media SPI bus with CS2, choose this  
+
+config SPI_FTSSP010_CS3
+    boolean "Use CS3 of Grain Media's SPI controller"
+    depends on SPI_FTSSP010
+    help
+        If you attach a SPI device on Grain Media SPI bus with CS3, choose this  
+
+config SPI_FTSSP010_CS4
+    boolean "Use CS4 of Grain Media's SPI controller"
+    depends on SPI_FTSSP010
+    help
+        If you attach a SPI device on Grain Media SPI bus with CS4, choose this  
+
+config SPI_FTSSP010_CS5
+    boolean "Use CS5 of Grain Media's SPI controller"
+    depends on SPI_FTSSP010
+    help
+        If you attach a SPI device on Grain Media SPI bus with CS5, choose this  
 #
 # Add new SPI master controllers in alphabetical order above this line
 #

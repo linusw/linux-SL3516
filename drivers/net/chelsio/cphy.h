@@ -1,8 +1,8 @@
 /*****************************************************************************
  *                                                                           *
  * File: cphy.h                                                              *
- * $Revision: 1.7 $                                                          *
- * $Date: 2005/06/21 18:29:47 $                                              *
+ * $Revision: 1.3 $                                                          *
+ * $Date: 2009/02/12 06:12:54 $                                              *
  * Description:                                                              *
  *  part of the Chelsio 10Gb Ethernet Driver.                                *
  *                                                                           *

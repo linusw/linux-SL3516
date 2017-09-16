@@ -28,6 +28,9 @@
 
 /*
  * $Log: NCR5380.c,v $
+ * Revision 1.13  2009/02/16 11:31:59  lichun_c
+ * patch 2.6.25
+ *
 
  * Revision 1.10 1998/9/2	Alan Cox
  *				(alan@redhat.com)

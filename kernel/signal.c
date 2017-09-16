@@ -2216,6 +2216,8 @@ sys_kill(pid_t pid, int sig)
 	return kill_something_info(sig, &info, pid);
 }
 
+EXPORT_SYMBOL(sys_kill);
+
 static int do_tkill(pid_t tgid, pid_t pid, int sig)
 {
 	int error;

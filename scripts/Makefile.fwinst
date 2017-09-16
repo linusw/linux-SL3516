@@ -39,11 +39,11 @@ install-all-dirs: $(installed-fw-dirs)
 quiet_cmd_install = INSTALL $(subst $(srctree)/,,$@)
       cmd_install = $(INSTALL) -m0644 $< $@
 
-$(installed-fw-dirs):
-	$(call cmd,mkdir)
+#$(installed-fw-dirs):
+#	$(call cmd,mkdir)
 
-$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $(INSTALL_FW_PATH)/$$(dir %)
-	$(call cmd,install)
+#$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $(INSTALL_FW_PATH)/$$(dir %)
+#	$(call cmd,install)
 
 PHONY +=  __fw_install __fw_modinst FORCE
 

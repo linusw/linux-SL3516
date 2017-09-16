@@ -12,7 +12,13 @@
  * Author:
  * L. Haag
  *
- * $Log: r3964.h,v $
+ * $Log: n_r3964.h,v $
+ * Revision 1.3  2007/06/26 03:13:35  mingfeng
+ * 2007-06-27 Linux kernel upgrade from 2.6.19 to 2.6.20 on A320D.
+ * Simple tests pass with FA526/FA626 with cache write-through and
+ * cache write-back. Also note that drivers/mtd/nand/nand_base.c
+ * is not modified yet. It will be modified until next release.
+ *
  * Revision 1.4  2005/12/21 19:54:24  Kurt Huwig <kurt huwig de>
  * Fixed HZ usage on 2.6 kernels
  * Removed unnecessary include

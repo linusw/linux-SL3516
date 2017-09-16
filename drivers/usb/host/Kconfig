@@ -42,6 +42,64 @@ config USB_EHCI_HCD
 	  To compile this driver as a module, choose M here: the
 	  module will be called ehci-hcd.
 
+config GM_FOTG2XX
+	tristate "GM USB On-The-Go EHCI HCD(USB2.0) support"
+	depends on USB
+	depends on !GM_FUSB200
+	---help---
+	  The USB HCD Driver of GM FOTG2XX, USB OTG IP
+	  is designed to meet USB2.0 EHCI specification with
+	  minor modification, Read OTG2XX data sheet for more details.
+
+#config GM_FOTG2XX_NOHOST
+#	bool "Disable Host function on GM USB OTG2XX"
+#	depends on GM_FOTG2XX
+#	default n
+#	---help---
+#	  Disable Host function on OTG controller,You need to configure Gadget
+#	  for device function.
+#	  If you would like to Disable OTG's Device funtion, just to disable
+#	  gadget function
+
+config GM_FOTG2XX_INFO
+	bool "Provide FOTG2XX information while running"
+	depends on GM_FOTG2XX
+	default n
+	---help---
+	  Dump some important information while FOTG2XX running
+
+config GM_FOTG2XX_LOW_TIMING
+	bool "Set longer EOF1 Time on FPGA stage"
+	depends on GM_FOTG2XX
+	default n
+	---help---
+	  Set EOF1_time on Misc register (0x40) longer on FPGA to avoid USB halt
+	  This will get poor performance
+
+config GM_FUSBH200
+	tristate "GM USB Host EHCI(USB2.0) support"
+	depends on USB
+	depends on !PLATFORM_GM8180 && !PLATFORM_GM8126
+	---help---
+	  The USB HCD Driver of GM FUSBH200, USB Host IP
+	  is designed to meet USB2.0 EHCI specification with
+	  minor modification, Read FUSBH200 data sheet for more details.
+
+config GM_FUSBH200_INFO
+	bool "Provide FUSBH200 information while running"
+	depends on GM_FUSBH200
+	default n
+	---help---
+	  Dump some important information while FUSBH200 running
+
+config GM_FUSBH200_LOW_TIMING
+	bool "Set longer EOF1 Time on FPGA stage"
+	depends on GM_FUSBH200
+	default n
+	---help---
+	  Set EOF1_time on Misc register (0x34) longer on FPGA to avoid USB halt
+	  This will get poor performance
+
 config USB_EHCI_ROOT_HUB_TT
 	bool "Root Hub Transaction Translators"
 	depends on USB_EHCI_HCD

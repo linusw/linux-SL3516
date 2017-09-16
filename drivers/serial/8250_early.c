@@ -3,6 +3,8 @@
  *
  * (c) Copyright 2004 Hewlett-Packard Development Company, L.P.
  *	Bjorn Helgaas <bjorn.helgaas@hp.com>
+ * Copyright (C) 2005 Faraday Corp.
+ *      Luke Lee, modified for register offset shifts.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -22,6 +24,22 @@
  * or
  *	console=uart8250,io,0x3f8,9600n8
  *	console=uart8250,mmio,0xff5e0000,115200n8
+ *
+ *
+ * If the baudrate is not specified, current baud will be probed.
+ * e.g.,
+ *	console=uart,io,0x3f8
+ *	console=uart,mmio,0xff5e0000
+ *
+ * The optional "shift,n" is used to indicate how many bits should
+ * be shifted for the register offset. For some systems like Faraday's
+ * UART IP, each register is 4-bytes long which is different from
+ * standard 16550A UART 1-byte register, but they are actually
+ * compatible as long as register offsets shifted left by 2 bits.
+ * e.g.
+ *	console=uart,shift,2,io,0xf9820000,115200n8
+ *	console=uart,shift,2,mmio,0xff5e000         (auto probe baud)
+ * 
  */
 
 #include <linux/tty.h>
@@ -48,6 +66,7 @@ static struct early_serial8250_device early_device;
 
 static unsigned int __init serial_in(struct uart_port *port, int offset)
 {
+        offset <<= port->regshift;
 	if (port->iotype == UPIO_MEM)
 		return readb(port->membase + offset);
 	else
@@ -56,6 +75,7 @@ static unsigned int __init serial_in(struct uart_port *port, int offset)
 
 static void __init serial_out(struct uart_port *port, int offset, int value)
 {
+        offset <<= port->regshift;
 	if (port->iotype == UPIO_MEM)
 		writeb(value, port->membase + offset);
 	else
@@ -143,6 +163,15 @@ static int __init parse_options(struct early_serial8250_device *device,
 		return -ENODEV;
 
 	port->uartclk = BASE_BAUD * 16;
+
+        /* Luke Lee 09/21/2005 ins 6 */
+        if (!strncmp(options, "shift,",6)) {
+                options += 6;
+                port->regshift = simple_strtoul(options, 0, 0);
+                options = strchr(options, ',') + 1;
+        } else
+                port->regshift = 0;
+
 	if (!strncmp(options, "mmio,", 5)) {
 		port->iotype = UPIO_MEM;
 		port->mapbase = simple_strtoul(options + 5, &options, 0);
@@ -181,11 +210,11 @@ static int __init parse_options(struct early_serial8250_device *device,
 			device->baud);
 	}
 
-	printk(KERN_INFO "Early serial console at %s 0x%llx (options '%s')\n",
+	printk(KERN_INFO "Early serial console at %s 0x%llx (options '%s', shift %d)\n",
 		mmio ? "MMIO" : "I/O port",
 		mmio ? (unsigned long long) port->mapbase
 		     : (unsigned long long) port->iobase,
-		device->options);
+		device->options, port->regshift );
 	return 0;
 }
 

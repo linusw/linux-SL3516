@@ -1055,7 +1055,9 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip, 
 	 * depending of the conditions.	 The ' + 1' is to avoid having a
 	 * timeout of 0 jiffies if HZ is smaller than 1000.
 	 */
+#ifndef CONFIG_MTD_GM	 
 	unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
+#endif	
 	int ret = 0;
 	map_word oldd;
 	int retry_cnt = 0;
@@ -1100,7 +1102,11 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip, 
 				chip->word_write_time);
 
 	/* See comment above for timeout value. */
+#ifdef CONFIG_MTD_GM
+	timeo = jiffies + (HZ*2);
+#else
 	timeo = jiffies + uWriteTimeout;
+#endif
 	for (;;) {
 		if (chip->state != FL_WRITING) {
 			/* Someone's suspended the write. Sleep */
@@ -1111,7 +1117,11 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip, 
 			spin_unlock(chip->mutex);
 			schedule();
 			remove_wait_queue(&chip->wq, &wait);
+#ifdef CONFIG_MTD_GM
+			timeo = jiffies + (HZ * 2);
+#else
 			timeo = jiffies + (HZ / 2); /* FIXME */
+#endif
 			spin_lock(chip->mutex);
 			continue;
 		}
@@ -1302,7 +1312,9 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
 	struct cfi_private *cfi = map->fldrv_priv;
 	unsigned long timeo = jiffies + HZ;
 	/* see comments in do_write_oneword() regarding uWriteTimeo. */
+#ifndef CONFIG_MTD_GM	
 	unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
+#endif	
 	int ret = -EIO;
 	unsigned long cmd_adr;
 	int z, words;
@@ -1360,8 +1372,11 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
 				adr, map_bankwidth(map),
 				chip->word_write_time);
 
+#ifdef CONFIG_MTD_GM
+	timeo = jiffies + (HZ*2);
+#else
 	timeo = jiffies + uWriteTimeout;
-
+#endif
 	for (;;) {
 		if (chip->state != FL_WRITING) {
 			/* Someone's suspended the write. Sleep */
@@ -1372,7 +1387,11 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
 			spin_unlock(chip->mutex);
 			schedule();
 			remove_wait_queue(&chip->wq, &wait);
+#ifdef CONFIG_MTD_GM
+			timeo = jiffies + (HZ * 2);
+#else
 			timeo = jiffies + (HZ / 2); /* FIXME */
+#endif
 			spin_lock(chip->mutex);
 			continue;
 		}

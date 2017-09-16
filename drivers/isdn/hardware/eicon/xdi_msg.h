@@ -1,4 +1,4 @@
-/* $Id: xdi_msg.h,v 1.1.2.2 2001/02/16 08:40:36 armin Exp $ */
+/* $Id: xdi_msg.h,v 1.1.1.1 2006/03/02 14:48:50 ijsung Exp $ */
 
 #ifndef __DIVA_XDI_UM_CFG_MESSSGE_H__
 #define __DIVA_XDI_UM_CFG_MESSAGE_H__

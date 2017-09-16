@@ -101,7 +101,7 @@ struct otp_info {
 struct nand_oobinfo {
 	uint32_t useecc;
 	uint32_t eccbytes;
-	uint32_t oobfree[8][2];
+	uint32_t oobfree[12][2];  //john change from 8->12
 	uint32_t eccpos[32];
 };
 

@@ -1,4 +1,4 @@
-/* $Id: capidrv.h,v 1.2.8.2 2001/09/23 22:24:33 kai Exp $
+/* $Id: capidrv.h,v 1.1.1.1 2006/03/02 14:48:50 ijsung Exp $
  *
  * ISDN4Linux Driver, using capi20 interface (kernelcapi)
  *

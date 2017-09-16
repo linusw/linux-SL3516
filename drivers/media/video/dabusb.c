@@ -21,7 +21,7 @@
  *
  *
  *
- *  $Id: dabusb.c,v 1.54 2000/07/24 21:39:39 deti Exp $
+ *  $Id: dabusb.c,v 1.5 2009/02/18 10:56:39 lichun_c Exp $
  *
  */
 

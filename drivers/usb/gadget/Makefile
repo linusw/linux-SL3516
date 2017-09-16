@@ -6,6 +6,33 @@ ifeq ($(CONFIG_USB_GADGET_DEBUG),y)
 endif
 
 obj-$(CONFIG_USB_DUMMY_HCD)	+= dummy_hcd.o
+#ifeq ($(CONFIG_GM_USB_DEVICE),y)
+#
+#ifeq ($(CONFIG_GM_FUSB220),y)
+#ifeq ($(CONFIG_GM_USB_UDC),y)
+#obj-$(CONFIG_GM_USB_DEVICE)+= GM_udc.o
+#endif
+#endif
+#
+##ifeq ($(CONFIG_GM_FOTG2XX),y)
+##obj-$(CONFIG_GM_USB_DEVICE)+= GM_udc.o
+##endif
+#endif
+
+#ifeq ($(CONFIG_GM_USB_UDC),y)
+#obj-$(CONFIG_GM_USB_UDC)   += GM_udc.o
+#endif
+
+g_GM_udc-objs              := GM_udc.o
+#ifeq ($(CONFIG_GM_FOTG2XX_NOHOST),y)
+#ifeq ($(CONFIG_GM_USB_UDC),m)
+ifneq ($(CONFIG_GM_FOTG2XX),y)
+g_GM_udc-objs              += ../host/fotg2xx_opt.o
+endif
+#endif
+#endif
+obj-$(CONFIG_GM_USB_UDC)   += g_GM_udc.o
+
 obj-$(CONFIG_USB_NET2280)	+= net2280.o
 obj-$(CONFIG_USB_AMD5536UDC)	+= amd5536udc.o
 obj-$(CONFIG_USB_PXA25X)	+= pxa25x_udc.o
@@ -23,6 +50,14 @@ obj-$(CONFIG_USB_FSL_QE)	+= fsl_qe_udc.o
 #
 # USB gadget drivers
 #
+ifeq ($(CONFIG_GM_USB_DEVICE),y)
+ifeq ($(CONFIG_GM_FUSB220),y)
+g_GM_zero-objs             := FTC_zero.o usbstring.o config.o epautoconf.o
+else
+g_GM_zero-objs             := GM_test.o usbstring.o config.o epautoconf.o
+endif
+endif
+
 g_zero-objs			:= zero.o
 g_ether-objs			:= ether.o
 g_serial-objs			:= serial.o
@@ -32,6 +67,7 @@ g_file_storage-objs		:= file_storage.o
 g_printer-objs			:= printer.o
 g_cdc-objs			:= cdc2.o
 
+obj-$(CONFIG_GM_PATH_TEST) += g_GM_zero.o 
 obj-$(CONFIG_USB_ZERO)		+= g_zero.o
 obj-$(CONFIG_USB_ETH)		+= g_ether.o
 obj-$(CONFIG_USB_GADGETFS)	+= gadgetfs.o

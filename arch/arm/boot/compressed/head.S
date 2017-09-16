@@ -423,6 +423,14 @@ __setup_mmu:	sub	r3, r4, #16384		@ Page directory size
 		mov	pc, lr
 ENDPROC(__setup_mmu)
 
+/* added by ivan wang for no cache support */
+__armv4_no_cache:
+		orr	r0,r0,#0
+		orr	r0,r0,#0
+		mov	pc,lr
+		orr	r0,r0,#0
+		orr	r0,r0,#0
+
 __armv4_mmu_cache_on:
 		mov	r12, lr
 		bl	__setup_mmu
@@ -482,6 +490,13 @@ __common_mmu_cache_on:
 		.align	5			@ cache line aligned
 1:		mcr	p15, 0, r0, c1, c0, 0	@ load control register
 		mrc	p15, 0, r0, c1, c0, 0	@ and read it back to
+
+#if defined(CONFIG_CPU_FA526) || defined(CONFIG_CPU_FA626TE)
+		/* Luke Lee 03/23/2005 ins block */
+        	/* FA526 need > 2 nops */
+        	mov 	r0,r0
+        	mov 	r0,r0	
+#endif
 		sub	pc, lr, r0, lsr #32	@ properly flush pipeline
 
 /*
@@ -604,6 +619,14 @@ proc_types:
 		b	__armv4_mpu_cache_off
 		b	__armv4_mpu_cache_flush
 
+		/* FA726TE 04/02/2009 ins begin */
+		.word	0x66057261		@ FA726, ARMv5TE
+		.word	0xff05fff1
+		b	__armv4_mmu_cache_on
+		b	__armv4_mmu_cache_off
+		b	__armv4_mmu_cache_flush
+		/* FA726TE 04/02/2009 ins end */	
+
 		.word	0x00007000		@ ARM7 IDs
 		.word	0x0000f000
 		mov	pc, lr
@@ -637,6 +660,14 @@ proc_types:
 		b	__armv4_mmu_cache_on
 		b	__armv4_mmu_cache_off
 		b	__armv4_mmu_cache_flush
+
+		/* Luke Lee 05/30/2005 ins begin */
+		.word	0x66014261		@ FA526, 626, ARMv4
+		.word	0xff01cff1
+		b	__armv4_mmu_cache_on
+		b	__armv4_mmu_cache_off
+		b	__armv4_mmu_cache_flush
+		/* Luke Lee 05/30/2005 ins end */	
 
 		.word	0x00050000		@ ARMv5TE
 		.word	0x000f0000
@@ -704,6 +735,12 @@ __armv4_mmu_cache_off:
 		mrc	p15, 0, r0, c1, c0
 		bic	r0, r0, #0x000d
 		mcr	p15, 0, r0, c1, c0	@ turn MMU and cache off
+#if defined(CONFIG_CPU_FA526)
+		/* Luke Lee 03/23/2005 ins block */
+        	/* FA526 need > 2 nops */
+        	mov 	r0,r0
+        	mov 	r0,r0	
+#endif	
 		mov	r0, #0
 		mcr	p15, 0, r0, c7, c7	@ invalidate whole cache v4
 		mcr	p15, 0, r0, c8, c7	@ invalidate whole TLB v4

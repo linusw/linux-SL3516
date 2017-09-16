@@ -26,7 +26,10 @@
  */
 
 /*
- * $Log: mac_NCR5380.c,v $
+ * $Log: mac_scsi.c,v $
+ * Revision 1.8  2009/02/17 06:24:52  lichun_c
+ * patch 2.6.26
+ *
  */
 
 #include <linux/types.h>

@@ -37,7 +37,7 @@
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGES.
  *
- * $Id: //depot/aic7xxx/aic7xxx/aicasm/aicasm_symbol.c#24 $
+ * $Id: aicasm_symbol.c,v 1.3 2009/02/18 11:00:16 lichun_c Exp $
  *
  * $FreeBSD$
  */

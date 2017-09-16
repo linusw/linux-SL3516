@@ -1,4 +1,4 @@
-/* $Id: isdn_net.h,v 1.1.2.2 2004/01/12 22:37:19 keil Exp $
+/* $Id: isdn_net.h,v 1.2 2009/02/17 06:22:48 lichun_c Exp $
  *
  * header for Linux ISDN subsystem, network related functions (linklevel).
  *

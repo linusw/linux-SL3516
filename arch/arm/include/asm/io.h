@@ -57,10 +57,19 @@ extern void __raw_readsl(const void __iomem *addr, void *data, int longlen);
 /*
  * Architecture ioremap implementation.
  */
-#define MT_DEVICE		0
-#define MT_DEVICE_NONSHARED	1
-#define MT_DEVICE_CACHED	2
-#define MT_DEVICE_WC		3
+/* Luke Lee 09/13/2005 add 4 modes for Autospec:
+ *   MT_DEVICE_NCNB, MT_DEVICE_NCB, MT_DEVICE_CNB, MT_DEVICE_CB,
+ *   MT_DEVICE_NCNB is euqivalent to original MT_DEVICE
+ */
+#define MT_DEVICE               0
+#define MT_DEVICE_NCNB          0
+#define MT_DEVICE_NCB           1
+#define MT_DEVICE_CNB           2
+#define MT_DEVICE_CB            3
+
+#define MT_DEVICE_NONSHARED	4
+#define MT_DEVICE_CACHED	5
+#define MT_DEVICE_WC		6
 /*
  * types 4 onwards can be found in asm/mach/map.h and are undefined
  * for ioremap

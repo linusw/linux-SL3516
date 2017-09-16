@@ -1,4 +1,4 @@
-/* $Id: g364fb.c,v 1.3 1998/08/28 22:43:00 tsbogend Exp $
+/* $Id: g364fb.c,v 1.4 2009/02/12 06:14:01 lichun_c Exp $
  *
  * linux/drivers/video/g364fb.c -- Mips Magnum frame buffer device
  *

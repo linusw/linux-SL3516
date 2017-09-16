@@ -1855,6 +1855,14 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
 
 	if (reuse) {
 reuse:
+#ifdef CONFIG_CPU_FA626_VIPT_FIXUP
+		/* For VIPT cache like 626, can't flush when pte is old
+		   since there's not yet valid mappings of this page.
+		   (emulated LRU on ARM). It is also not necessary
+		   because an old page must not be dirty */
+
+		if(pte_young(orig_pte) && pte_present(orig_pte))
+#endif
 		flush_cache_page(vma, address, pte_pfn(orig_pte));
 		entry = pte_mkyoung(orig_pte);
 		entry = maybe_mkwrite(pte_mkdirty(entry), vma);
@@ -1904,6 +1912,13 @@ gotten:
 			}
 		} else
 			inc_mm_counter(mm, anon_rss);
+#ifdef CONFIG_CPU_FA626_VIPT_FIXUP
+		/* For VIPT cache like 626, can't flush when pte is old
+		   since there's not yet valid mappings of this page.
+		   (emulated LRU on ARM) */
+
+                if(pte_young(orig_pte) && pte_present(orig_pte))
+#endif
 		flush_cache_page(vma, address, pte_pfn(orig_pte));
 		entry = mk_pte(new_page, vma->vm_page_prot);
 		entry = maybe_mkwrite(pte_mkdirty(entry), vma);

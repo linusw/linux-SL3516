@@ -118,6 +118,36 @@ choice
 	   Many controller drivers are platform-specific; these
 	   often need board-specific hooks.
 
+#john
+config GM_USB_DEVICE
+        boolean "GM USB FUSB220 or FUSBOTG210"
+        ---help---
+           The USB device driver of GM FUSB220 or FOTG210, 
+           modified to aim compatibility of USB 2.0. for more see 
+           FOTG210 or FUSB220 data sheet
+#eason: we don't have FUSB220
+#config GM_FUSB220
+#        boolean "Use GM FUSB220"
+#        depends on GM_USB_DEVICE 
+#        default n
+#        ---help--- 
+#           Use this option to select FUSB220 or FOTF210, 
+#           'y' to select FUSB220, 'n' to slect FOTG210
+
+#config GM_FUSB220_DMA
+#        boolean "Enable FUSB220 DMA function"
+#        depends on GM_USB_DEVICE
+#        depends on GM_FUSB220
+#        default n
+#        ---help---
+#           Enable DMA for FUSB220 on data transmission
+
+config GM_USB_UDC
+        tristate
+        depends on GM_USB_DEVICE
+        default USB_GADGET
+        select USB_GADGET_SELECTED
+
 #
 # Integrated controllers
 #
@@ -459,7 +489,7 @@ config USB_DUMMY_HCD
 endchoice
 
 config USB_GADGET_DUALSPEED
-	bool
+	bool "Dual speed support"
 	depends on USB_GADGET
 	default n
 	help
@@ -524,6 +554,14 @@ config USB_ZERO_HNPTEST
 	  this gadget connects to another OTG device, with this one using
 	  the "B-Peripheral" role, that device will use HNP to let this
 	  one serve as the USB host instead (in the "B-Host" role).
+
+#john
+config GM_PATH_TEST
+        tristate "GM Path test for USB device driver"
+        depends on GM_USB_DEVICE
+        ---help---
+          This USB device driver is designed to test OTG's device part.
+          You must have the application program on PC for path test.
 
 config USB_ETH
 	tristate "Ethernet Gadget (with CDC Ethernet support)"

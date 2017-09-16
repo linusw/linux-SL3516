@@ -447,7 +447,24 @@ static int enable_periodic (struct ehci_hcd *ehci)
 					     STS_PSS, 0, 9 * 125);
 	if (status)
 		return status;
-
+#if 0
+#if defined(CONFIG_PLATFORM_GM8185_v2) || defined(CONFIG_PLATFORM_GM8181)
+#if defined(CONFIG_GM_FOTG2XX) || defined(CONFIG_GM_FUSBH200)
+	if ((ehci_to_hcd(ehci)->rsrc_start == USB_FOTG2XX_0_VA_BASE)
+#ifdef CONFIG_GM_FUSBH200
+			|| (ehci_to_hcd(ehci)->rsrc_start == USB_FUSBH200_0_VA_BASE)
+#endif
+	   )
+	{
+#if defined(CONFIG_PLATFORM_GM8185_v2)
+		ddr_cmd_flush(7);
+#elif defined(CONFIG_PLATFORM_GM8181)
+		ddr_cmd_flush(0);
+#endif
+	}
+#endif
+#endif
+#endif
 	cmd = ehci_readl(ehci, &ehci->regs->command) | CMD_PSE;
 	ehci_writel(ehci, cmd, &ehci->regs->command);
 	/* posted write ... PSS happens later */

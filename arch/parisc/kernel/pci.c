@@ -1,4 +1,4 @@
-/* $Id: pci.c,v 1.6 2000/01/29 00:12:05 grundler Exp $
+/* $Id: pci.c,v 1.9 2009/02/17 06:20:08 lichun_c Exp $
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License.  See the file "COPYING" in the main directory of this archive

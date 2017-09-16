@@ -39,7 +39,7 @@
  *
  * $FreeBSD$
  */
-VERSION = "$Id: //depot/aic7xxx/aic7xxx/aic79xx.reg#77 $"
+VERSION = "$Id: aic79xx.reg,v 1.4 2009/02/18 11:00:13 lichun_c Exp $"
 
 /*
  * This file is processed by the aic7xxx_asm utility for use in assembling

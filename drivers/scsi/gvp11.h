@@ -1,6 +1,6 @@
 #ifndef GVP11_H
 
-/* $Id: gvp11.h,v 1.4 1997/01/19 23:07:12 davem Exp $
+/* $Id: gvp11.h,v 1.3 2007/06/25 10:39:15 mingfeng Exp $
  *
  * Header file for the GVP Series II SCSI controller for Linux
  *

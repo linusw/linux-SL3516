@@ -170,5 +170,5 @@ ghoz.
 Ghozlane Toumi <gtoumi@laposte.net>
 
 
-$Date: 2002/05/09 20:11:45 $
+$Date: 2009/02/12 05:15:28 $
 http://sstfb.sourceforge.net/README

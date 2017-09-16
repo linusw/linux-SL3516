@@ -11,6 +11,9 @@
  *  2 of the License, or (at your option) any later version.
  *   
  *  $Log: pc300_tty.c,v $
+ *  Revision 1.10  2009/02/18 10:58:42  lichun_c
+ *  patch 2.6.28
+ *
  *  Revision 3.7  2002/03/07 14:17:09  henrique
  *  License data fixed
  *

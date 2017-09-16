@@ -9,11 +9,21 @@
 
 extern unsigned int cacheid;
 
+#if defined(CONFIG_CPU_FA626)||defined(CONFIG_CPU_FA626TE)      /* FA626 has an aliasing VIPT cache */
+#define cache_is_vivt()                 0
+#define cache_is_vipt()                 1
+#define cache_is_vipt_nonaliasing()     0
+#define cache_is_vipt_aliasing()        1
+#define icache_is_vivt_asid_tagged()    0
+
+#else
+
 #define cache_is_vivt()			cacheid_is(CACHEID_VIVT)
 #define cache_is_vipt()			cacheid_is(CACHEID_VIPT)
 #define cache_is_vipt_nonaliasing()	cacheid_is(CACHEID_VIPT_NONALIASING)
 #define cache_is_vipt_aliasing()	cacheid_is(CACHEID_VIPT_ALIASING)
 #define icache_is_vivt_asid_tagged()	cacheid_is(CACHEID_ASID_TAGGED)
+#endif
 
 /*
  * __LINUX_ARM_ARCH__ is the minimum supported CPU architecture

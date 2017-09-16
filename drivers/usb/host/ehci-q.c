@@ -227,8 +227,9 @@ ehci_urb_done(struct ehci_hcd *ehci, struct urb *urb, int status)
 __releases(ehci->lock)
 __acquires(ehci->lock)
 {
+	struct ehci_qh	*qh = (struct ehci_qh *) urb->hcpriv;
 	if (likely (urb->hcpriv != NULL)) {
-		struct ehci_qh	*qh = (struct ehci_qh *) urb->hcpriv;
+		//struct ehci_qh	*qh = (struct ehci_qh *) urb->hcpriv;
 
 		/* S-mask in a QH means it's an interrupt urb */
 		if ((qh->hw_info2 & cpu_to_hc32(ehci, QH_SMASK)) != 0) {
@@ -248,6 +249,14 @@ __acquires(ehci->lock)
 		COUNT(ehci->stats.complete);
 	}
 
+#if defined(CONFIG_GM_FOTG2XX) || defined(CONFIG_GM_FUSBH200)
+	if (usb_pipeint(urb->pipe) && (urb->actual_length == 0) && (((qh->hw_info1 & 0x03000) >> 12) == 0x01)) {
+		ehci_dbg(ehci, "qh's physical address = %p\n", qh->qh_dma);
+		ehci_dbg(ehci, "qtd's physical address = %p\n", qh->hw_current);
+		ehci_dbg(ehci, "%s: fix the wrong qtd\n", __func__);
+		qh->hw_token &= ~QTD_STS_STS;
+	}
+#endif
 #ifdef EHCI_URB_TRACE
 	ehci_dbg (ehci,
 		"%s %s urb %p ep%d%s status %d len %d/%d\n",
@@ -841,8 +850,25 @@ static void qh_link_async (struct ehci_hcd *ehci, struct ehci_qh *qh)
 
 		if (!(cmd & CMD_ASE)) {
 			/* in case a clear of CMD_ASE didn't take yet */
-			(void)handshake(ehci, &ehci->regs->status,
-					STS_ASS, 0, 150);
+			(void)handshake(ehci, &ehci->regs->status, STS_ASS, 0, 150);
+#if 1
+#if defined(CONFIG_PLATFORM_GM8185_v2) || defined(CONFIG_PLATFORM_GM8181)
+#if defined(CONFIG_GM_FOTG2XX) || defined(CONFIG_GM_FUSBH200)
+			if ((ehci_to_hcd(ehci)->rsrc_start == USB_FOTG2XX_0_VA_BASE)
+#ifdef CONFIG_GM_FUSBH200
+					|| (ehci_to_hcd(ehci)->rsrc_start == USB_FUSBH200_0_VA_BASE)
+#endif
+			   )
+			{
+#if defined(CONFIG_PLATFORM_GM8185_v2)
+				ddr_cmd_flush(7);
+#elif defined(CONFIG_PLATFORM_GM8181)
+				ddr_cmd_flush(0);
+#endif
+			}
+#endif
+#endif
+#endif
 			cmd |= CMD_ASE | CMD_RUN;
 			ehci_writel(ehci, cmd, &ehci->regs->command);
 			ehci_to_hcd(ehci)->state = HC_STATE_RUNNING;

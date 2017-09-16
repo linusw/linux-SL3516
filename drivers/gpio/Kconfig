@@ -13,7 +13,7 @@ config ARCH_WANT_OPTIONAL_GPIOLIB
 	  decide whether he needs it or not.
 
 config ARCH_REQUIRE_GPIOLIB
-	bool
+	bool "Require GPIO library"
 	select GPIOLIB
 	help
 	  Platforms select gpiolib if they use this infrastructure
@@ -63,9 +63,15 @@ config GPIO_SYSFS
 	  Kernel drivers may also request that a particular GPIO be
 	  exported to userspace; this can be useful when debugging.
 
+config GPIO_INTERRUPT_API
+	bool "GPIO interrupt APIs support (GM add)"
+	help
+	  Say Y here to get some GPIO functions to use.	
+
 # put expanders in the right section, in alphabetical order
 
 comment "Memory mapped GPIO expanders:"
+source "drivers/gpio/chips/gm/Kconfig"
 
 config GPIO_XILINX
 	bool "Xilinx GPIO support"

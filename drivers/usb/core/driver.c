@@ -880,7 +880,8 @@ static void do_unbind_rebind(struct usb_device *udev, int action)
 }
 
 /* Caller has locked udev's pm_mutex */
-static int usb_suspend_device(struct usb_device *udev, pm_message_t msg)
+//static 
+int usb_suspend_device(struct usb_device *udev, pm_message_t msg)
 {
 	struct usb_device_driver	*udriver;
 	int				status = 0;
@@ -902,7 +903,7 @@ static int usb_suspend_device(struct usb_device *udev, pm_message_t msg)
 	dev_vdbg(&udev->dev, "%s: status %d\n", __func__, status);
 	return status;
 }
-
+		
 /* Caller has locked udev's pm_mutex */
 static int usb_resume_device(struct usb_device *udev)
 {
@@ -1089,7 +1090,8 @@ static int autosuspend_check(struct usb_device *udev, int reschedule)
 		reschedule = 1;
 	else
 		suspend_time = j + HZ;
-	if (reschedule) {
+	//printk("dev:%x disable timer for suspend %x...%x to avoid sudden wakeup\n",udev,j,suspend_time);
+	if (0) { //(reschedule) {
 		if (!timer_pending(&udev->autosuspend.timer)) {
 			queue_delayed_work(ksuspend_usb_wq, &udev->autosuspend,
 				round_jiffies_relative(suspend_time - j));

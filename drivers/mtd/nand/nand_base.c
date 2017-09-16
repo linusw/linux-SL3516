@@ -1045,12 +1045,12 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
 	uint32_t readlen = ops->len;
 	uint32_t oobreadlen = ops->ooblen;
 	uint8_t *bufpoi, *oob, *buf;
-
+        
 	stats = mtd->ecc_stats;
 
 	chipnr = (int)(from >> chip->chip_shift);
 	chip->select_chip(mtd, chipnr);
-
+	
 	realpage = (int)(from >> chip->page_shift);
 	page = realpage & chip->pagemask;
 
@@ -1071,14 +1071,15 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
 				chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);
 				sndcmd = 0;
 			}
-
+            
 			/* Now read the page into the buffer */
-			if (unlikely(ops->mode == MTD_OOB_RAW))
-				ret = chip->ecc.read_page_raw(mtd, chip, bufpoi);
-			else if (!aligned && NAND_SUBPAGE_READ(chip) && !oob)
+			if (unlikely(ops->mode == MTD_OOB_RAW))			    
+				ret = chip->ecc.read_page_raw(mtd, chip, bufpoi);			
+			else if (!aligned && NAND_SUBPAGE_READ(chip) && !oob)			    
 				ret = chip->ecc.read_subpage(mtd, chip, col, bytes, bufpoi);
-			else
-				ret = chip->ecc.read_page(mtd, chip, bufpoi);
+			else			    
+				ret = chip->ecc.read_page(mtd, chip, bufpoi);   /* executes this case */
+			
 			if (ret < 0)
 				break;
 
@@ -1428,6 +1429,7 @@ static int nand_do_read_oob(struct mtd_info *mtd, loff_t from,
 	}
 
 	ops->oobretlen = ops->ooblen;
+		
 	return 0;
 }
 
@@ -1966,6 +1968,7 @@ static int nand_write_oob(struct mtd_info *mtd, loff_t to,
 static void single_erase_cmd(struct mtd_info *mtd, int page)
 {
 	struct nand_chip *chip = mtd->priv;
+		
 	/* Send commands to erase a block */
 	chip->cmdfunc(mtd, NAND_CMD_ERASE1, -1, page);
 	chip->cmdfunc(mtd, NAND_CMD_ERASE2, -1, -1);
@@ -2018,7 +2021,7 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 	struct nand_chip *chip = mtd->priv;
 	int rewrite_bbt[NAND_MAX_CHIPS]={0};
 	unsigned int bbt_masked_page = 0xffffffff;
-
+    
 	DEBUG(MTD_DEBUG_LEVEL3, "nand_erase: start = 0x%08x, len = %i\n",
 	      (unsigned int)instr->addr, (unsigned int)instr->len);
 
@@ -2027,7 +2030,7 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 		DEBUG(MTD_DEBUG_LEVEL0, "nand_erase: Unaligned address\n");
 		return -EINVAL;
 	}
-
+    
 	/* Length must align on block boundary */
 	if (instr->len & ((1 << chip->phys_erase_shift) - 1)) {
 		DEBUG(MTD_DEBUG_LEVEL0, "nand_erase: "
@@ -2064,7 +2067,7 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 		instr->state = MTD_ERASE_FAILED;
 		goto erase_exit;
 	}
-
+    
 	/*
 	 * If BBT requires refresh, set the BBT page mask to see if the BBT
 	 * should be rewritten. Otherwise the mask is set to 0xffffffff which
@@ -2330,7 +2333,7 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 	/* Read manufacturer and device IDs */
 	*maf_id = chip->read_byte(mtd);
 	dev_id = chip->read_byte(mtd);
-
+        
 	/* Try again to make sure, as some systems the bus-hold or other
 	 * interface concerns can cause random data which looks like a
 	 * possibly credible NAND flash to appear. If the two results do
@@ -2395,7 +2398,10 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 		mtd->oobsize = mtd->writesize / 32;
 		busw = type->options & NAND_BUSWIDTH_16;
 	}
-
+    
+    if (mtd->erasesize == 0) /* error configuration in nand_flash_ids[] table */
+        panic("NAND: wrong configuration in nand_flash_ids[] table!");
+        
 	/* Try to identify manufacturer */
 	for (maf_idx = 0; nand_manuf_ids[maf_idx].id != 0x0; maf_idx++) {
 		if (nand_manuf_ids[maf_idx].id == *maf_id)
@@ -2420,7 +2426,7 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 	chip->page_shift = ffs(mtd->writesize) - 1;
 	/* Convert chipsize to number of pages per chip -1. */
 	chip->pagemask = (chip->chipsize >> chip->page_shift) - 1;
-
+    
 	chip->bbt_erase_shift = chip->phys_erase_shift =
 		ffs(mtd->erasesize) - 1;
 	chip->chip_shift = ffs(chip->chipsize) - 1;
@@ -2481,7 +2487,7 @@ int nand_scan_ident(struct mtd_info *mtd, int maxchips)
 	busw = chip->options & NAND_BUSWIDTH_16;
 	/* Set the default functions */
 	nand_set_defaults(chip, busw);
-
+        
 	/* Read the flash type */
 	type = nand_get_flash_type(mtd, chip, busw, &nand_maf_id);
 
@@ -2556,8 +2562,9 @@ int nand_scan_tail(struct mtd_info *mtd)
 			BUG();
 		}
 	}
-
-	if (!chip->write_page)
+    
+    /* ftnandc023_nand_write_page */ 
+	if (!chip->write_page) 
 		chip->write_page = nand_write_page;
 
 	/*
@@ -2637,7 +2644,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 		       chip->ecc.mode);
 		BUG();
 	}
-
+    
 	/*
 	 * The number of bytes available for a client to place data into
 	 * the out of band area
@@ -2647,7 +2654,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 		chip->ecc.layout->oobavail +=
 			chip->ecc.layout->oobfree[i].length;
 	mtd->oobavail = chip->ecc.layout->oobavail;
-
+    
 	/*
 	 * Set the number of read / write steps for one page depending on ECC
 	 * mode
@@ -2658,7 +2665,7 @@ int nand_scan_tail(struct mtd_info *mtd)
 		BUG();
 	}
 	chip->ecc.total = chip->ecc.steps * chip->ecc.bytes;
-
+	
 	/*
 	 * Allow subpage writes up to ecc.steps. Not possible for MLC
 	 * FLASH.
@@ -2676,13 +2683,13 @@ int nand_scan_tail(struct mtd_info *mtd)
 		}
 	}
 	chip->subpagesize = mtd->writesize >> mtd->subpage_sft;
-
+    
 	/* Initialize state */
 	chip->state = FL_READY;
-
+        
 	/* De-select the device */
 	chip->select_chip(mtd, -1);
-
+    
 	/* Invalidate the pagebuffer reference */
 	chip->pagebuf = -1;
 
@@ -2710,9 +2717,8 @@ int nand_scan_tail(struct mtd_info *mtd)
 	/* Check, if we should skip the bad block table scan */
 	if (chip->options & NAND_SKIP_BBTSCAN)
 		return 0;
-
-	/* Build bad block table */
-	return chip->scan_bbt(mtd);
+    
+    return chip->scan_bbt(mtd);
 }
 
 /* module_text_address() isn't exported, and it's mostly a pointless

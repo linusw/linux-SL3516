@@ -1,4 +1,4 @@
-/* $Id: isdnloop.h,v 1.5.6.3 2001/09/23 22:24:56 kai Exp $
+/* $Id: isdnloop.h,v 1.3 2007/06/25 10:38:39 mingfeng Exp $
  *
  * Loopback lowlevel module for testing of linklevel.
  *

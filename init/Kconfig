@@ -526,6 +526,13 @@ source "usr/Kconfig"
 
 endif
 
+config ISOLATE_INITRAMFS
+	bool "Separate initramfs from kernel (EXPERIMENTAL)"
+	depends on BLK_DEV_INITRD
+	help
+	 The independant initial RAM filesystem could be put on 
+	 the flash and is not necessary bound with kernel image
+
 config CC_OPTIMIZE_FOR_SIZE
 	bool "Optimize for size"
 	default y

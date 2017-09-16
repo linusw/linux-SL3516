@@ -1,4 +1,4 @@
-/* $Id: command.c,v 1.4.10.1 2001/09/23 22:24:59 kai Exp $
+/* $Id: command.c,v 1.6 2009/02/13 05:32:40 lichun_c Exp $
  *
  * Copyright (C) 1996  SpellCaster Telecommunications Inc.
  *

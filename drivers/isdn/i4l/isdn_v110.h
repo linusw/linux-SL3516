@@ -1,4 +1,4 @@
-/* $Id: isdn_v110.h,v 1.1.2.2 2004/01/12 22:37:19 keil Exp $
+/* $Id: isdn_v110.h,v 1.1.1.1 2006/03/02 14:48:50 ijsung Exp $
  *
  * Linux ISDN subsystem, V.110 related functions (linklevel).
  *

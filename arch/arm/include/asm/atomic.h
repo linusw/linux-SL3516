@@ -114,6 +114,108 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
 	: "cc");
 }
 
+#elif defined(CONFIG_CPU_FMP626)
+
+/*
+ * Faraday FMP626 UP and SMP safe atomic ops.  We use load exclusive and
+ * store exclusive to ensure that these are atomic.  We may loop
+ * to ensure that the update happens.  Writing to 'v->counter'
+ * without using the following operations WILL break the atomic
+ * nature of these ops.
+ */
+static inline void atomic_set(atomic_t *v, int i)
+{
+	unsigned long tmp;
+
+	__asm__ __volatile__("@ atomic_set\n"
+"1:	ldc	p13, c1, [%1], {4}	@ set address for ldrex\n"
+"	mrc	p13, 0, %0, c1, c0, 0	@ ldrex\n"
+"	mcr	p13, 0, %2, c1, c0, 0	@ data for strex\n"
+"	stc	p13, c2, [%1], {4}	@ strex to address\n"
+"	mrc	p13, 0, pc, c3, c0, 0	@ strex status\n"
+"	bne	1b"
+	: "=&r" (tmp)
+	: "r" (&v->counter), "r" (i)
+	: "cc");
+}
+
+static inline int atomic_add_return(int i, atomic_t *v)
+{
+	unsigned long tmp;
+	int result;
+
+	__asm__ __volatile__("@ atomic_add_return\n"
+"1:	ldc	p13, c1, [%2], {4}		@ set address for ldrex\n"
+"	mrc	p13, 0, %0, c1, c0, 0	@ ldrex\n"
+"	add	%0, %0, %3\n"
+"	mcr	p13, 0, %0, c1, c0, 0	@ data for strex\n"
+"	stc	p13, c2, [%2], {4}	@ strex to address\n"
+"	mrc	p13, 0, pc, c3, c0, 0	@ strex status\n"
+"	bne	1b"
+	: "=&r" (result), "=&r" (tmp)
+	: "r" (&v->counter), "Ir" (i)
+	: "cc");
+
+	return result;
+}
+
+static inline int atomic_sub_return(int i, atomic_t *v)
+{
+	int result;
+
+	__asm__ __volatile__("@ atomic_sub_return\n"
+"1:	ldc	p13, c1, [%1], {4}	@ set address for ldrex\n"
+"	mrc	p13, 0, %0, c1, c0, 0	@ ldrex\n"
+"	sub	%0, %0, %2\n"
+"	mcr	p13, 0, %0, c1, c0, 0	@ data for strex\n"
+"	stc	p13, c2, [%1], {4}	@ strex to address\n"
+"	mrc	p13, 0, pc, c3, c0, 0	@ strex status\n"
+"	bne	1b"
+	: "=&r" (result)
+	: "r" (&v->counter), "Ir" (i)
+	: "cc");
+
+	return result;
+}
+
+static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
+{
+	unsigned long oldval, res;
+
+	do {
+		__asm__ __volatile__("@ atomic_cmpxchg\n"
+		"ldc	p13, c1, [%2], {4}	@ set address for ldrex\n"
+		"mrc	p13, 0, %1, c1, c0, 0	@ ldrex\n"
+		"mov	%0, #0\n"
+		"teq	%1, %3\n"
+		"mcreq	p13, 0, %4, c1, c0, 0	@ data for strex\n"
+		"stceq	p13, c2, [%2], {4}	@ strex to address\n"
+		"mrceq	p13, 0, %0, c3, c0, 0	@ strex status\n"
+		    : "=&r" (res), "=&r" (oldval)
+		    : "r" (&ptr->counter), "Ir" (old), "r" (new)
+		    : "cc");
+	} while (res);
+
+	return oldval;
+}
+
+static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+{
+	unsigned long tmp;
+
+	__asm__ __volatile__("@ atomic_clear_mask\n"
+"1:	ldc	p13, c1, [%1], {4}	@ set address for ldrex\n"
+"	mrc	p13, 0, %0, c1, c0, 0	@ ldrex\n"
+"	bic	%0, %0, %2\n"
+"	mcr	p13, 0, %0, c1, c0, 0	@ data for strex\n"
+"	stc	p13, c2, [%1], {4}	@ strex to address\n"
+"	mrc	p13, 0, pc, c3, c0, 0	@ strex status\n"
+"	bne	1b"
+	: "=&r" (tmp)
+	: "r" (addr), "Ir" (mask)
+	: "cc");
+}
+
 #else /* ARM_ARCH_6 */
 
 #include <asm/system.h>

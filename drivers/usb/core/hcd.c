@@ -44,6 +44,7 @@
 #include "usb.h"
 #include "hcd.h"
 #include "hub.h"
+#include "../host/fotg2xx.h"
 
 
 /*-------------------------------------------------------------------------*/
@@ -1717,7 +1718,7 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
 {
 	struct usb_hcd		*hcd = __hcd;
 	unsigned long		flags;
-	irqreturn_t		rc;
+	irqreturn_t		rc = IRQ_HANDLED;
 
 	/* IRQF_DISABLED doesn't work correctly with shared IRQs
 	 * when the first handler doesn't use it.  So let's just
@@ -1727,14 +1728,33 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
 
 	if (unlikely(hcd->state == HC_STATE_HALT ||
 		     !test_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags))) {
-		rc = IRQ_NONE;
+#ifdef CONFIG_GM_FOTG2XX
+		if (ehci_is_ehci_irq()
+#ifdef CONFIG_GM_FUSBH200
+		|| (hcd->rsrc_start == USB_FUSBH200_VA_BASE)
+#endif
+		)
+#endif
+		{
+			rc = IRQ_NONE;
+		}
 	} else if (hcd->driver->irq(hcd) == IRQ_NONE) {
 		rc = IRQ_NONE;
 	} else {
 		set_bit(HCD_FLAG_SAW_IRQ, &hcd->flags);
 
-		if (unlikely(hcd->state == HC_STATE_HALT))
-			usb_hc_died(hcd);
+		if (unlikely(hcd->state == HC_STATE_HALT)) {
+#ifdef CONFIG_GM_FOTG2XX
+			if (ehci_is_ehci_irq()
+#ifdef CONFIG_GM_FUSBH200
+			|| (hcd->rsrc_start == USB_FUSBH200_VA_BASE)
+#endif
+			)
+#endif
+			{
+				usb_hc_died(hcd);
+			}
+		}
 		rc = IRQ_HANDLED;
 	}
 

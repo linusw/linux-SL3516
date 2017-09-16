@@ -137,8 +137,10 @@
 
 #ifndef arch_adjust_zones
 #define arch_adjust_zones(node,size,holes) do { } while (0)
+#if 0 //Harry modified, we use arch_adjust_zones to reserve high memory, but we don't need ZONE_DMA
 #elif !defined(CONFIG_ZONE_DMA)
 #error "custom arch_adjust_zones() requires CONFIG_ZONE_DMA"
+#endif 
 #endif
 
 /*

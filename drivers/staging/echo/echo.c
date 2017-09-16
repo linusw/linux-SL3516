@@ -28,7 +28,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * $Id: echo.c,v 1.20 2006/12/01 18:00:48 steveu Exp $
+ * $Id: echo.c,v 1.1 2009/02/19 00:54:24 lichun_c Exp $
  */
 
 /*! \file */

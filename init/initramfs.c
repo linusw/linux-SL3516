@@ -512,6 +512,9 @@ static char * __init unpack_to_rootfs(char *buf, unsigned len, int check_only)
 		crc = (ulg)0xffffffffL; /* shift register contents */
 		makecrc();
 		gunzip();
+#ifdef CONFIG_ISOLATE_INITRAMFS
+		break;  //no more unzip
+#endif		
 		if (state != Reset)
 			error("junk in gzipped archive");
 		this_header = saved_offset + inptr;
@@ -537,7 +540,11 @@ static int __init retain_initrd_param(char *str)
 }
 __setup("retain_initrd", retain_initrd_param);
 
+#ifdef CONFIG_ISOLATE_INITRAMFS
+extern unsigned long  __initramfs_start, __initramfs_size;
+#else
 extern char __initramfs_start[], __initramfs_end[];
+#endif
 #include <linux/initrd.h>
 #include <linux/kexec.h>
 
@@ -575,8 +582,13 @@ skip:
 
 static int __init populate_rootfs(void)
 {
+#ifdef CONFIG_ISOLATE_INITRAMFS
+	char *err = unpack_to_rootfs((char *)__initramfs_start,
+			 __initramfs_size, 0);
+#else	
 	char *err = unpack_to_rootfs(__initramfs_start,
 			 __initramfs_end - __initramfs_start, 0);
+#endif	
 	if (err)
 		panic(err);
 	if (initrd_start) {

@@ -37,7 +37,7 @@
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGES.
  *
- * $Id: //depot/aic7xxx/aic7xxx/aic79xx.h#109 $
+ * $Id: aic79xx.h,v 1.10 2009/02/17 06:24:57 lichun_c Exp $
  *
  * $FreeBSD$
  */

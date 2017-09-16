@@ -2,7 +2,7 @@
 # Makefile for USB Core files and filesystem
 #
 
-usbcore-objs	:= usb.o hub.o hcd.o urb.o message.o driver.o \
+usbcore-objs	:= usb.o fotg2xx-hub.o hcd.o urb.o message.o driver.o \
 			config.o file.o buffer.o sysfs.o endpoint.o \
 			devio.o notify.o generic.o quirks.o
 

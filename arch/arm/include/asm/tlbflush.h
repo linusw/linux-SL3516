@@ -39,6 +39,7 @@
 #define TLB_V6_D_ASID	(1 << 17)
 #define TLB_V6_I_ASID	(1 << 18)
 
+#define TLB_BTB		(1 << 28)
 #define TLB_L2CLEAN_FR	(1 << 29)		/* Feroceon */
 #define TLB_DCLEAN	(1 << 30)
 #define TLB_WB		(1 << 31)
@@ -55,6 +56,7 @@
  *	  fr    - Feroceon (v4wbi with non-outer-cacheable page table walks)
  *	  v6wbi - ARMv6 with write buffer with I TLB flush entry instruction
  *	  v7wbi - identical to v6wbi
+ *	  fa    - ARMv4 with write buffer with UTLB and branch target buffer (BTB)
  */
 #undef _TLB
 #undef MULTI_TLB
@@ -87,6 +89,34 @@
 #else
 # define v4_possible_flags	0
 # define v4_always_flags	(-1UL)
+#endif
+
+#ifdef CONFIG_CPU_FA_BTB
+#define __TLB_BTB      TLB_BTB
+#else
+#define __TLB_BTB      0
+#endif
+
+#ifdef CONFIG_CPU_FA_WB_DISABLE
+#define __TLB_WB       0
+#else
+#define __TLB_WB       TLB_WB
+#endif
+
+#define fa_tlb_flags    (__TLB_WB | __TLB_BTB | TLB_DCLEAN | \
+                         TLB_V4_U_FULL | TLB_V4_U_PAGE)
+
+#ifdef CONFIG_CPU_TLB_FA
+# define fa_possible_flags      fa_tlb_flags
+# define fa_always_flags        fa_tlb_flags
+# ifdef _TLB
+#  define MULTI_TLB 1
+# else
+#  define _TLB fa
+# endif
+#else
+# define fa_possible_flags      0
+# define fa_always_flags        (-1UL)
 #endif
 
 #define v4wbi_tlb_flags	(TLB_WB | TLB_DCLEAN | \
@@ -267,6 +297,7 @@ extern struct cpu_tlb_fns cpu_tlb;
 				 v4wbi_possible_flags | \
 				 fr_possible_flags | \
 				 v4wb_possible_flags | \
+				 fa_possible_flags | \
 				 v6wbi_possible_flags | \
 				 v7wbi_possible_flags)
 
@@ -275,6 +306,7 @@ extern struct cpu_tlb_fns cpu_tlb;
 				 v4wbi_always_flags & \
 				 fr_always_flags & \
 				 v4wb_always_flags & \
+				 fa_always_flags & \
 				 v6wbi_always_flags & \
 				 v7wbi_always_flags)
 
@@ -305,6 +337,14 @@ static inline void local_flush_tlb_all(void)
 		dsb();
 		isb();
 	}
+
+#ifdef	CONFIG_CPU_FA526_BTB_FIXUP
+	if (tlb_flag(TLB_BTB)) {
+		asm("mcr p15, 0, %0, c7, c5, 6" : : "r" (zero) : "cc");
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
+#endif
 }
 
 static inline void local_flush_tlb_mm(struct mm_struct *mm)
@@ -341,6 +381,14 @@ static inline void local_flush_tlb_mm(struct mm_struct *mm)
 		asm("mcr p15, 0, %0, c7, c5, 6" : : "r" (zero) : "cc");
 		dsb();
 	}
+
+#ifdef	CONFIG_CPU_FA526_BTB_FIXUP
+	if (tlb_flag(TLB_BTB)) {
+		asm("mcr p15, 0, %0, c7, c5, 6" : : "r" (zero) : "cc");
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
+#endif
 }
 
 static inline void
@@ -381,6 +429,14 @@ local_flush_tlb_page(struct vm_area_struct *vma, unsigned long uaddr)
 		asm("mcr p15, 0, %0, c7, c5, 6" : : "r" (zero) : "cc");
 		dsb();
 	}
+
+#ifdef	CONFIG_CPU_FA526_BTB_FIXUP
+	if (tlb_flag(TLB_BTB)) {
+		asm("mcr p15, 0, %0, c7, c5, 6" : : "r" (zero) : "cc");
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
+#endif
 }
 
 static inline void local_flush_tlb_kernel_page(unsigned long kaddr)
@@ -419,6 +475,14 @@ static inline void local_flush_tlb_kernel_page(unsigned long kaddr)
 		dsb();
 		isb();
 	}
+
+#ifdef	CONFIG_CPU_FA526_BTB_FIXUP
+	if (tlb_flag(TLB_BTB)) {
+		asm("mcr p15, 0, %0, c7, c5, 6" : : "r" (zero) : "cc");
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
+#endif
 }
 
 /*
@@ -448,6 +512,14 @@ static inline void flush_pmd_entry(pmd_t *pmd)
 
 	if (tlb_flag(TLB_WB))
 		dsb();
+
+#ifdef	CONFIG_CPU_FA526_BTB_FIXUP
+	if (tlb_flag(TLB_BTB)) {
+		asm("mcr p15, 0, %0, c7, c5, 6" : : "r" (0) : "cc");
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
+#endif
 }
 
 static inline void clean_pmd_entry(pmd_t *pmd)
@@ -461,6 +533,14 @@ static inline void clean_pmd_entry(pmd_t *pmd)
 	if (tlb_flag(TLB_L2CLEAN_FR))
 		asm("mcr	p15, 1, %0, c15, c9, 1  @ L2 flush_pmd"
 			: : "r" (pmd) : "cc");
+
+#ifdef	CONFIG_CPU_FA526_BTB_FIXUP
+	if (tlb_flag(TLB_BTB)) {
+		asm("mcr p15, 0, %0, c7, c5, 6" : : "r" (0) : "cc");
+		asm("mov r0, r0" : : );
+		asm("mov r0, r0" : : );
+	}
+#endif
 }
 
 #undef tlb_flag

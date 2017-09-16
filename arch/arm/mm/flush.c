@@ -29,13 +29,33 @@ static void flush_pfn_alias(unsigned long pfn, unsigned long vaddr)
 
 	set_pte_ext(TOP_PTE(to), pfn_pte(pfn, PAGE_KERNEL), 0);
 	flush_tlb_kernel_page(to);
-
+#if defined(CONFIG_CPU_FA626TE)
+	/* Clean+Invalidate entire I/D  for FA626TE */
+	//flush_icache_range(to, to + PAGE_SIZE - L1_CACHE_BYTES);
+	{
+		unsigned end=to + PAGE_SIZE;
+		for(;to<end;to+=L1_CACHE_BYTES) {
+			asm(
+#ifdef CONFIG_CPU_DCACHE_WRITETHROUGH
+				/* Invalid D-Cache entry */
+				"mcr	p15, 0, %0, c7, c6, 1\n\t"
+#else
+				/* Clean+Invalidate D-cache entry */
+				"mcr	p15, 0, %0, c7, c14, 1\n\t"
+#endif			
+				::"r"(to):"cc");
+		}
+	}
+#elif defined(CONFIG_CPU_FMP626)
+	__cpuc_flush_user_range(to, to + PAGE_SIZE - L1_CACHE_BYTES, zero);
+#else
 	asm(	"mcrr	p15, 0, %1, %0, c14\n"
 	"	mcr	p15, 0, %2, c7, c10, 4\n"
 	"	mcr	p15, 0, %2, c7, c5, 0\n"
 	    :
 	    : "r" (to), "r" (to + PAGE_SIZE - L1_CACHE_BYTES), "r" (zero)
 	    : "cc");
+#endif
 }
 
 void flush_cache_mm(struct mm_struct *mm)

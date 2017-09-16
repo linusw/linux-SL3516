@@ -1,4 +1,4 @@
-/*  $Id$
+/*  $Id: aha1740.c,v 1.8 2009/02/16 11:32:00 lichun_c Exp $
  *  1993/03/31
  *  linux/kernel/aha1740.c
  *

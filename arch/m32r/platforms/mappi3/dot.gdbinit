@@ -1,5 +1,5 @@
 # .gdbinit file
-# $Id: dot.gdbinit,v 1.1 2005/04/11 02:21:08 sakugawa Exp $
+# $Id: dot.gdbinit,v 1.1 2009/02/13 06:24:47 lichun_c Exp $
 
 # setting
 set width 0d70

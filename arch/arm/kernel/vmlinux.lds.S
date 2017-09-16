@@ -58,10 +58,12 @@ SECTIONS
 			*(.security_initcall.init)
 		__security_initcall_end = .;
 #ifdef CONFIG_BLK_DEV_INITRD
+#ifndef CONFIG_ISOLATE_INITRAMFS
 		. = ALIGN(32);
 		__initramfs_start = .;
 			usr/built-in.o(.init.ramfs)
 		__initramfs_end = .;
+#endif
 #endif
 		. = ALIGN(4096);
 		__per_cpu_start = .;
@@ -76,7 +78,8 @@ SECTIONS
 #endif
 	}
 
-	/DISCARD/ : {			/* Exit code and data		*/
+	/* Luke Lee 03/30/2005 TOFIX mod 1 : /DISCARD/ -> .discard */
+	.discard : {			/* Exit code and data		*/
 		EXIT_TEXT
 		EXIT_DATA
 		*(.exitcall.exit)
