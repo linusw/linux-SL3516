@@ -53,6 +53,21 @@
 #include <linux/raid/md_u.h>
 #include <linux/raid/md_k.h>
 
+#define md_to_volume(md) ((md)->volumeid)
+#define mdidx(md) ((md)->md_minor)
+
+#define BAD_SECTOR_REMAP
+#define MD0_RECOLLECTING
+#define	MD_SYNC_CONTINUOUSLY
+#define MD_SYNC_CONCURRENTLY
+#define MD_ADD_IN_ERROR
+#define	MD_ACCESS_STATUS
+#define	MD_CHECK_STATUS
+#define MD_SINGLE_DISK
+
+/* For debug... */
+#define ACS_TEST
+
 /*
  * Different major versions are not compatible.
  * Different minor versions are only downward compatible.
@@ -60,16 +75,7 @@
  */
 #define MD_MAJOR_VERSION                0
 #define MD_MINOR_VERSION                90
-/*
- * MD_PATCHLEVEL_VERSION indicates kernel functionality.
- * >=1 means different superblock formats are selectable using SET_ARRAY_INFO
- *     and major_version/minor_version accordingly
- * >=2 means that Internal bitmaps are supported by setting MD_SB_BITMAP_PRESENT
- *     in the super status byte
- * >=3 means that bitmap superblock version 4 is supported, which uses
- *     little-ending representation rather than host-endian
- */
-#define MD_PATCHLEVEL_VERSION           3
+#define MD_PATCHLEVEL_VERSION           1
 
 extern int register_md_personality (int p_num, mdk_personality_t *p);
 extern int unregister_md_personality (int p_num);
@@ -78,7 +84,7 @@ extern mdk_thread_t * md_register_thread (void (*run) (mddev_t *mddev),
 extern void md_unregister_thread (mdk_thread_t *thread);
 extern void md_wakeup_thread(mdk_thread_t *thread);
 extern void md_check_recovery(mddev_t *mddev);
-extern void md_write_start(mddev_t *mddev, struct bio *bi);
+extern void md_write_start(mddev_t *mddev);
 extern void md_write_end(mddev_t *mddev);
 extern void md_handle_safemode(mddev_t *mddev);
 extern void md_done_sync(mddev_t *mddev, int blocks, int ok);
@@ -86,13 +92,6 @@ extern void md_error (mddev_t *mddev, mdk_rdev_t *rdev);
 extern void md_unplug_mddev(mddev_t *mddev);
 
 extern void md_print_devices (void);
-
-extern void md_super_write(mddev_t *mddev, mdk_rdev_t *rdev,
-			   sector_t sector, int size, struct page *page);
-extern void md_super_wait(mddev_t *mddev);
-extern int sync_page_io(struct block_device *bdev, sector_t sector, int size,
-			struct page *page, int rw);
-
 
 #define MD_BUG(x...) { printk("md: bug in file %s, line %d\n", __FILE__, __LINE__); md_print_devices(); }
 

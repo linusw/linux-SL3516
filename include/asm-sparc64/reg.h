@@ -1,4 +1,4 @@
-/* $Id: reg.h,v 1.6 1999/09/06 08:22:10 jj Exp $
+/* $Id: reg.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $
  * linux/asm-sparc64/reg.h
  * Layout of the registers as expected by gdb on the Sparc
  * we should replace the user.h definitions with those in

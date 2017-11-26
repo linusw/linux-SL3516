@@ -1,4 +1,4 @@
-/* $Id: lshrdi3.S,v 1.1 1999/03/21 06:37:45 davem Exp $ */
+/* $Id: lshrdi3.S,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $ */
 
 	.globl	__lshrdi3
 __lshrdi3:

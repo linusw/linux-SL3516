@@ -3,7 +3,7 @@
 
 #include <asm/page.h>
 
-#define VERSION_CIO_QDIO_H "$Revision: 1.33 $"
+#define VERSION_CIO_QDIO_H "$Revision: 1.1.1.1 $"
 
 #ifdef CONFIG_QDIO_DEBUG
 #define QDIO_VERBOSE_LEVEL 9

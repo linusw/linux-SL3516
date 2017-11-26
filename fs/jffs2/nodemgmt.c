@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: nodemgmt.c,v 1.127 2005/09/20 15:49:12 dedekind Exp $
+ * $Id: nodemgmt.c,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $
  *
  */
 

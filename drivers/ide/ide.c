@@ -154,6 +154,8 @@
 #include <linux/seq_file.h>
 #include <linux/device.h>
 #include <linux/bitops.h>
+#include <linux/acs_nas.h>
+#include <linux/hotswap.h>
 
 #include <asm/byteorder.h>
 #include <asm/irq.h>
@@ -199,7 +201,11 @@ EXPORT_SYMBOL(ide_hwifs);
 /*
  * Do not even *think* about calling this!
  */
+#ifndef	CONFIG_ACS_DRIVERS_HOTSWAP
 static void init_hwif_data(ide_hwif_t *hwif, unsigned int index)
+#else
+void init_hwif_data(ide_hwif_t *hwif, unsigned int index)
+#endif
 {
 	unsigned int unit;
 
@@ -249,7 +255,11 @@ static void init_hwif_data(ide_hwif_t *hwif, unsigned int index)
 	}
 }
 
+#ifndef	CONFIG_ACS_DRIVERS_HOTSWAP
 static void init_hwif_default(ide_hwif_t *hwif, unsigned int index)
+#else
+void init_hwif_default(ide_hwif_t *hwif, unsigned int index)
+#endif
 {
 	hw_regs_t hw;
 
@@ -457,7 +467,11 @@ void ide_hwif_release_regions(ide_hwif_t *hwif)
  *	from the template.
  */
 
+#ifndef	CONFIG_ACS_DRIVERS_HOTSWAP
 static void ide_hwif_restore(ide_hwif_t *hwif, ide_hwif_t *tmp_hwif)
+#else
+void ide_hwif_restore(ide_hwif_t *hwif, ide_hwif_t *tmp_hwif)
+#endif
 {
 	hwif->hwgroup			= tmp_hwif->hwgroup;
 
@@ -1189,6 +1203,10 @@ void ide_add_generic_settings (ide_drive_t *drive)
 /*
  *			  drive		setting name		read/write access				read ioctl		write ioctl		data type	min	max				mul_factor	div_factor	data pointer			set function
  */
+#ifdef	ACS_DEBUG
+	acs_printk("%s: start\n", __func__);
+#endif
+
 	__ide_add_setting(drive,	"io_32bit",		drive->no_io_32bit ? SETTING_READ : SETTING_RW,	HDIO_GET_32BIT,		HDIO_SET_32BIT,		TYPE_BYTE,	0,	1 + (SUPPORT_VLB_SYNC << 1),	1,		1,		&drive->io_32bit,		set_io_32bit,	0);
 	__ide_add_setting(drive,	"keepsettings",		SETTING_RW,					HDIO_GET_KEEPSETTINGS,	HDIO_SET_KEEPSETTINGS,	TYPE_BYTE,	0,	1,				1,		1,		&drive->keep_settings,		NULL,		0);
 	__ide_add_setting(drive,	"nice1",		SETTING_RW,					-1,			-1,			TYPE_BYTE,	0,	1,				1,		1,		&drive->nice1,			NULL,		0);
@@ -1252,6 +1270,15 @@ static int generic_ide_resume(struct device *dev)
 	return ide_do_drive_cmd(drive, &rq, ide_head_wait);
 }
 
+//allen 20070124
+#define HDIO_GETGEO_BIG 0x0330
+struct hd_big_geometry{
+	unsigned char heads;
+	unsigned char sectors;
+	unsigned int cylinders;
+	unsigned long start;
+};
+
 int generic_ide_ioctl(ide_drive_t *drive, struct file *file, struct block_device *bdev,
 			unsigned int cmd, unsigned long arg)
 {
@@ -1259,6 +1286,13 @@ int generic_ide_ioctl(ide_drive_t *drive, struct file *file, struct block_device
 	ide_driver_t *drv;
 	int err = 0;
 	void __user *p = (void __user *)arg;
+
+#ifdef	CONFIG_ACS_DRIVERS_HOTSWAP
+	if(hotswap_stat[get_disk_num(drive->name)] & (0x10 | 0x02)){
+                err = -EINVAL;
+                return err;
+        }
+#endif
 
 	down(&ide_setting_sem);
 	if ((setting = ide_find_setting_by_ioctl(drive, cmd)) != NULL) {
@@ -1291,6 +1325,20 @@ int generic_ide_ioctl(ide_drive_t *drive, struct file *file, struct block_device
 			return 0;
 		}
 
+		case HDIO_GETGEO_BIG:
+                {
+                        struct hd_big_geometry geom;
+                        if (!p || (drive->media != ide_disk && drive->media != ide_floppy)) return -EINVAL;
+                        geom.heads = drive->bios_head;
+                        geom.sectors = drive->bios_sect;
+                        //geom.cylinders = drive->bios_cyl; /* truncate */
+			geom.cylinders = ((unsigned int)(drive->capacity64 - drive->sect0)) / (geom.sectors * geom.heads);
+                        geom.start = get_start_sect(bdev);
+                        if (copy_to_user(p, &geom, sizeof(struct hd_big_geometry)))
+                                return -EFAULT;
+                        return 0;
+                }
+
 		case HDIO_OBSOLETE_IDENTITY:
 		case HDIO_GET_IDENTITY:
 			if (bdev != bdev->bd_contains)
@@ -1300,6 +1348,15 @@ int generic_ide_ioctl(ide_drive_t *drive, struct file *file, struct block_device
 			if (copy_to_user(p, drive->id, (cmd == HDIO_GET_IDENTITY) ? sizeof(*drive->id) : 142))
 				return -EFAULT;
 			return 0;
+
+		case HDIO_GET_FIRMWARE:  //Neagus get disk firmware
+                        if (bdev != bdev->bd_contains)
+                                return -EINVAL;
+                        if (drive->id_read == 0)
+                                return -ENOMSG;
+                        if (copy_to_user(p, drive->id->fw_rev, 8*sizeof(char)))
+                                return -EFAULT;
+                        return 0;
 
 		case HDIO_GET_NICE:
 			return put_user(drive->dsc_overlap	<<	IDE_NICE_DSC_OVERLAP	|
@@ -1410,6 +1467,11 @@ int generic_ide_ioctl(ide_drive_t *drive, struct file *file, struct block_device
 			if (HWIF(drive)->busproc)
 				return HWIF(drive)->busproc(drive, (int)arg);
 			return -EOPNOTSUPP;
+
+#ifdef	BAD_BLK_REMAP
+		case HDIO_BBR_INIT:
+			return bad_blk_remap_init(get_disk_num(drive->name));
+#endif	
 		default:
 			return -EINVAL;
 	}
@@ -1854,6 +1916,12 @@ static void __init probe_for_hwifs (void)
 #ifdef CONFIG_H8300
 	h8300_ide_init();
 #endif
+#if defined(CONFIG_BLK_DEV_IDE_SL2312)
+	{
+		extern void ide_init_sl2312(void);
+        ide_init_sl2312();
+    }    
+#endif /* CONFIG_BLK_DEV_IDE_SL2312 */
 }
 
 void ide_register_subdriver(ide_drive_t *drive, ide_driver_t *driver)

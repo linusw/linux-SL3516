@@ -1,4 +1,4 @@
-/* $Id: isdn.h,v 1.125.2.3 2004/02/10 01:07:14 keil Exp $
+/* $Id: isdn.h,v 1.1.1.1 2006/04/03 08:41:19 amos_lee Exp $
  *
  * Main header for the Linux ISDN subsystem (linklevel).
  *

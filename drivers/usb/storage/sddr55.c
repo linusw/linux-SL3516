@@ -1,6 +1,6 @@
 /* Driver for SanDisk SDDR-55 SmartMedia reader
  *
- * $Id:$
+ * $Id: sddr55.c,v 1.1.1.1 2006/04/03 08:41:02 amos_lee Exp $
  *
  * SDDR55 driver v0.1:
  *

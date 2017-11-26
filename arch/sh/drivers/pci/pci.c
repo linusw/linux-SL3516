@@ -1,5 +1,5 @@
 /* arch/sh/kernel/pci.c
- * $Id: pci.c,v 1.1 2003/08/24 19:15:45 lethal Exp $
+ * $Id: pci.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  *
  * Copyright (c) 2002 M. R. Brown  <mrbrown@linux-sh.org>
  * 

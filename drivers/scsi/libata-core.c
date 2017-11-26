@@ -1362,7 +1362,11 @@ void ata_dev_config(struct ata_port *ap, unsigned int i)
  *	Zero on success, non-zero on error.
  */
 
-static int ata_bus_probe(struct ata_port *ap)
+#ifdef CONFIG_ARCH_SL2312
+int ata_bus_probe(struct ata_port *ap, struct ata_probe_ent *ent, struct ata_host_set *host_set)
+#else
+int ata_bus_probe(struct ata_port *ap)
+#endif
 {
 	unsigned int i, found = 0;
 
@@ -1380,7 +1384,12 @@ static int ata_bus_probe(struct ata_port *ap)
 
 	if ((!found) || (ap->flags & ATA_FLAG_PORT_DISABLED))
 		goto err_out_disable;
-
+#ifdef CONFIG_ARCH_SL2312
+	/* obtain irq, that is shared between channels */
+	if (request_irq(ent->irq, ent->port_ops->irq_handler, ent->irq_flags,
+			DRV_NAME, host_set))
+		goto err_out;
+#endif
 	ata_set_mode(ap);
 	if (ap->flags & ATA_FLAG_PORT_DISABLED)
 		goto err_out_disable;
@@ -3938,7 +3947,8 @@ inline unsigned int ata_host_intr (struct ata_port *ap,
 			goto idle_irq;
 
 		/* before we do anything else, clear DMA-Start bit */
-		ap->ops->bmdma_stop(qc);
+		//ap->ops->bmdma_stop(qc);
+		ata_bmdma_stop(qc);
 
 		/* fall through */
 
@@ -4355,10 +4365,12 @@ int ata_device_add(const struct ata_probe_ent *ent)
 	if (!count)
 		goto err_free_ret;
 
+#ifndef CONFIG_ARCH_SL2312
 	/* obtain irq, that is shared between channels */
 	if (request_irq(ent->irq, ent->port_ops->irq_handler, ent->irq_flags,
 			DRV_NAME, host_set))
 		goto err_out;
+#endif
 
 	/* perform each probe synchronously */
 	DPRINTK("probe begin\n");
@@ -4369,7 +4381,11 @@ int ata_device_add(const struct ata_probe_ent *ent)
 		ap = host_set->ports[i];
 
 		DPRINTK("ata%u: probe begin\n", ap->id);
+#ifdef CONFIG_ARCH_SL2312
+		rc = ata_bus_probe(ap,ent,host_set);
+#else
 		rc = ata_bus_probe(ap);
+#endif		
 		DPRINTK("ata%u: probe end\n", ap->id);
 
 		if (rc) {

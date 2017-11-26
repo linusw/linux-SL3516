@@ -1,0 +1,56 @@
+./power/runtime.c:static void runtime_resume(struct device * dev)
+./power/runtime.c:	if (!resume_device(dev))
+./power/runtime.c: *	dpm_runtime_resume - Power one device back on.
+./power/runtime.c:void dpm_runtime_resume(struct device * dev)
+./power/runtime.c:	runtime_resume(dev);
+./power/runtime.c:EXPORT_SYMBOL(dpm_runtime_resume);
+./power/runtime.c:		runtime_resume(dev);
+./power/shutdown.c: * down last and resume them first. That way, we don't do anything stupid like
+./power/power.h: * resume.c
+./power/power.h:extern void dpm_resume(void);
+./power/power.h:extern int resume_device(struct device *);
+./power/Makefile:obj-$(CONFIG_PM)	+= main.o suspend.o resume.o runtime.o sysfs.o
+./power/resume.c: * resume.c - Functions for waking devices up.
+./power/resume.c:extern int sysdev_resume(void);
+./power/resume.c: *	resume_device - Restore state for one device.
+./power/resume.c:int resume_device(struct device * dev)
+./power/resume.c:		dev_err(dev, "PM: resume from %d, parent %s still %d\n",
+./power/resume.c:	if (dev->bus && dev->bus->resume) {
+./power/resume.c:		error = dev->bus->resume(dev);
+./power/resume.c:void dpm_resume(void)
+./power/resume.c:			resume_device(dev);
+./power/resume.c: *	device_resume - Restore state of each device in system.
+./power/resume.c: *	Walk the dpm_off list, remove each entry, resume the device,
+./power/resume.c:void device_resume(void)
+./power/resume.c:	dpm_resume();
+./power/resume.c:EXPORT_SYMBOL_GPL(device_resume);
+./power/resume.c:		resume_device(dev);
+./power/resume.c:	sysdev_resume();
+./power/suspend.c: * Things are the reverse on the resume path - iterations are done in
+./power/suspend.c: *	If we hit a failure with any of the devices, call device_resume()
+./power/suspend.c:		 * to call resume() on them, in case they partially suspended
+./power/suspend.c:		dpm_resume();
+./power/CVS/Entries:/resume.c/1.1.1.1/Mon Apr  3 08:40:45 2006//
+Binary file ./power/built-in.o matches
+./power/sysfs.c: *	is requested, the device is first resumed, then suspended into the new
+./power/sysfs.c:		dpm_runtime_resume(dev);
+./sys.c:static void __sysdev_resume(struct sys_device *dev)
+./sys.c:	if (cls->resume)
+./sys.c:		cls->resume(dev);
+./sys.c:		if (drv->resume)
+./sys.c:			drv->resume(dev);
+./sys.c:		if (drv->resume)
+./sys.c:			drv->resume(dev);
+./sys.c:	/* resume current sysdev */
+./sys.c:		if (err_drv->resume)
+./sys.c:			err_drv->resume(sysdev);
+./sys.c:		if (err_drv->resume)
+./sys.c:			err_drv->resume(sysdev);
+./sys.c:	/* resume other sysdevs in current class */
+./sys.c:		__sysdev_resume(err_dev);
+./sys.c:	/* resume other classes */
+./sys.c:			__sysdev_resume(err_dev);
+./sys.c: *	sysdev_resume - Bring system devices back to life.
+./sys.c: *	to guarantee that parent devices are resumed before their children.
+./sys.c:int sysdev_resume(void)
+./sys.c:			__sysdev_resume(sysdev);

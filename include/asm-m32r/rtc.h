@@ -1,4 +1,4 @@
-/* $Id: rtc.h,v 1.1.1.1 2004/03/25 04:29:22 hitoshiy Exp $ */
+/* $Id: rtc.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $ */
 
 #ifndef __RTC_H__
 #define __RTC_H__

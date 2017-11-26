@@ -10,7 +10,7 @@
  *
  * <achim_leubner@adaptec.com>
  *
- * $Id: gdth.h,v 1.57 2004/03/31 11:52:09 achim Exp $
+ * $Id: gdth.h,v 1.1.1.1 2006/04/03 08:40:58 amos_lee Exp $
  */
 
 #include <linux/version.h>

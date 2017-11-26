@@ -2,8 +2,8 @@
  *
  * Name:	skqueue.h
  * Project:	Gigabit Ethernet Adapters, Event Scheduler Module
- * Version:	$Revision: 1.16 $
- * Date:	$Date: 2003/09/16 12:50:32 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2006/04/03 08:40:55 $
  * Purpose:	Defines for the Event queue
  *
  ******************************************************************************/

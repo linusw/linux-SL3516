@@ -9,7 +9,7 @@
  *
  * gendisk related functions for the dasd driver.
  *
- * $Revision: 1.51 $
+ * $Revision: 1.1.1.1 $
  */
 
 #include <linux/config.h>

@@ -288,10 +288,10 @@ static void scsi_target_dev_release(struct device *dev)
 {
 	struct device *parent = dev->parent;
 	struct scsi_target *starget = to_scsi_target(dev);
-	struct Scsi_Host *shost = dev_to_shost(parent);
+//	struct Scsi_Host *shost = dev_to_shost(parent);
 
-	if (shost->hostt->target_destroy)
-		shost->hostt->target_destroy(starget);
+//	if (shost->hostt->target_destroy)
+//		shost->hostt->target_destroy(starget);
 	kfree(starget);
 	put_device(parent);
 }

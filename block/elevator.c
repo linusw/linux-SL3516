@@ -33,6 +33,9 @@
 #include <linux/init.h>
 #include <linux/compiler.h>
 #include <linux/delay.h>
+#include <linux/ide.h>
+#include <linux/acs_nas.h>
+#include <linux/hotswap.h>
 
 #include <asm/uaccess.h>
 
@@ -315,7 +318,11 @@ void elv_requeue_request(request_queue_t *q, struct request *rq)
 	__elv_add_request(q, rq, ELEVATOR_INSERT_FRONT, 0);
 }
 
+#ifndef  CONFIG_ACS_DRIVERS_HOTSWAP
 static void elv_drain_elevator(request_queue_t *q)
+#else
+void elv_drain_elevator(request_queue_t *q)
+#endif
 {
 	static int printed;
 	while (q->elevator->ops->elevator_dispatch_fn(q, 1))
@@ -477,6 +484,9 @@ struct request *elv_next_request(request_queue_t *q)
 		if ((rq->flags & REQ_DONTPREP) || !q->prep_rq_fn)
 			break;
 
+#ifdef	ACS_DEBUG
+		//acs_printk("%s: start prep_rq_fn\n", __func__);
+#endif
 		ret = q->prep_rq_fn(q, rq);
 		if (ret == BLKPREP_OK) {
 			break;

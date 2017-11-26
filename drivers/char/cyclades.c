@@ -2,7 +2,7 @@
 #define	Z_WAKE
 #undef	Z_EXT_CHARS_IN_BUFFER
 static char rcsid[] =
-"$Revision: 2.3.2.20 $$Date: 2004/02/25 18:14:16 $";
+"$Revision: 1.1.1.1 $$Date: 2006/04/03 08:40:46 $";
 
 /*
  *  linux/drivers/char/cyclades.c
@@ -25,6 +25,9 @@ static char rcsid[] =
  * This version supports shared IRQ's (only for PCI boards).
  *
  * $Log: cyclades.c,v $
+ * Revision 1.1.1.1  2006/04/03 08:40:46  amos_lee
+ * initial
+ *
  * Prevent users from opening non-existing Z ports.
  *
  * Revision 2.3.2.8   2000/07/06 18:14:16 ivan

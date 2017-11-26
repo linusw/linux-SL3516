@@ -24,11 +24,13 @@
 #include <linux/hdreg.h>
 #include <linux/ide.h>
 #include <linux/bitops.h>
+#include <linux/acs_nas.h>
 
 #include <asm/byteorder.h>
 #include <asm/irq.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
+#include <linux/acs_nas.h>
 
 /*
  *	Conventional PIO operations for ATA devices
@@ -241,6 +243,11 @@ static void ata_input_data(ide_drive_t *drive, void *buffer, u32 wcount)
 	ide_hwif_t *hwif	= HWIF(drive);
 	u8 io_32bit		= drive->io_32bit;
 
+#ifdef ORION_430ST
+        if (drive->queue && drive->queue->activity_fn)
+                /* turn on access LED */
+                drive->queue->activity_fn(drive->queue->activity_data, 1);
+#endif
 	if (io_32bit) {
 		if (io_32bit & 2) {
 			unsigned long flags;
@@ -253,6 +260,11 @@ static void ata_input_data(ide_drive_t *drive, void *buffer, u32 wcount)
 	} else {
 		hwif->INSW(IDE_DATA_REG, buffer, wcount<<1);
 	}
+#ifdef ORION_430ST
+        if (drive->queue && drive->queue->activity_fn)
+                /* turn off access LED */
+                drive->queue->activity_fn(drive->queue->activity_data, 0);
+#endif
 }
 
 /*
@@ -263,6 +275,11 @@ static void ata_output_data(ide_drive_t *drive, void *buffer, u32 wcount)
 	ide_hwif_t *hwif	= HWIF(drive);
 	u8 io_32bit		= drive->io_32bit;
 
+#ifdef ORION_430ST
+        if (drive->queue && drive->queue->activity_fn)
+                /* turn on access LED */
+                drive->queue->activity_fn(drive->queue->activity_data, 1);
+#endif
 	if (io_32bit) {
 		if (io_32bit & 2) {
 			unsigned long flags;
@@ -275,6 +292,11 @@ static void ata_output_data(ide_drive_t *drive, void *buffer, u32 wcount)
 	} else {
 		hwif->OUTSW(IDE_DATA_REG, buffer, wcount<<1);
 	}
+#ifdef ORION_430ST
+        if (drive->queue && drive->queue->activity_fn)
+                /* turn off access LED */
+                drive->queue->activity_fn(drive->queue->activity_data, 0);
+#endif
 }
 
 /*
@@ -939,8 +961,10 @@ void ide_execute_command(ide_drive_t *drive, task_ioreg_t cmd, ide_handler_t *ha
 	
 	spin_lock_irqsave(&ide_lock, flags);
 	
-	if(hwgroup->handler)
+	if(hwgroup->handler) {
+		printk("%s: BUG. drive %s\n", __func__, drive->name);
 		BUG();
+	}
 	hwgroup->handler	= handler;
 	hwgroup->expiry		= expiry;
 	hwgroup->timer.expires	= jiffies + timeout;
@@ -1132,14 +1156,24 @@ static ide_startstop_t do_reset1 (ide_drive_t *drive, int do_not_try_atapi)
 	unsigned long flags;
 	ide_hwif_t *hwif;
 	ide_hwgroup_t *hwgroup;
-	
+
+#ifdef	ACS_DEBUG
+	acs_printk("%s: start\n", __func__);
+#endif 	
 	spin_lock_irqsave(&ide_lock, flags);
 	hwif = HWIF(drive);
 	hwgroup = HWGROUP(drive);
 
+#ifdef	ACS_DEBUG
+	acs_printk("%s: step1\n", __func__);
+#endif 	
 	/* We must not reset with running handlers */
-	if(hwgroup->handler != NULL)
+	if(hwgroup->handler != NULL){
+#ifdef	ACS_DEBUG
+		acs_printk("%s: no handler\n", __func__);
+#endif 	
 		BUG();
+	}
 
 	/* For an ATAPI device, first try an ATAPI SRST. */
 	if (drive->media != ide_disk && !do_not_try_atapi) {
@@ -1159,9 +1193,17 @@ static ide_startstop_t do_reset1 (ide_drive_t *drive, int do_not_try_atapi)
 	 * First, reset any device state data we were maintaining
 	 * for any of the drives on this interface.
 	 */
-	for (unit = 0; unit < MAX_DRIVES; ++unit)
+	for (unit = 0; unit < MAX_DRIVES; ++unit) {
+#ifdef  CONFIG_ACS_DRIVERS_HOTSWAP
+		if(!hwif->drives[unit].present)
+			continue;
+#endif
 		pre_reset(&hwif->drives[unit]);
+	}
 
+#ifdef	ACS_DEBUG
+	acs_printk("%s: step2. ctl=%x\n", __func__, drive->ctl);
+#endif 	
 #if OK_TO_RESET_CONTROLLER
 	if (!IDE_CONTROL_REG) {
 		spin_unlock_irqrestore(&ide_lock, flags);
@@ -1181,12 +1223,18 @@ static ide_startstop_t do_reset1 (ide_drive_t *drive, int do_not_try_atapi)
 	/* more than enough time */
 	udelay(10);
 	if (drive->quirk_list == 2) {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: drive->quirk_list == 2\n", __func__);
+#endif 	
 		/* clear SRST and nIEN */
 		hwif->OUTBSYNC(drive, drive->ctl, IDE_CONTROL_REG);
 	} else {
 		/* clear SRST, leave nIEN */
 		hwif->OUTBSYNC(drive, drive->ctl|2, IDE_CONTROL_REG);
 	}
+#ifdef	ACS_DEBUG
+	acs_printk("%s: step3\n", __func__);
+#endif 	
 	/* more than enough time */
 	udelay(10);
 	hwgroup->poll_timeout = jiffies + WAIT_WORSTCASE;

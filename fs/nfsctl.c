@@ -109,8 +109,9 @@ asmlinkage sys_nfsservctl(int cmd, struct nfsctl_arg __user *arg, void __user *r
 	if (IS_ERR(file))
 		return PTR_ERR(file);
 	err = file->f_op->write(file, p, map[cmd].wsize, &file->f_pos);
-	if (err >= 0 && map[cmd].rsize)
+	if (err >= 0 && map[cmd].rsize) {
 		err = file->f_op->read(file, res, map[cmd].rsize, &file->f_pos);
+	}
 	if (err >= 0)
 		err = 0;
 	fput(file);

@@ -31,7 +31,7 @@
 
 #define ZFCP_LOG_AREA			ZFCP_LOG_AREA_ERP
 
-#define ZFCP_ERP_REVISION "$Revision: 1.86 $"
+#define ZFCP_ERP_REVISION "$Revision: 1.1.1.1 $"
 
 #include "zfcp_ext.h"
 

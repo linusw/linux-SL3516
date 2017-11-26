@@ -5,7 +5,7 @@
  *	Authors:
  *	Lennert Buytenhek		<buytenh@gnu.org>
  *
- *	$Id: br_fdb.c,v 1.6 2002/01/17 00:57:07 davem Exp $
+ *	$Id: br_fdb.c,v 1.2 2006/04/20 02:33:47 beckerh Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License
@@ -366,3 +366,46 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
 	}
 	rcu_read_unlock();
 }
+
+/*for WLAN* + TSS*/
+#if defined(CONFIG_SL2312_TSO)
+extern struct net_bridge *current_br;
+int br_fdb_check_eth0 (unsigned char *addr)
+{
+	struct net_bridge_fdb_entry *fdb;
+	struct net_bridge *br=current_br;
+
+	if (!br)
+		return 1; /* no bridge */
+
+	rcu_read_lock();
+	fdb = __br_fdb_get(br, addr);
+
+	if (fdb)
+	{
+		char *mc;
+		mc = fdb->addr.addr;
+#if 0
+		printk("%s: emac addr=%02x:%02x:%02x:%02x:%02x:%02x\r\n", __func__, 
+	    		addr[0], addr[1], addr[2], addr[3],addr[4], addr[5]);
+
+		printk("%s: mc=%02x:%02x:%02x:%02x:%02x:%02x\r\n", __func__, 
+	    		mc[0], mc[1], mc[2], mc[3],mc[4], mc[5]);
+#endif		
+		if (!memcmp(fdb->addr.addr, addr, ETH_ALEN))
+		{		
+				if (!has_expired(br, fdb) && !memcmp(fdb->dst->dev->name, "eth0", 4))
+				{
+					rcu_read_unlock();
+					return 1;
+				}/**/
+		}/*if*/
+		//printk("%s:%s: dst_dev=%s not found\n", __FILE__, __func__, fdb->dst->dev->name);		
+	}/*if*/
+	rcu_read_unlock();
+	//printk("%s:%s: not hit !\n", __FILE__, __func__);
+	
+	return 0;
+}/**/
+#endif
+

@@ -1,7 +1,7 @@
 /*
  *  arch/ppc/kernel/hashtable.S
  *
- *  $Id: hashtable.S,v 1.6 1999/10/08 01:56:15 paulus Exp $
+ *  $Id: hashtable.S,v 1.1.1.1 2006/04/03 08:40:41 amos_lee Exp $
  *
  *  PowerPC version
  *    Copyright (C) 1995-1996 Gary Thomas (gdt@linuxppc.org)

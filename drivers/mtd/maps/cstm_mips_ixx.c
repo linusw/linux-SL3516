@@ -1,5 +1,5 @@
 /*
- * $Id: cstm_mips_ixx.c,v 1.14 2005/11/07 11:14:26 gleixner Exp $
+ * $Id: cstm_mips_ixx.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  * Mapping of a custom board with both AMD CFI and JEDEC flash in partitions.
  * Config with both CFI and JEDEC device support.

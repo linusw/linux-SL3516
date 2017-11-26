@@ -18,6 +18,9 @@
 #ifndef __XFS_DIR2_SF_H__
 #define	__XFS_DIR2_SF_H__
 
+//debug_Aaron on 08/18/2006 fix bug of XFS internal error xfs_da_do_buf(2) at line 2221 of file fs/xfs/xfs_da_btree.c
+#define JZ_PACKED __attribute__ ((packed))
+
 /*
  * Directory layout when stored internal to an inode.
  *
@@ -62,7 +65,9 @@ typedef union {
  * Normalized offset (in a data block) of the entry, really xfs_dir2_data_off_t.
  * Only need 16 bits, this is the byte offset into the single block form.
  */
-typedef struct { __uint8_t i[2]; } xfs_dir2_sf_off_t;
+//debug_Aaron
+//typedef struct { __uint8_t i[2]; } xfs_dir2_sf_off_t;
+typedef struct { __uint8_t i[2]; } JZ_PACKED xfs_dir2_sf_off_t;
 
 /*
  * The parent directory has a dedicated field, and the self-pointer must
@@ -76,19 +81,25 @@ typedef struct xfs_dir2_sf_hdr {
 	__uint8_t		count;		/* count of entries */
 	__uint8_t		i8count;	/* count of 8-byte inode #s */
 	xfs_dir2_inou_t		parent;		/* parent dir inode number */
-} xfs_dir2_sf_hdr_t;
+//debug_Aaron
+//} xfs_dir2_sf_hdr_t;
+} JZ_PACKED xfs_dir2_sf_hdr_t;
 
 typedef struct xfs_dir2_sf_entry {
 	__uint8_t		namelen;	/* actual name length */
 	xfs_dir2_sf_off_t	offset;		/* saved offset */
 	__uint8_t		name[1];	/* name, variable size */
 	xfs_dir2_inou_t		inumber;	/* inode number, var. offset */
-} xfs_dir2_sf_entry_t;
+//debug_Aaron
+//} xfs_dir2_sf_entry_t;
+} JZ_PACKED xfs_dir2_sf_entry_t;
 
 typedef struct xfs_dir2_sf {
 	xfs_dir2_sf_hdr_t	hdr;		/* shortform header */
 	xfs_dir2_sf_entry_t	list[1];	/* shortform entries */
-} xfs_dir2_sf_t;
+//debug_Aaron
+//} xfs_dir2_sf_t;
+} JZ_PACKED xfs_dir2_sf_t;
 
 #define	XFS_DIR2_SF_HDR_SIZE(i8count)	xfs_dir2_sf_hdr_size(i8count)
 static inline int xfs_dir2_sf_hdr_size(int i8count)

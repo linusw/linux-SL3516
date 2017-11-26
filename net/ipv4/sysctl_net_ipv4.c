@@ -1,7 +1,7 @@
 /*
  * sysctl_net_ipv4.c: sysctl interface to net IPV4 subsystem.
  *
- * $Id: sysctl_net_ipv4.c,v 1.50 2001/10/20 00:00:11 davem Exp $
+ * $Id: sysctl_net_ipv4.c,v 1.2 2006/06/02 07:17:43 jason Exp $
  *
  * Begun April 1, 1996, Mike Shaver.
  * Added /proc/sys/net/ipv4 directory entry (empty =) ). [MS]
@@ -17,6 +17,11 @@
 #include <net/ip.h>
 #include <net/route.h>
 #include <net/tcp.h>
+
+#ifdef CONFIG_SL2312_TSO
+#include <linux/sysctl_storlink.h>
+struct storlink_sysctl	storlink_ctl;
+#endif
 
 /* From af_inet.c */
 extern int sysctl_ip_nonlocal_bind;
@@ -653,7 +658,72 @@ ctl_table ipv4_table[] = {
 		.mode		= 0644,
 		.proc_handler	= &proc_dointvec,
 	},
-
+#ifdef CONFIG_SL2312_TSO
+	{
+		.ctl_name	= NET_TCP_STORLINK_SENDFILE,
+		.procname	= "storlink_sendfile",
+		.data		= &storlink_ctl.sendfile,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec,
+	},
+	{
+		.ctl_name	= NET_TCP_STORLINK_RECVFILE,
+		.procname	= "storlink_recvfile",
+		.data		= &storlink_ctl.recvfile,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec,
+	},
+	{
+		.ctl_name	= NET_TCP_STORLINK_MPAGES,
+		.procname	= "storlink_mpages",
+		.data		= &storlink_ctl.mpages,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec,
+	},
+	{
+		.ctl_name	= NET_TCP_STORLINK_ACKCNT,
+		.procname	= "storlink_ackcnt",
+		.data		= &storlink_ctl.ackcnt,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec,
+	},
+	{
+		.ctl_name	= NET_TCP_STORLINK_VAR1,
+		.procname	= "storlink_var1",
+		.data		= &storlink_ctl.var1,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec,
+	},
+	{
+		.ctl_name	= NET_TCP_STORLINK_VAR2,
+		.procname	= "storlink_var2",
+		.data		= &storlink_ctl.var2,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec,
+	},
+	{
+		.ctl_name	= NET_TCP_STORLINK_LINK,
+		.procname	= "storlink_link0",
+		.data		= &storlink_ctl.link[0],
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec,
+	},
+	{
+		.ctl_name	= NET_TCP_STORLINK_LINK,
+		.procname	= "storlink_link1",
+		.data		= &storlink_ctl.link[1],
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec,
+	},
+#endif
 	{ .ctl_name = 0 }
 };
 

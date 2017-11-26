@@ -1,7 +1,7 @@
 /* Rubin encoder/decoder header       */
 /* work started at   : aug   3, 1994  */
 /* last modification : aug  15, 1994  */
-/* $Id: compr_rubin.h,v 1.7 2005/11/07 11:14:38 gleixner Exp $ */
+/* $Id: compr_rubin.h,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $ */
 
 #include "pushpull.h"
 

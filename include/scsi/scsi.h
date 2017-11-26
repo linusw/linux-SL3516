@@ -427,4 +427,5 @@ struct scsi_lun {
 /* Used to obtain the PCI location of a device */
 #define SCSI_IOCTL_GET_PCI		0x5387
 
+#define SCSI_IOCTL_GET_USBBUS_NUM		0x5388
 #endif /* _SCSI_SCSI_H */

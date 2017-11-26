@@ -214,8 +214,9 @@ static ssize_t write_getfs(struct file *file, char *buf, size_t size)
 	int err = 0;
 	struct knfsd_fh *res;
 
-	if (size < sizeof(*data))
+	if (size < sizeof(*data)){
 		return -EINVAL;
+	}
 	data = (struct nfsctl_fsparm*)buf;
 	err = -EPROTONOSUPPORT;
 	if (data->gd_addr.sa_family != AF_INET)
@@ -227,8 +228,9 @@ static ssize_t write_getfs(struct file *file, char *buf, size_t size)
 	res = (struct knfsd_fh*)buf;
 
 	exp_readlock();
-	if (!(clp = auth_unix_lookup(sin->sin_addr)))
+	if (!(clp = auth_unix_lookup(sin->sin_addr))){
 		err = -EPERM;
+	}
 	else {
 		err = exp_rootfh(clp, data->gd_path, res, data->gd_maxlen);
 		auth_domain_put(clp);

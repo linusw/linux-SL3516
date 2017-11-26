@@ -1,4 +1,4 @@
-/* $Id: vmlinux.lds.S,v 1.8 2003/05/16 17:18:14 lethal Exp $
+/* $Id: vmlinux.lds.S,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * ld script to make SuperH Linux kernel
  * Written by Niibe Yutaka
  */

@@ -14,6 +14,7 @@
 #include <linux/bio.h>
 #include <linux/module.h>
 #include <linux/stringify.h>
+#include <linux/acs_nas.h>
 
 #include <asm/scatterlist.h>
 
@@ -109,6 +110,9 @@ struct request_list {
 	int starved[2];
 	int elvpriv;
 	mempool_t *rq_pool;
+#ifdef ACS_MD_SPECIAL
+	mempool_t *mdsb_rq_pool;  /* memory pool for MD super block */
+#endif
 	wait_queue_head_t wait[2];
 };
 
@@ -232,6 +236,9 @@ enum rq_flag_bits {
 	__REQ_BAR_PREFLUSH,	/* barrier pre-flush done */
 	__REQ_BAR_POSTFLUSH,	/* barrier post-flush */
 	__REQ_BAR_FLUSH,	/* rq is the flush request */
+#ifdef ACS_MD_SPECIAL
+	__REQ_RW_MDSB,		/* read or write super block of MD */
+#endif
 	__REQ_NR_BITS,		/* stops here */
 };
 
@@ -261,6 +268,9 @@ enum rq_flag_bits {
 #define REQ_PM_SHUTDOWN	(1 << __REQ_PM_SHUTDOWN)
 #define REQ_BAR_PREFLUSH	(1 << __REQ_BAR_PREFLUSH)
 #define REQ_BAR_POSTFLUSH	(1 << __REQ_BAR_POSTFLUSH)
+#ifdef ACS_MD_SPECIAL
+#define REQ_RW_MDSB	(1 << __REQ_RW_MDSB)
+#endif
 #define REQ_BAR_FLUSH	(1 << __REQ_BAR_FLUSH)
 
 /*

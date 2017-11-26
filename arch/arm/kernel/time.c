@@ -495,8 +495,13 @@ static int __init timer_init_sysfs(void)
 
 device_initcall(timer_init_sysfs);
 
+extern unsigned int rtc_get_time_second(void);
+
 void __init time_init(void)
 {
+#ifdef CONFIG_SL2312_RTC
+//	xtime.tv_sec  = rtc_get_time_second() ; //Sunny 20070321
+#endif
 	if (system_timer->offset == NULL)
 		system_timer->offset = dummy_gettimeoffset;
 	system_timer->init();

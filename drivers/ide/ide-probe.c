@@ -51,11 +51,21 @@
 #include <linux/spinlock.h>
 #include <linux/kmod.h>
 #include <linux/pci.h>
+#include <linux/acs_nas.h>
+#include <linux/hotswap.h>
 
 #include <asm/byteorder.h>
 #include <asm/irq.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
+
+/* Neagus 2007.07.24 */
+#define GEMINI_PROBE_ISSUE
+#ifdef GEMINI_PROBE_ISSUE
+extern unsigned int iomux;
+extern unsigned int sata_phy0;
+extern unsigned int sata_phy1;
+#endif
 
 /**
  *	generic_id		-	add a generic drive id
@@ -179,6 +189,9 @@ static inline void do_identify (ide_drive_t *drive, u8 cmd)
 	int bswap = 1;
 	struct hd_driveid *id;
 
+#ifdef ACS_DEBUG
+	acs_printk("%s:(line %d) start\n", __func__, __LINE__);
+#endif
 	id = drive->id;
 	/* read 512 bytes of id info */
 	hwif->ata_input_data(drive, id, SECTOR_WORDS);
@@ -221,6 +234,7 @@ static inline void do_identify (ide_drive_t *drive, u8 cmd)
 	id->model[sizeof(id->model)-1] = '\0';
 	printk("%s: %s, ", drive->name, id->model);
 	drive->present = 1;
+	drive_stat[get_disk_num(drive->name)] |= IDE_EXIST;
 	drive->dead = 0;
 
 	/*
@@ -320,6 +334,9 @@ static int actual_try_to_identify (ide_drive_t *drive, u8 cmd)
 	/* take a deep breath */
 	msleep(50);
 
+#ifdef ACS_DEBUG
+	acs_printk("%s: step1 status:%x\n", __func__, hwif->INB(IDE_STATUS_REG));
+#endif
 	if (IDE_CONTROL_REG) {
 		a = hwif->INB(IDE_ALTSTATUS_REG);
 		s = hwif->INB(IDE_STATUS_REG);
@@ -328,9 +345,15 @@ static int actual_try_to_identify (ide_drive_t *drive, u8 cmd)
 				"ALTSTATUS(0x%02x)\n", drive->name, s, a);
 			/* ancient Seagate drives, broken interfaces */
 			hd_status = IDE_STATUS_REG;
+#ifdef ACS_DEBUG
+			acs_printk("%s: ancient Seagate drives.\n", __func__);
+#endif
 		} else {
 			/* use non-intrusive polling */
 			hd_status = IDE_ALTSTATUS_REG;
+#ifdef ACS_DEBUG
+			acs_printk("%s: use non-intrusive polling\n", __func__);
+#endif
 		}
 	} else
 		hd_status = IDE_STATUS_REG;
@@ -354,6 +377,9 @@ static int actual_try_to_identify (ide_drive_t *drive, u8 cmd)
 		}
 		/* give drive a breather */
 		msleep(50);
+#ifdef ACS_DEBUG
+		acs_printk("%s: step2 status:%x control:%x\n", __func__, hwif->INB(IDE_STATUS_REG), hwif->INB(hd_status));
+#endif
 	} while ((hwif->INB(hd_status)) & BUSY_STAT);
 
 	/* wait for IRQ and DRQ_STAT */
@@ -361,6 +387,9 @@ static int actual_try_to_identify (ide_drive_t *drive, u8 cmd)
 	if (OK_STAT((hwif->INB(IDE_STATUS_REG)), DRQ_STAT, BAD_R_STAT)) {
 		unsigned long flags;
 
+#ifdef ACS_DEBUG
+		acs_printk("%s: step3 status:%x\n", __func__, hwif->INB(IDE_STATUS_REG));
+#endif
 		/* local CPU only; some systems need this */
 		local_irq_save(flags);
 		/* drive returned ID */
@@ -371,6 +400,9 @@ static int actual_try_to_identify (ide_drive_t *drive, u8 cmd)
 		(void) hwif->INB(IDE_STATUS_REG);
 		local_irq_restore(flags);
 	} else {
+#ifdef ACS_DEBUG
+		acs_printk("%s: step4 status:%x\n", __func__, hwif->INB(IDE_STATUS_REG));
+#endif
 		/* drive refused ID */
 		rc = 2;
 	}
@@ -468,10 +500,13 @@ static int do_probe (ide_drive_t *drive, u8 cmd)
 		if ((drive->media != ide_disk) && (cmd == WIN_IDENTIFY))
 			return 4;
 	}
-#ifdef DEBUG
-	printk("probing for %s: present=%d, media=%d, probetype=%s\n",
-		drive->name, drive->present, drive->media,
-		(cmd == WIN_IDENTIFY) ? "ATA" : "ATAPI");
+
+#ifdef  CONFIG_ACS_DRIVERS_HOTSWAP
+        if (hotswap_stat[get_disk_num(drive->name)] & DISK_ADDING) {
+		msleep(50);
+		ide_hard_reset(get_disk_num(drive->name));
+		msleep(50);
+	}
 #endif
 
 	/* needed for some systems
@@ -479,8 +514,34 @@ static int do_probe (ide_drive_t *drive, u8 cmd)
 	 */
 	msleep(50);
 	SELECT_DRIVE(drive);
+#ifdef ACS_DEBUG
+	acs_printk("%s: select=%x drive->select=%x\n", __func__, hwif->INB(IDE_SELECT_REG), drive->select.all);
+#endif
 	msleep(50);
+
+#ifdef ACS_DEBUG
+	acs_printk("%s: status:%x hotswap_stat:%x\n", __func__, hwif->INB(IDE_STATUS_REG), hotswap_stat[get_disk_num(drive->name)]);
+#endif
+#ifdef  CONFIG_ACS_DRIVERS_HOTSWAP
+        if (hotswap_stat[get_disk_num(drive->name)] & DISK_ADDING) {
+                unsigned long long cur_jiffies = jiffies;
+                while (!OK_STAT((hwif->INB(IDE_STATUS_REG)), READY_STAT, BUSY_STAT) || hwif->INB(IDE_SELECT_REG) != drive->select.all) 
+		{
+                        if (jiffies - cur_jiffies > 5 * HZ)
+                                break;
+			SELECT_DRIVE(drive);
+                        msleep(50);
+                }
+#ifdef ACS_DEBUG
+                acs_printk("%s: status:%x time:%lu\n", __func__, hwif->INB(IDE_STATUS_REG), jiffies - cur_jiffies);
+#endif
+        }
+#endif
+
 	if (hwif->INB(IDE_SELECT_REG) != drive->select.all && !drive->present) {
+#ifdef ACS_DEBUG
+		acs_printk("%s: line:%d select reg:%x\n", __func__, __LINE__, hwif->INB(IDE_SELECT_REG));
+#endif
 		if (drive->select.b.unit != 0) {
 			/* exit with drive0 selected */
 			SELECT_DRIVE(&hwif->drives[0]);
@@ -492,7 +553,7 @@ static int do_probe (ide_drive_t *drive, u8 cmd)
 	}
 
 	if (OK_STAT((hwif->INB(IDE_STATUS_REG)), READY_STAT, BUSY_STAT) ||
-	    drive->present || cmd == WIN_PIDENTIFY) {
+		drive->present || cmd == WIN_PIDENTIFY) {
 		/* send cmd and wait */
 		if ((rc = try_to_identify(drive, cmd))) {
 			/* failed: try again */
@@ -524,6 +585,9 @@ static int do_probe (ide_drive_t *drive, u8 cmd)
 		/* ensure drive irq is clear */
 		(void) hwif->INB(IDE_STATUS_REG);
 	} else {
+#ifdef ACS_DEBUG
+		acs_printk("%s:(line %d) not present or maybe ATAPI\n", __func__, __LINE__);
+#endif
 		/* not present or maybe ATAPI */
 		rc = 3;
 	}
@@ -568,8 +632,12 @@ static void enable_nest (ide_drive_t *drive)
 
 	/* if !(success||timed-out) */
 	if (do_probe(drive, WIN_IDENTIFY) >= 2) {
+#ifndef  CONFIG_ACS_DRIVERS_HOTSWAP
 		/* look for ATAPI device */
 		(void) do_probe(drive, WIN_PIDENTIFY);
+#else
+		(void) do_probe(drive, WIN_IDENTIFY);
+#endif
 	}
 }
 
@@ -595,7 +663,10 @@ static inline u8 probe_for_drive (ide_drive_t *drive)
 	 *
 	 *	Also note that 0 everywhere means "can't do X"
 	 */
- 
+
+#ifdef	ACS_DEBUG
+	acs_printk("%s: start\n", __func__);
+#endif 
 	drive->id = kzalloc(SECTOR_WORDS *4, GFP_KERNEL);
 	drive->id_read = 0;
 	if(drive->id == NULL)
@@ -610,14 +681,22 @@ static inline u8 probe_for_drive (ide_drive_t *drive)
 	{
 		/* if !(success||timed-out) */
 		if (do_probe(drive, WIN_IDENTIFY) >= 2) {
+#ifndef  CONFIG_ACS_DRIVERS_HOTSWAP
 			/* look for ATAPI device */
 			(void) do_probe(drive, WIN_PIDENTIFY);
+#else
+			(void) do_probe(drive, WIN_IDENTIFY);
+#endif
 		}
 		if (strstr(drive->id->model, "E X A B Y T E N E S T"))
 			enable_nest(drive);
-		if (!drive->present)
+		if (!drive->present){
+#ifdef	ACS_DEBUG
+			acs_printk("probe_for_drive: drive not present\n");
+#endif 
 			/* drive not found */
 			return 0;
+		}
 	
 		/* identification failed? */
 		if (!drive->id_read) {
@@ -635,8 +714,12 @@ static inline u8 probe_for_drive (ide_drive_t *drive)
 		}
 		/* drive was found */
 	}
-	if(!drive->present)
+	if(!drive->present){
+#ifdef	ACS_DEBUG
+		acs_printk("%s: drive not present\n", __func__);
+#endif 
 		return 0;
+	}
 	/* The drive wasn't being helpful. Add generic info only */
 	if (drive->id_read == 0) {
 		generic_id(drive);
@@ -688,21 +771,74 @@ static int wait_hwif_ready(ide_hwif_t *hwif)
 	 * I know of at least one disk who takes 31 seconds, I use 35
 	 * here to be safe
 	 */
-	rc = ide_wait_not_busy(hwif, 35000);
-	if (rc)
+/* Neagus 2007.07.24 */
+#ifdef GEMINI_PROBE_ISSUE
+	if(strcmp(hwif->hwif_data ,"GEM_SATA")==0){
+		if((!sata_phy0)&&(!sata_phy1))
+			return 0;
+	}
+#endif
+#ifndef GEMINI_PROBE_ISSUE
+	rc = ide_wait_not_busy(hwif, 10000);
+	if (rc){
+#ifdef	ACS_DEBUG
+		acs_printk("%s: hwif busy\n", __func__);
+#endif
 		return rc;
+	}
+
+#else
+	if(strcmp(hwif->hwif_data ,"GEM_SATA")==0){
+		if((iomux==2)&&(sata_phy1==0) ){
+			printk("MASTER not exist\n");
+			hwif->drives[0].noprobe =1;
+			goto SLAVE;
+		}
+		if((iomux==3)&&(sata_phy0==0) ){
+			printk("MASTER not exist\n");
+			hwif->drives[0].noprobe =1;
+			goto SLAVE;
+		}
+	}
+#endif
 
 	/* Now make sure both master & slave are ready */
 	SELECT_DRIVE(&hwif->drives[0]);
 	hwif->OUTB(8, hwif->io_ports[IDE_CONTROL_OFFSET]);
 	mdelay(2);
-	rc = ide_wait_not_busy(hwif, 35000);
-	if (rc)
+	rc = ide_wait_not_busy(hwif, 20000);
+	if (rc){
+#ifdef	ACS_DEBUG
+		acs_printk("%s: master busy\n", __func__);
+#endif
 		return rc;
+	}
+/* Neagus 2007.07.24 */
+#ifdef GEMINI_PROBE_ISSUE
+SLAVE:	
+	if(strcmp(hwif->hwif_data ,"GEM_SATA")==0){
+		if((iomux==2)&&(sata_phy0==0) ){
+			printk("SLAVE not exist\n");
+			hwif->drives[1].noprobe =1;
+			return 0;
+		}
+		if((iomux==3)&&(sata_phy1==0) ){
+			printk("SLAVE not exist\n");
+			hwif->drives[1].noprobe =1;
+			return 0;
+		}
+	}
+#endif
+
 	SELECT_DRIVE(&hwif->drives[1]);
 	hwif->OUTB(8, hwif->io_ports[IDE_CONTROL_OFFSET]);
 	mdelay(2);
-	rc = ide_wait_not_busy(hwif, 35000);
+	rc = ide_wait_not_busy(hwif, 20000);
+#ifdef	ACS_DEBUG
+	if (rc){
+		acs_printk("%s: slave busy\n", __func__);
+	}
+#endif
 
 	/* Exit function with master reselected (let's be sane) */
 	SELECT_DRIVE(&hwif->drives[0]);
@@ -751,7 +887,14 @@ EXPORT_SYMBOL_GPL(ide_undecoded_slave);
  * This routine only knows how to look for drive units 0 and 1
  * on an interface, so any setting of MAX_DRIVES > 2 won't work here.
  */
+#ifndef  CONFIG_ACS_DRIVERS_HOTSWAP
 static void probe_hwif(ide_hwif_t *hwif)
+#else
+/* @mst_slv : 0 - probe master only; 1 - probe slave only; 2 - probe all 
+ * 0 and 1 is for hotswap 
+ */ 
+void probe_hwif(ide_hwif_t *hwif, int mst_slv)
+#endif
 {
 	unsigned int unit;
 	unsigned long flags;
@@ -762,6 +905,9 @@ static void probe_hwif(ide_hwif_t *hwif)
 
 	if ((hwif->chipset != ide_4drives || !hwif->mate || !hwif->mate->present) &&
 	    (ide_hwif_request_regions(hwif))) {
+#ifdef	ACS_DEBUG
+		acs_printk("probe_hwif: request regions fail\n");
+#endif
 		u16 msgout = 0;
 		for (unit = 0; unit < MAX_DRIVES; ++unit) {
 			ide_drive_t *drive = &hwif->drives[unit];
@@ -783,6 +929,9 @@ static void probe_hwif(ide_hwif_t *hwif)
 	 * we'll install our IRQ driver much later...
 	 */
 	irqd = hwif->irq;
+#ifdef	ACS_DEBUG
+		acs_printk("probe_hwif: irqd=%d\n", irqd);
+#endif
 	if (irqd)
 		disable_irq(hwif->irq);
 
@@ -807,22 +956,41 @@ static void probe_hwif(ide_hwif_t *hwif)
 	 *  
 	 *  BenH.
 	 */
-	if (wait_hwif_ready(hwif) == -EBUSY)
+#ifndef  CONFIG_ACS_DRIVERS_HOTSWAP
+	if (wait_hwif_ready(hwif) == -EBUSY){
+#else
+	if (mst_slv >> 1 && wait_hwif_ready(hwif) == -EBUSY){
+#endif
 		printk(KERN_DEBUG "%s: Wait for ready failed before probe !\n", hwif->name);
+#ifdef	ACS_DEBUG
+		acs_printk("probe_hwif: wait for ready failed\n");
+#endif
+	}
 
 	/*
 	 * Second drive should only exist if first drive was found,
 	 * but a lot of cdrom drives are configured as single slaves.
 	 */
 	for (unit = 0; unit < MAX_DRIVES; ++unit) {
+#ifdef  CONFIG_ACS_DRIVERS_HOTSWAP
+		if(!(mst_slv >> 1) && unit != mst_slv){	/* not probe all disk */
+			continue;
+		}
+#endif
 		ide_drive_t *drive = &hwif->drives[unit];
 		drive->dn = (hwif->channel ? 2 : 0) + unit;
 		(void) probe_for_drive(drive);
 		if (drive->present && !hwif->present) {
+#ifdef	ACS_DEBUG
+			acs_printk("probe_hwif: hwif->present=1\n");
+#endif
 			hwif->present = 1;
 			if (hwif->chipset != ide_4drives ||
 			    !hwif->mate || 
 			    !hwif->mate->present) {
+#ifdef	ACS_DEBUG
+				acs_printk("probe_hwif: hwif register\n");
+#endif
 				hwif_register(hwif);
 			}
 		}
@@ -831,6 +999,9 @@ static void probe_hwif(ide_hwif_t *hwif)
 		unsigned long timeout = jiffies + WAIT_WORSTCASE;
 		u8 stat;
 
+#ifdef	ACS_DEBUG
+		acs_printk("probe_hwif: %s reset\n", hwif->name);
+#endif
 		printk(KERN_WARNING "%s: reset\n", hwif->name);
 		hwif->OUTB(12, hwif->io_ports[IDE_CONTROL_OFFSET]);
 		udelay(10);
@@ -855,6 +1026,11 @@ static void probe_hwif(ide_hwif_t *hwif)
 	}
 
 	for (unit = 0; unit < MAX_DRIVES; ++unit) {
+#ifdef  CONFIG_ACS_DRIVERS_HOTSWAP
+		if(!(mst_slv >> 1) && unit != mst_slv){	/* not probe all disk */
+			continue;
+		}
+#endif
 		ide_drive_t *drive = &hwif->drives[unit];
 
 		if (drive->present) {
@@ -895,16 +1071,32 @@ static void probe_hwif(ide_hwif_t *hwif)
 	}
 }
 
+#ifndef  CONFIG_ACS_DRIVERS_HOTSWAP
 static int hwif_init(ide_hwif_t *hwif);
+#else
+/* mst_slv : 0-probe master only; 1-probe slave only; 2-probe all */ 
+int hwif_init(ide_hwif_t *hwif, int mst_slv);
+#endif
 
 int probe_hwif_init_with_fixup(ide_hwif_t *hwif, void (*fixup)(ide_hwif_t *hwif))
 {
+#ifdef	ACS_DEBUG
+	acs_printk("%s: start\n", __func__);
+#endif
+#ifndef	CONFIG_ACS_DRIVERS_HOTSWAP
 	probe_hwif(hwif);
+#else
+	probe_hwif(hwif, 2);
+#endif
 
 	if (fixup)
 		fixup(hwif);
 
+#ifndef  CONFIG_ACS_DRIVERS_HOTSWAP
 	if (!hwif_init(hwif)) {
+#else
+	if (!hwif_init(hwif, 2)) {
+#endif
 		printk(KERN_INFO "%s: failed to initialize IDE interface\n",
 				 hwif->name);
 		return -1;
@@ -1309,6 +1501,9 @@ static void drive_release_dev (struct device *dev)
 {
 	ide_drive_t *drive = container_of(dev, ide_drive_t, gendev);
 
+#ifdef	ACS_DEBUG
+	acs_printk("%s: start\n", __func__);
+#endif
 	spin_lock_irq(&ide_lock);
 	if (drive->devfs_name[0] != '\0') {
 		devfs_remove(drive->devfs_name);
@@ -1334,11 +1529,19 @@ static void drive_release_dev (struct device *dev)
  * structures needed for the routines in genhd.c.  ide_geninit() gets called
  * somewhat later, during the partition check.
  */
+#ifndef	CONFIG_ACS_DRIVERS_HOTSWAP
 static void init_gendisk (ide_hwif_t *hwif)
+#else
+static void init_gendisk (ide_hwif_t *hwif, int mst_slv)
+#endif
 {
 	unsigned int unit;
 
 	for (unit = 0; unit < MAX_DRIVES; ++unit) {
+#ifdef	CONFIG_ACS_DRIVERS_HOTSWAP
+		if(!(mst_slv >> 1) && unit != mst_slv)
+			continue;
+#endif
 		ide_drive_t * drive = &hwif->drives[unit];
 		ide_add_generic_settings(drive);
 		snprintf(drive->gendev.bus_id,BUS_ID_SIZE,"%u.%u",
@@ -1358,14 +1561,84 @@ static void init_gendisk (ide_hwif_t *hwif)
 			THIS_MODULE, ata_probe, ata_lock, hwif);
 }
 
+#ifndef  CONFIG_ACS_DRIVERS_HOTSWAP
 static int hwif_init(ide_hwif_t *hwif)
+#else
+/* mst_slv : 0-probe master only; 1-probe slave only; 2-probe all */ 
+int hwif_init(ide_hwif_t *hwif, int mst_slv)
+#endif
 {
 	int old_irq;
 
-	/* Return success if no device is connected */
-	if (!hwif->present)
-		return 1;
+#ifdef	ACS_DEBUG
+	acs_printk("%s: start\n", __func__);
+#endif
 
+	/* Return success if no device is connected */
+	if (!hwif->present) {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: ERROR: hwif not present\n", __func__);
+#endif
+		return 1;
+	}
+
+#ifdef  CONFIG_ACS_DRIVERS_HOTSWAP
+	if(!(mst_slv >> 1) && hwif->drives[!mst_slv].present == 1){
+#ifdef	ACS_DEBUG
+		acs_printk("%s: hwif needn't init\n", __func__);
+#endif
+                ide_drive_t *drive = &hwif->drives[mst_slv];
+		ide_hwgroup_t *hwgroup = hwif->hwgroup;
+		if(!hwgroup) {
+			BUG_ON(1);
+			return 0;
+		}
+		down(&ide_cfg_sem);
+                if (!drive->present) {
+			BUG_ON(1);
+                        return 0;
+		}
+                if (ide_init_queue(drive)) {
+                        printk(KERN_ERR "ide: failed to init %s\n",drive->name);
+			BUG_ON(1);
+			return 0;
+                }
+#ifdef	ACS_DEBUG
+		acs_printk("%s: ide_init_queue OK\n", __func__);
+#endif
+                spin_lock_irq(&ide_lock);
+                if (!hwgroup->drive) {
+                        /* first drive for hwgroup. */
+                        drive->next = drive;
+                        hwgroup->drive = drive;
+                        hwgroup->hwif = HWIF(hwgroup->drive);
+                } else {
+                        drive->next = hwgroup->drive->next;
+                        hwgroup->drive->next = drive;
+                }
+                spin_unlock_irq(&ide_lock);
+		up(&ide_cfg_sem);
+
+                ide_add_generic_settings(drive);
+                snprintf(drive->gendev.bus_id,BUS_ID_SIZE,"%u.%u",
+                         hwif->index, mst_slv);
+                drive->gendev.parent = &hwif->gendev;
+                drive->gendev.bus = &ide_bus_type;
+                drive->gendev.driver_data = drive;
+                drive->gendev.release = drive_release_dev;
+                if (drive->present) {
+                        sprintf(drive->devfs_name, "ide/host%d/bus%d/target%d/lun%d",
+                                (hwif->channel && hwif->mate) ?
+                                hwif->mate->index : hwif->index,
+                                hwif->channel, mst_slv, drive->lun);
+                }
+	
+#ifdef	ACS_DEBUG
+		acs_printk("%s: OK\n", __func__);
+#endif
+		return 1;
+	}
+#endif
 	if (!hwif->irq) {
 		if (!(hwif->irq = ide_default_irq(hwif->io_ports[IDE_DATA_OFFSET])))
 		{
@@ -1384,8 +1657,12 @@ static int hwif_init(ide_hwif_t *hwif)
 	/* we set it back to 1 if all is ok below */	
 	hwif->present = 0;
 
-	if (register_blkdev(hwif->major, hwif->name))
+	if (register_blkdev(hwif->major, hwif->name)) {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: register_blkdev fail!\n", __func__);
+#endif
 		return 0;
+}
 
 	if (!hwif->sg_max_nents)
 		hwif->sg_max_nents = PRD_ENTRIES;
@@ -1419,7 +1696,11 @@ static int hwif_init(ide_hwif_t *hwif)
 		hwif->name, hwif->irq);
 
 done:
+#ifndef	CONFIG_ACS_DRIVERS_HOTSWAP
 	init_gendisk(hwif);
+#else
+	init_gendisk(hwif, mst_slv);
+#endif
 	hwif->present = 1;	/* success */
 	return 1;
 
@@ -1438,11 +1719,21 @@ int ideprobe_init (void)
 		probe[index] = !ide_hwifs[index].present;
 
 	for (index = 0; index < MAX_HWIFS; ++index)
-		if (probe[index])
+		if (probe[index]){
+#ifndef  CONFIG_ACS_DRIVERS_HOTSWAP
 			probe_hwif(&ide_hwifs[index]);
+#else
+			probe_hwif(&ide_hwifs[index], 2);
+#endif
+		}
 	for (index = 0; index < MAX_HWIFS; ++index)
-		if (probe[index])
+		if (probe[index]){
+#ifndef  CONFIG_ACS_DRIVERS_HOTSWAP
 			hwif_init(&ide_hwifs[index]);
+#else
+			hwif_init(&ide_hwifs[index], 2);
+#endif
+		}
 	for (index = 0; index < MAX_HWIFS; ++index) {
 		if (probe[index]) {
 			ide_hwif_t *hwif = &ide_hwifs[index];
@@ -1459,4 +1750,7 @@ int ideprobe_init (void)
 	return 0;
 }
 
+
+EXPORT_SYMBOL_GPL(hwif_init);
+EXPORT_SYMBOL_GPL(probe_hwif);
 EXPORT_SYMBOL_GPL(ideprobe_init);

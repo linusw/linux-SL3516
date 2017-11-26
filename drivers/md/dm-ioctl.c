@@ -122,6 +122,17 @@ static struct hash_cell *__get_uuid_cell(const char *str)
 /*-----------------------------------------------------------------
  * Inserting, removing and renaming a device.
  *---------------------------------------------------------------*/
+//allen
+#if 0
+static inline char *kstrdup(const char *str)
+{
+	char *r = kmalloc(strlen(str) + 1, GFP_KERNEL);
+	if (r)
+		strcpy(r, str);
+	return r;
+}
+#endif
+
 static struct hash_cell *alloc_cell(const char *name, const char *uuid,
 				    struct mapped_device *md)
 {
@@ -131,7 +142,8 @@ static struct hash_cell *alloc_cell(const char *name, const char *uuid,
 	if (!hc)
 		return NULL;
 
-	hc->name = kstrdup(name, GFP_KERNEL);
+//	hc->name = kstrdup(name);  allen
+	hc->name = kstrdup(name,GFP_KERNEL);
 	if (!hc->name) {
 		kfree(hc);
 		return NULL;
@@ -141,7 +153,8 @@ static struct hash_cell *alloc_cell(const char *name, const char *uuid,
 		hc->uuid = NULL;
 
 	else {
-		hc->uuid = kstrdup(uuid, GFP_KERNEL);
+//		hc->uuid = kstrdup(uuid);  allen
+		hc->uuid = kstrdup(uuid,GFP_KERNEL);
 		if (!hc->uuid) {
 			kfree(hc->name);
 			kfree(hc);
@@ -230,20 +243,11 @@ static int dm_hash_insert(const char *name, const char *uuid, struct mapped_devi
 
 static void __hash_remove(struct hash_cell *hc)
 {
-	struct dm_table *table;
-
 	/* remove from the dev hash */
 	list_del(&hc->uuid_list);
 	list_del(&hc->name_list);
 	unregister_with_devfs(hc);
 	dm_set_mdptr(hc->md, NULL);
-
-	table = dm_get_table(hc->md);
-	if (table) {
-		dm_table_event(table);
-		dm_table_put(table);
-	}
-
 	dm_put(hc->md);
 	if (hc->new_map)
 		dm_table_put(hc->new_map);
@@ -274,7 +278,8 @@ static int dm_hash_rename(const char *old, const char *new)
 	/*
 	 * duplicate new.
 	 */
-	new_name = kstrdup(new, GFP_KERNEL);
+//	new_name = kstrdup(new);allen
+	new_name = kstrdup(new,GFP_KERNEL);
 	if (!new_name)
 		return -ENOMEM;
 
@@ -425,8 +430,8 @@ static void list_version_get_needed(struct target_type *tt, void *needed_param)
 {
     size_t *needed = needed_param;
 
-    *needed += sizeof(struct dm_target_versions);
     *needed += strlen(tt->name);
+    *needed += sizeof(tt->version);
     *needed += ALIGN_MASK;
 }
 
@@ -974,7 +979,6 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
 	if (!hc) {
 		DMWARN("device doesn't appear to be in the dev hash table.");
 		up_write(&_hash_lock);
-		dm_table_put(t);
 		return -ENXIO;
 	}
 

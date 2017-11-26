@@ -574,8 +574,9 @@ exp_get_by_name(svc_client *clp, struct vfsmount *mnt, struct dentry *dentry,
 	key.ex_dentry = dentry;
 
 	exp = svc_export_lookup(&key, 0);
+	int ret;
 	if (exp != NULL) 
-		switch (cache_check(&svc_export_cache, &exp->h, reqp)) {
+		switch (ret=cache_check(&svc_export_cache, &exp->h, reqp)) {
 		case 0: break;
 		case -EAGAIN:
 			exp = ERR_PTR(-EAGAIN);

@@ -43,6 +43,13 @@
 #include <linux/dcache.h>
 #include <linux/syscalls.h>
 
+
+/*added by beck */
+#ifdef CONFIG_STOR_PRINTK
+#include <linux/sysctl_storlink.h>
+struct sysctl_storlink sysctl_storlink;
+#endif
+
 #include <asm/uaccess.h>
 #include <asm/processor.h>
 
@@ -656,6 +663,52 @@ static ctl_table kern_table[] = {
 		.proc_handler	= &proc_dointvec,
 	},
 #endif
+/*beck*/
+#ifdef CONFIG_STOR_PRINTK
+	{
+		.ctl_name	= KERN_SYSCTL_STORLINK_SENDFILE,
+		.procname	= "storlink_sendfile",
+		.data		= &sysctl_storlink.sendfile,
+		.maxlen		= sizeof (int),
+		.mode		= 0444,
+		.proc_handler	= &proc_dointvec,
+	},
+	{
+		.ctl_name	= KERN_SYSCTL_STORLINK_RECVFILE,
+		.procname	= "storlink_recvfile",
+		.data		= &sysctl_storlink.recvfile,
+		.maxlen		= sizeof (int),
+		.mode		= 0444,
+		.proc_handler	= &proc_dointvec,
+	},	
+	{
+		.ctl_name	= KERN_SYSCTL_STORLINK_DEBUG_BUFFER,
+		.procname	= "storlink_debug_buffer",
+		.data		= &sysctl_storlink.debug_buffer,
+		.maxlen		= SYSCTL_STORLINK_DEBUG_BUFFER_SIZE,
+		.mode		= 0644,
+		.proc_handler	= &proc_dostring,
+		.strategy	= &sysctl_string,
+	},
+	{
+		.ctl_name	= KERN_SYSCTL_STORLINK_DEBUG_BUFFER_LOG_ADDR,
+		.procname	= "storlink_debug_buffer_log_addr",
+		.data		= &sysctl_storlink.debug_buffer_log_addr,
+		.maxlen		= SYSCTL_STORLINK_DEBUG_BUFFER_LOG_ADDR_SIZE,
+		.mode		= 0644,
+		.proc_handler	= &proc_dostring,
+		.strategy	= &sysctl_string,
+	},
+	{
+		.ctl_name	= KERN_SYSCTL_STORLINK_DEBUG_BUFFER_PHY_ADDR,
+		.procname	= "storlink_debug_buffer_phy_addr",
+		.data		= &sysctl_storlink.debug_buffer_phy_addr,
+		.maxlen		= SYSCTL_STORLINK_DEBUG_BUFFER_PHY_ADDR_SIZE,
+		.mode		= 0644,
+		.proc_handler	= &proc_dostring,
+		.strategy	= &sysctl_string,
+	},
+#endif /*beck*/
 	{ .ctl_name = 0 }
 };
 
@@ -1035,7 +1088,14 @@ static void start_unregistering(struct ctl_table_header *p)
 
 void __init sysctl_init(void)
 {
+
 #ifdef CONFIG_PROC_FS
+
+#ifdef CONFIG_STOR_PRINTK
+	sprintf(sysctl_storlink.debug_buffer_log_addr, "%p", sysctl_storlink.debug_buffer);
+	sprintf(sysctl_storlink.debug_buffer_phy_addr, "%lx", virt_to_phys(sysctl_storlink.debug_buffer));
+	sysctl_storlink.sendfile=0x55aa;
+#endif
 	register_proc_table(root_table, proc_sys_root, &root_table_header);
 	init_irq_proc();
 #endif

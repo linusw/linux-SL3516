@@ -10,7 +10,7 @@
  *        src: r1
  *        n  : r2
  */
-/* $Id$ */
+/* $Id: memcpy.S,v 1.1.1.1 2006/04/03 08:40:34 amos_lee Exp $ */
 
 
 	.text

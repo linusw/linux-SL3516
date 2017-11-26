@@ -1,5 +1,5 @@
 /*
- * $Id: analog.c,v 1.68 2002/01/22 20:18:32 vojtech Exp $
+ * $Id: analog.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  *
  *  Copyright (c) 1996-2001 Vojtech Pavlik
  */

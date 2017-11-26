@@ -1,4 +1,4 @@
-/* $Id: ethernet.c,v 1.31 2004/10/18 14:49:03 starvik Exp $
+/* $Id: eth_v10.c,v 1.1.1.1 2006/04/03 08:40:54 amos_lee Exp $
  *
  * e100net.c: A network driver for the ETRAX 100LX network controller.
  *
@@ -6,7 +6,10 @@
  *
  * The outline of this driver comes from skeleton.c.
  *
- * $Log: ethernet.c,v $
+ * $Log: eth_v10.c,v $
+ * Revision 1.1.1.1  2006/04/03 08:40:54  amos_lee
+ * initial
+ *
  * Revision 1.31  2004/10/18 14:49:03  starvik
  * Use RX interrupt as random source
  *
@@ -1541,7 +1544,7 @@ static void e100_get_drvinfo(struct net_device *dev,
 			     struct ethtool_drvinfo *info)
 {
 	strncpy(info->driver, "ETRAX 100LX", sizeof(info->driver) - 1);
-	strncpy(info->version, "$Revision: 1.31 $", sizeof(info->version) - 1);
+	strncpy(info->version, "$Revision: 1.1.1.1 $", sizeof(info->version) - 1);
 	strncpy(info->fw_version, "N/A", sizeof(info->fw_version) - 1);
 	strncpy(info->bus_info, "N/A", sizeof(info->bus_info) - 1);
 }

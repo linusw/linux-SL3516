@@ -60,6 +60,9 @@
 #include <linux/genhd.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
+#include <linux/acs_nas.h>
+#include <linux/hotswap.h>
+#include <linux/bad_blk_remap.h>
 
 #define _IDE_DISK
 
@@ -71,12 +74,14 @@
 #include <asm/io.h>
 #include <asm/div64.h>
 
+#if	0
 struct ide_disk_obj {
 	ide_drive_t	*drive;
 	ide_driver_t	*driver;
 	struct gendisk	*disk;
 	struct kref	kref;
 };
+#endif
 
 static DECLARE_MUTEX(idedisk_ref_sem);
 
@@ -309,6 +314,15 @@ static ide_startstop_t ide_do_rw_disk (ide_drive_t *drive, struct request *rq, s
 
 	BUG_ON(drive->blocked);
 
+#ifdef  CONFIG_ACS_DRIVERS_HOTSWAP
+        if(hotswap_stat[get_disk_num(drive->name)] & (0x10 | 0x20))
+                return ide_stopped;
+#endif
+#ifdef  ACS_DEBUG
+        //if (unlikely(rq->flags & REQ_RW_MDSB))
+        //        acs_printk("%s: REQ_RW_MDSB\n", __func__);
+#endif
+
 	if (!blk_fs_request(rq)) {
 		blk_dump_rq_flags(rq, "ide_do_rw_disk - bad command");
 		ide_end_request(drive, 0, 0);
@@ -531,20 +545,32 @@ static void init_idedisk_capacity (ide_drive_t  *drive)
 	 * then we may need to change our opinion about the drive's capacity.
 	 */
 	int hpa = idedisk_supports_hpa(id);
+#ifdef	ACS_DEBUG
+	acs_printk("%s: hpa=%d\n", __func__, hpa);
+#endif
 
 	if (idedisk_supports_lba48(id)) {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: drive speaks 48-bit LBA\n", __func__);
+#endif
 		/* drive speaks 48-bit LBA */
 		drive->select.b.lba = 1;
 		drive->capacity64 = id->lba_capacity_2;
 		if (hpa)
 			idedisk_check_hpa(drive);
 	} else if ((id->capability & 2) && lba_capacity_is_ok(id)) {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: drive speaks 28-bit LBA\n", __func__);
+#endif
 		/* drive speaks 28-bit LBA */
 		drive->select.b.lba = 1;
 		drive->capacity64 = id->lba_capacity;
 		if (hpa)
 			idedisk_check_hpa(drive);
 	} else {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: drive speaks boring old 28-bit CHS\n", __func__);
+#endif
 		/* drive speaks boring old 28-bit CHS */
 		drive->capacity64 = drive->cyl * drive->head * drive->sect;
 	}
@@ -863,6 +889,9 @@ static int set_lba_addressing(ide_drive_t *drive, int arg)
 	if (!idedisk_supports_lba48(drive->id))
                 return -EIO;
 	drive->addressing = arg;
+#ifdef	ACS_DEBUG
+	acs_printk("%s: addressing = %d\n", __func__, drive->addressing);
+#endif
 	return 0;
 }
 
@@ -925,6 +954,9 @@ static void idedisk_setup (ide_drive_t *drive)
 	/* calculate drive capacity, and select LBA if possible */
 	init_idedisk_capacity (drive);
 
+#ifdef	ACS_DEBUG
+	acs_printk("%s: step1\n", __func__);
+#endif
 	/* limit drive capacity to 137GB if LBA48 cannot be used */
 	if (drive->addressing == 0 && drive->capacity64 > 1ULL << 28) {
 		printk(KERN_WARNING "%s: cannot use LBA48 - full capacity "
@@ -935,6 +967,9 @@ static void idedisk_setup (ide_drive_t *drive)
 	}
 
 	if (drive->hwif->no_lba48_dma && drive->addressing) {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: step2\n", __func__);
+#endif
 		if (drive->capacity64 > 1ULL << 28) {
 			printk(KERN_INFO "%s: cannot use LBA48 DMA - PIO mode will"
 					 " be used for accessing sectors > %u\n",
@@ -948,12 +983,22 @@ static void idedisk_setup (ide_drive_t *drive)
 	 * by correcting bios_cyls:
 	 */
 	capacity = idedisk_capacity (drive);
+#ifdef	ACS_DEBUG
+	acs_printk("%s: step3\n", __func__);
+#endif
 	if (!drive->forced_geom) {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: step4\n", __func__);
+#endif
 
 		if (idedisk_supports_lba48(drive->id)) {
 			/* compatibility */
 			drive->bios_sect = 63;
+#ifndef	CONFIG_ACS_DRIVERS_HOTSWAP
 			drive->bios_head = 255;
+#else
+			drive->bios_head = 16;
+#endif
 		}
 
 		if (drive->bios_sect && drive->bios_head) {
@@ -1012,6 +1057,9 @@ static void idedisk_setup (ide_drive_t *drive)
 	printk(KERN_INFO "%s: cache flushes %ssupported\n",
 		drive->name, barrier ? "" : "not ");
 	if (barrier) {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: step5\n", __func__);
+#endif
 		blk_queue_ordered(drive->queue, QUEUE_ORDERED_FLUSH);
 		drive->queue->prepare_flush_fn = idedisk_prepare_flush;
 		drive->queue->end_flush_fn = idedisk_end_flush;
@@ -1034,11 +1082,23 @@ static int ide_disk_remove(struct device *dev)
 	struct ide_disk_obj *idkp = drive->driver_data;
 	struct gendisk *g = idkp->disk;
 
+#ifdef	ACS_DEBUG
+	acs_printk("%s: start\n", __func__);
+#endif
 	ide_unregister_subdriver(drive, idkp->driver);
 
+#ifdef	ACS_DEBUG
+	acs_printk("%s: step1\n", __func__);
+#endif
 	del_gendisk(g);
 
+#ifdef	ACS_DEBUG
+	acs_printk("%s: step2\n", __func__);
+#endif
 	ide_cacheflush_p(drive);
+#ifdef	ACS_DEBUG
+	acs_printk("%s: step3\n", __func__);
+#endif
 
 	ide_disk_put(idkp);
 
@@ -1207,6 +1267,9 @@ static int ide_disk_probe(struct device *dev)
 	struct ide_disk_obj *idkp;
 	struct gendisk *g;
 
+#ifdef	ACS_DEBUG
+	printk("%s: start\n", __func__);
+#endif
 	/* strstr("foo", "") is non-NULL */
 	if (!strstr("ide-disk", drive->driver_req))
 		goto failed;
@@ -1239,6 +1302,9 @@ static int ide_disk_probe(struct device *dev)
 	drive->driver_data = idkp;
 
 	idedisk_setup(drive);
+#ifdef	ACS_DEBUG
+	printk("%s: idedisk_setup end\n", __func__);
+#endif
 	if ((!drive->head || drive->head > 16) && !drive->select.b.lba) {
 		printk(KERN_ERR "%s: INVALID GEOMETRY: %d PHYSICAL HEADS?\n",
 			drive->name, drive->head);
@@ -1251,13 +1317,23 @@ static int ide_disk_probe(struct device *dev)
 	g->driverfs_dev = &drive->gendev;
 	g->flags = drive->removable ? GENHD_FL_REMOVABLE : 0;
 	set_capacity(g, idedisk_capacity(drive));
+#ifdef	ACS_DEBUG
+	printk("%s: set_capacity end\n", __func__);
+#endif
 	g->fops = &idedisk_ops;
 	add_disk(g);
+
 	return 0;
 
 out_free_idkp:
+#ifdef	ACS_DEBUG
+	printk("%s: FAIL\n", __func__);
+#endif
 	kfree(idkp);
 failed:
+#ifdef	ACS_DEBUG
+	printk("%s: FAIL\n", __func__);
+#endif
 	return -ENODEV;
 }
 
@@ -1268,7 +1344,40 @@ static void __exit idedisk_exit (void)
 
 static int __init idedisk_init(void)
 {
+#ifndef	BAD_BLK_REMAP
 	return driver_register(&idedisk_driver.gen_driver);
+#else
+	int ret, i;
+	unsigned char prm_scd, mst_slv;
+        struct gendisk *disk;
+	ide_drive_t *drive;
+
+	ret = driver_register(&idedisk_driver.gen_driver);
+	if (ret) {
+#ifdef	ACS_DEBUG
+		acs_printk("ERROR: %s: driver_register fail!\n", __func__);
+#endif
+		return ret;
+	}
+
+        for (i = 0; i < DISK_NUM; i++) {
+		get_disk_intf(i, &prm_scd, &mst_slv);
+
+                ide_drive_t *drive = &(ide_hwifs[prm_scd].drives[mst_slv]);
+                if (drive->present) {
+                        disk = ((struct ide_disk_obj *)drive->driver_data)->disk;
+                        if(!disk->part[2])
+                                continue;
+
+        		bad_blk_remap_init(i);
+                }
+        }
+
+	INIT_LIST_HEAD(&work_list);
+        init_waitqueue_head(&remap_queue);
+        kernel_thread(work_daemon, NULL, CLONE_FS | CLONE_SIGHAND);
+        init_vbio();
+#endif
 }
 
 module_init(idedisk_init);

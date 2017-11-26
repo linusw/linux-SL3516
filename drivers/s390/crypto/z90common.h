@@ -27,7 +27,7 @@
 #ifndef _Z90COMMON_H_
 #define _Z90COMMON_H_
 
-#define VERSION_Z90COMMON_H "$Revision: 1.17 $"
+#define VERSION_Z90COMMON_H "$Revision: 1.1.1.1 $"
 
 
 #define RESPBUFFSIZE 256

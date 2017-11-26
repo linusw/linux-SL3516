@@ -1,5 +1,5 @@
 /*
- * $Id: mtdchar.c,v 1.76 2005/11/07 11:14:20 gleixner Exp $
+ * $Id: mtdchar.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  * Character-device access to raw MTD devices.
  *
@@ -19,7 +19,17 @@
 
 #include <asm/uaccess.h>
 
+#include <asm/semaphore.h>
+#include <asm/arch/hardware.h>
+#include <asm/io.h>
+
 static struct class *mtd_class;
+DECLARE_MUTEX(mtd_sema);
+
+static void mtdchar_erase_callback (struct erase_info *instr)
+{
+	wake_up((wait_queue_head_t *)instr->priv);
+}
 
 static void mtd_notify_add(struct mtd_info* mtd)
 {
@@ -63,6 +73,75 @@ static struct mtd_notifier notifier = {
 #define SET_MTD_MODE(file, mode) \
 	do { long __p = (long)((file)->private_data); \
 	     (file)->private_data = (void *)((__p & ~3L) | mode); } while (0)
+
+/***********************************************************************
+/*             Storlink SoC -- flash
+/***********************************************************************/
+#ifdef CONFIG_SL2312_SHARE_PIN	
+unsigned int share_pin_flag=0;		// bit0:FLASH, bit1:UART, bit2:EMAC, bit3-4:IDE
+unsigned int check_sleep_flag=0;	// bit0:FLASH, bit1:IDE
+static spinlock_t sl2312_flash_lock = SPIN_LOCK_UNLOCKED;	
+EXPORT_SYMBOL(share_pin_flag);
+
+DECLARE_WAIT_QUEUE_HEAD(wq);
+extern struct wait_queue_head_t *flash_wait;
+void mtd_lock()
+{
+	struct task_struct *tsk = current;
+	unsigned int value ;
+	unsigned long flags;
+	
+	DECLARE_WAITQUEUE(wait, tsk);
+	add_wait_queue(&wq, &wait);
+	for(;;)
+	{
+		set_task_state(tsk, TASK_INTERRUPTIBLE);
+		spin_lock_irqsave(&sl2312_flash_lock,flags);
+
+//jenny 2007.02.02 for md0 sync
+		if(test_bit(IDE_RW_SHARE_BIT, &share_pin_flag) || test_bit(IDE_CMD_SHARE_BIT, &share_pin_flag)) {
+			spin_unlock_irqrestore(&sl2312_flash_lock, flags);
+			check_sleep_flag |= 0x00000001;
+//			printk("mtd yield %x %x\n",share_pin_flag,check_sleep_flag);
+			wake_up_interruptible(&flash_wait);
+			schedule();
+		}
+		else {
+			check_sleep_flag &= ~0x01;
+			share_pin_flag |= 0x00000001 ;			// set share pin flag
+			value = readl(IO_ADDRESS((SL2312_GLOBAL_BASE+GLOBAL_MISC_REG)));
+			value = value & (~PFLASH_SHARE_BIT) ;
+			writel(value,IO_ADDRESS((SL2312_GLOBAL_BASE+GLOBAL_MISC_REG)));
+			spin_unlock_irqrestore(&sl2312_flash_lock, flags);
+			tsk->state = TASK_RUNNING;
+			remove_wait_queue(&wq, &wait);
+			return ;
+		}
+	}
+}
+
+void mtd_unlock()
+{
+	unsigned int value ;
+	unsigned long flags;
+	
+	spin_lock_irqsave(&sl2312_flash_lock,flags);		// Disable IRQ
+	value = readl(IO_ADDRESS((SL2312_GLOBAL_BASE+GLOBAL_MISC_REG)));
+	value = value | PFLASH_SHARE_BIT ;				// Disable Flash PADs
+	writel(value,IO_ADDRESS((SL2312_GLOBAL_BASE+GLOBAL_MISC_REG)));
+	share_pin_flag &= ~(0x00000001);			// clear share pin flag
+	check_sleep_flag &= ~0x00000001;
+	spin_unlock_irqrestore(&sl2312_flash_lock, flags);	// Restore IRQ
+//jenny 2007.02.02	
+//	if (check_sleep_flag & 0x00000002)
+//	{
+//		check_sleep_flag &= ~(0x00000002);
+		wake_up_interruptible(&flash_wait);
+//	}
+	DEBUG(MTD_DEBUG_LEVEL0, "Flash Unlock...\n");
+}
+#endif
+/***********************************************************************/
 
 static loff_t mtd_lseek (struct file *file, loff_t offset, int orig)
 {
@@ -136,12 +215,19 @@ static int mtd_close(struct inode *inode, struct file *file)
 
 	DEBUG(MTD_DEBUG_LEVEL0, "MTD_close\n");
 
+#ifdef CONFIG_SL2312_SHARE_PIN	
+	mtd_lock();				// sl2312 share pin lock
+#endif
 	mtd = TO_MTD(file);
 
 	if (mtd->sync)
 		mtd->sync(mtd);
 
 	put_mtd_device(mtd);
+
+#ifdef CONFIG_SL2312_SHARE_PIN	
+	mtd_unlock();				// sl2312 share pin lock
+#endif
 
 	return 0;
 } /* mtd_close */
@@ -160,13 +246,26 @@ static ssize_t mtd_read(struct file *file, char __user *buf, size_t count,loff_t
 	int len;
 	char *kbuf;
 
+//	printk("**** %s down sema pid=%d ****\n", __func__, current->pid);
+        down_interruptible(&mtd_sema);
+
+#ifdef CONFIG_SL2312_SHARE_PIN	
+	mtd_lock();				// sl2312 share pin lock
+#endif
+
 	DEBUG(MTD_DEBUG_LEVEL0,"MTD_read\n");
 
 	if (*ppos + count > mtd->size)
 		count = mtd->size - *ppos;
 
-	if (!count)
+	if (!count){
+#ifdef CONFIG_SL2312_SHARE_PIN	
+		mtd_unlock();				// sl2312 share pin lock
+#endif
+		up(&mtd_sema);
+//              printk("**** %s up sema ****\n", __func__);	
 		return 0;
+	}
 
 	/* FIXME: Use kiovec in 2.5 to lock down the user's buffers
 	   and pass them directly to the MTD functions */
@@ -177,8 +276,14 @@ static ssize_t mtd_read(struct file *file, char __user *buf, size_t count,loff_t
 			len = count;
 
 		kbuf=kmalloc(len,GFP_KERNEL);
-		if (!kbuf)
+		if (!kbuf){
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif				
+			up(&mtd_sema);
+//                	printk("**** %s up sema ****\n", __func__);	
 			return -ENOMEM;
+		}
 
 		switch (MTD_MODE(file)) {
 		case MTD_MODE_OTP_FACT:
@@ -200,6 +305,11 @@ static ssize_t mtd_read(struct file *file, char __user *buf, size_t count,loff_t
 			*ppos += retlen;
 			if (copy_to_user(buf, kbuf, retlen)) {
 			        kfree(kbuf);
+#ifdef CONFIG_SL2312_SHARE_PIN	
+				mtd_unlock();			// sl2312 share pin lock
+#endif				        
+				up(&mtd_sema);
+//                		printk("**** %s up sema ****\n", __func__);	
 				return -EFAULT;
 			}
 			else
@@ -212,12 +322,21 @@ static ssize_t mtd_read(struct file *file, char __user *buf, size_t count,loff_t
 		}
 		else {
 			kfree(kbuf);
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif				
+			up(&mtd_sema);
+//                	printk("**** %s up sema ****\n", __func__);	
 			return ret;
 		}
 
 		kfree(kbuf);
 	}
-
+#ifdef CONFIG_SL2312_SHARE_PIN	
+	mtd_unlock();				// sl2312 share pin lock
+#endif	
+	up(&mtd_sema);
+//      printk("**** %s up sema ****\n", __func__);	
 	return total_retlen;
 } /* mtd_read */
 
@@ -230,16 +349,86 @@ static ssize_t mtd_write(struct file *file, const char __user *buf, size_t count
 	int ret=0;
 	int len;
 
+//	printk("**** %s down sema pid=%d ****\n", __func__, current->pid);
+        down_interruptible(&mtd_sema);
+
+#ifdef CONFIG_SL2312_SHARE_PIN	
+	mtd_lock();				// sl2312 share pin lock
+#endif
+
 	DEBUG(MTD_DEBUG_LEVEL0,"MTD_write\n");
 
-	if (*ppos == mtd->size)
+/* jenny 2007.04.19 do erase firstly */
+{
+        struct erase_info *erase;
+
+        if(!(file->f_mode & 2))
+        {
+#ifdef CONFIG_SL2312_SHARE_PIN
+                mtd_unlock();                           // sl2312 share pin lock
+#endif
+                up(&mtd_sema);
+//              printk("**** %s up sema ****\n", __func__);
+                return -EPERM;
+        }      
+
+        erase=kmalloc(sizeof(struct erase_info),GFP_KERNEL);
+        if (!erase)
+                ret = -ENOMEM;
+        else {
+                wait_queue_head_t waitq;
+                DECLARE_WAITQUEUE(wait, current);
+
+                init_waitqueue_head(&waitq);
+
+                memset (erase,0,sizeof(struct erase_info));
+                erase->addr = *ppos;
+                erase->len = mtd->erasesize;
+                erase->mtd = mtd;
+                erase->callback = mtdchar_erase_callback;
+                erase->priv = (unsigned long)&waitq;
+
+                ret = mtd->erase(mtd, erase);
+                if (!ret) {
+                        set_current_state(TASK_UNINTERRUPTIBLE);
+                        add_wait_queue(&waitq, &wait);
+                        if (erase->state != MTD_ERASE_DONE &&
+                                    erase->state != MTD_ERASE_FAILED)
+                                schedule();
+                        remove_wait_queue(&waitq, &wait);
+                        set_current_state(TASK_RUNNING);
+
+                        ret = (erase->state == MTD_ERASE_FAILED)?-EIO:0;
+                }
+                kfree(erase);
+        }
+}
+        if (mtd->sync)
+                mtd->sync(mtd);
+
+/*+++++++++++++++++++++++++++++++++++++++ then do write ++++++++++++++++++++++++++++++*/
+
+
+	if (*ppos == mtd->size){
+#ifdef CONFIG_SL2312_SHARE_PIN	
+		mtd_unlock();				// sl2312 share pin lock
+#endif			
+                up(&mtd_sema);
+//              printk("**** %s up sema ****\n", __func__);
 		return -ENOSPC;
+	}
 
 	if (*ppos + count > mtd->size)
 		count = mtd->size - *ppos;
 
-	if (!count)
+	if (!count){
+#ifdef CONFIG_SL2312_SHARE_PIN	
+		mtd_unlock();				// sl2312 share pin lock
+#endif			
+                up(&mtd_sema);
+//              printk("**** %s up sema ****\n", __func__);
 		return 0;
+	}
 
 	while (count) {
 		if (count > MAX_KMALLOC_SIZE)
@@ -250,11 +439,21 @@ static ssize_t mtd_write(struct file *file, const char __user *buf, size_t count
 		kbuf=kmalloc(len,GFP_KERNEL);
 		if (!kbuf) {
 			printk("kmalloc is null\n");
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif				
+                	up(&mtd_sema);
+//                	printk("**** %s up sema ****\n", __func__);
 			return -ENOMEM;
 		}
 
 		if (copy_from_user(kbuf, buf, len)) {
 			kfree(kbuf);
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif				
+                	up(&mtd_sema);
+//                	printk("**** %s up sema ****\n", __func__);
 			return -EFAULT;
 		}
 
@@ -280,12 +479,21 @@ static ssize_t mtd_write(struct file *file, const char __user *buf, size_t count
 		}
 		else {
 			kfree(kbuf);
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif				
+                	up(&mtd_sema);
+//            	 	printk("**** %s up sema ****\n", __func__);
 			return ret;
 		}
 
 		kfree(kbuf);
 	}
-
+#ifdef CONFIG_SL2312_SHARE_PIN	
+	mtd_unlock();				// sl2312 share pin lock
+#endif	
+        up(&mtd_sema);
+//      printk("**** %s up sema ****\n", __func__);
 	return total_retlen;
 } /* mtd_write */
 
@@ -294,11 +502,8 @@ static ssize_t mtd_write(struct file *file, const char __user *buf, size_t count
     IOCTL calls for getting device parameters.
 
 ======================================================================*/
-static void mtdchar_erase_callback (struct erase_info *instr)
-{
-	wake_up((wait_queue_head_t *)instr->priv);
-}
 
+#define ERASESIZE 0x5858 //allen
 static int mtd_ioctl(struct inode *inode, struct file *file,
 		     u_int cmd, u_long arg)
 {
@@ -307,42 +512,96 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 	int ret = 0;
 	u_long size;
 
+#ifdef CONFIG_SL2312_SHARE_PIN	
+	mtd_lock();				// sl2312 share pin lock
+#endif
+
 	DEBUG(MTD_DEBUG_LEVEL0, "MTD_ioctl\n");
 
+//allen 
+if(cmd != 0x5858){
 	size = (cmd & IOCSIZE_MASK) >> IOCSIZE_SHIFT;
 	if (cmd & IOC_IN) {
 		if (!access_ok(VERIFY_READ, argp, size))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 	}
+	
 	if (cmd & IOC_OUT) {
 		if (!access_ok(VERIFY_WRITE, argp, size))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 	}
+}
 
 	switch (cmd) {
 	case MEMGETREGIONCOUNT:
 		if (copy_to_user(argp, &(mtd->numeraseregions), sizeof(int)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 		break;
+
+	//allen
+	case ERASESIZE:
+		if (copy_to_user(argp, &(mtd->erasesize), sizeof(int)))
+                {
+#ifdef CONFIG_SL2312_SHARE_PIN
+                        mtd_unlock();                           // sl2312 share pin lock
+#endif
+                        return -EFAULT;
+                }
+                break;
 
 	case MEMGETREGIONINFO:
 	{
 		struct region_info_user ur;
 
 		if (copy_from_user(&ur, argp, sizeof(struct region_info_user)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 
 		if (ur.regionindex >= mtd->numeraseregions)
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EINVAL;
+		}	
 		if (copy_to_user(argp, &(mtd->eraseregions[ur.regionindex]),
 				sizeof(struct mtd_erase_region_info)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 		break;
 	}
 
 	case MEMGETINFO:
 		if (copy_to_user(argp, mtd, sizeof(struct mtd_info_user)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 		break;
 
 	case MEMERASE:
@@ -350,7 +609,12 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 		struct erase_info *erase;
 
 		if(!(file->f_mode & 2))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EPERM;
+		}	
 
 		erase=kmalloc(sizeof(struct erase_info),GFP_KERNEL);
 		if (!erase)
@@ -365,6 +629,9 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 			if (copy_from_user(&erase->addr, argp,
 				    sizeof(struct erase_info_user))) {
 				kfree(erase);
+#ifdef CONFIG_SL2312_SHARE_PIN	
+				mtd_unlock();				// sl2312 share pin lock
+#endif			
 				return -EFAULT;
 			}
 			erase->mtd = mtd;
@@ -404,13 +671,28 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 		ssize_t retlen;
 
 		if(!(file->f_mode & 2))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EPERM;
+		}	
 
 		if (copy_from_user(&buf, argp, sizeof(struct mtd_oob_buf)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 
 		if (buf.length > 0x4096)
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EINVAL;
+		}	
 
 		if (!mtd->write_oob)
 			ret = -EOPNOTSUPP;
@@ -419,14 +701,27 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 					buf.length) ? 0 : EFAULT;
 
 		if (ret)
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return ret;
+		}	
 
 		databuf = kmalloc(buf.length, GFP_KERNEL);
 		if (!databuf)
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -ENOMEM;
+		}	
 
 		if (copy_from_user(databuf, buf.ptr, buf.length)) {
 			kfree(databuf);
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
 		}
 
@@ -447,10 +742,20 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 		ssize_t retlen;
 
 		if (copy_from_user(&buf, argp, sizeof(struct mtd_oob_buf)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 
 		if (buf.length > 0x4096)
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EINVAL;
+		}	
 
 		if (!mtd->read_oob)
 			ret = -EOPNOTSUPP;
@@ -459,11 +764,21 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 					buf.length) ? 0 : -EFAULT;
 
 		if (ret)
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return ret;
+		}	
 
 		databuf = kmalloc(buf.length, GFP_KERNEL);
 		if (!databuf)
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -ENOMEM;
+		}	
 
 		ret = (mtd->read_oob)(mtd, buf.start, buf.length, &retlen, databuf);
 
@@ -481,7 +796,12 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 		struct erase_info_user info;
 
 		if (copy_from_user(&info, argp, sizeof(info)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 
 		if (!mtd->lock)
 			ret = -EOPNOTSUPP;
@@ -495,7 +815,12 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 		struct erase_info_user info;
 
 		if (copy_from_user(&info, argp, sizeof(info)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 
 		if (!mtd->unlock)
 			ret = -EOPNOTSUPP;
@@ -507,14 +832,24 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 	case MEMSETOOBSEL:
 	{
 		if (copy_from_user(&mtd->oobinfo, argp, sizeof(struct nand_oobinfo)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 		break;
 	}
 
 	case MEMGETOOBSEL:
 	{
 		if (copy_to_user(argp, &(mtd->oobinfo), sizeof(struct nand_oobinfo)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 		break;
 	}
 
@@ -523,11 +858,21 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 		loff_t offs;
 
 		if (copy_from_user(&offs, argp, sizeof(loff_t)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 		if (!mtd->block_isbad)
 			ret = -EOPNOTSUPP;
 		else
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return mtd->block_isbad(mtd, offs);
+		}	
 		break;
 	}
 
@@ -536,11 +881,21 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 		loff_t offs;
 
 		if (copy_from_user(&offs, argp, sizeof(loff_t)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 		if (!mtd->block_markbad)
 			ret = -EOPNOTSUPP;
 		else
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return mtd->block_markbad(mtd, offs);
+		}	
 		break;
 	}
 
@@ -549,7 +904,12 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 	{
 		int mode;
 		if (copy_from_user(&mode, argp, sizeof(int)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 		SET_MTD_MODE(file, 0);
 		switch (mode) {
 		case MTD_OTP_FACTORY:
@@ -578,7 +938,12 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 	{
 		struct otp_info *buf = kmalloc(4096, GFP_KERNEL);
 		if (!buf)
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -ENOMEM;
+		}	
 		ret = -EOPNOTSUPP;
 		switch (MTD_MODE(file)) {
 		case MTD_MODE_OTP_FACT:
@@ -608,11 +973,26 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 		struct otp_info info;
 
 		if (MTD_MODE(file) != MTD_MODE_OTP_USER)
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EINVAL;
+		}	
 		if (copy_from_user(&info, argp, sizeof(info)))
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EFAULT;
+		}	
 		if (!mtd->lock_user_prot_reg)
+		{
+#ifdef CONFIG_SL2312_SHARE_PIN	
+			mtd_unlock();				// sl2312 share pin lock
+#endif			
 			return -EOPNOTSUPP;
+		}	
 		ret = mtd->lock_user_prot_reg(mtd, info.start, info.length);
 		break;
 	}
@@ -621,6 +1001,10 @@ static int mtd_ioctl(struct inode *inode, struct file *file,
 	default:
 		ret = -ENOTTY;
 	}
+
+#ifdef CONFIG_SL2312_SHARE_PIN	
+	mtd_unlock();				// sl2312 share pin lock
+#endif			
 
 	return ret;
 } /* memory_ioctl */

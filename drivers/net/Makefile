@@ -207,3 +207,12 @@ obj-$(CONFIG_NETCONSOLE) += netconsole.o
 
 obj-$(CONFIG_FS_ENET) += fs_enet/
 
+#obj-$(CONFIG_NET_SL2312) += sl2312_emac.o
+#obj-$(CONFIG_NET_SL2312_LEPUS)+= sl_lepus_gmac.o sl_lepus_nat.o sl_lepus_hash.o sl_lepus_crc16.o
+ifeq ($(CONFIG_NET_SL351X),y)
+obj-$(CONFIG_NET_SL351X)+= sl351x_gmac.o sl351x_nat.o sl351x_hash.o sl351x_crc16.o sl351x_proc.o sl_switch.o
+endif
+ifeq ($(CONFIG_NET_SL2312),y) 
+obj-$(CONFIG_NET_SL2312)+= sl2312_emac.o
+endif
+

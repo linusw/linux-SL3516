@@ -15,6 +15,7 @@
 #include <linux/compiler.h>
 #include <linux/hash.h>
 #include <linux/rbtree.h>
+#include <linux/acs_nas.h>
 
 /*
  * See Documentation/block/deadline-iosched.txt
@@ -308,6 +309,16 @@ static void deadline_remove_request(request_queue_t *q, struct request *rq)
 static int
 deadline_merge(request_queue_t *q, struct request **req, struct bio *bio)
 {
+#ifdef	ACS_DEBUG
+	if(!q)
+		acs_printk("%s: q is NULL\n", __func__);
+	if(!bio)
+		acs_printk("%s: bio is NULL\n", __func__);
+	if(!q->elevator)
+		acs_printk("%s: elevator is NULL\n", __func__);
+	if(!q->elevator->elevator_data)
+		acs_printk("%s: dd is NULL\n", __func__);
+#endif
 	struct deadline_data *dd = q->elevator->elevator_data;
 	struct request *__rq;
 	int ret;
@@ -317,6 +328,10 @@ deadline_merge(request_queue_t *q, struct request **req, struct bio *bio)
 	 */
 	__rq = deadline_find_drq_hash(dd, bio->bi_sector);
 	if (__rq) {
+#ifdef	ACS_DEBUG
+		if(__rq->sector + __rq->nr_sectors != bio->bi_sector)
+			acs_printk("%s: %lu %lu %lu\n", __func__, __rq->sector, __rq->nr_sectors, bio->bi_sector);
+#endif
 		BUG_ON(__rq->sector + __rq->nr_sectors != bio->bi_sector);
 
 		if (elv_rq_merge_ok(__rq, bio)) {
@@ -599,8 +614,20 @@ deadline_latter_request(request_queue_t *q, struct request *rq)
 
 static void deadline_exit_queue(elevator_t *e)
 {
+#ifdef	ACS_DEBUG
+	if(!e)
+		acs_printk("%s: !e\n", __func__);
+	if(!e->elevator_data)
+		acs_printk("%s: !e->elevator_data\n", __func__);
+#endif
 	struct deadline_data *dd = e->elevator_data;
 
+#ifdef	ACS_DEBUG
+	if(!list_empty(&dd->fifo_list[READ]))
+		acs_printk("%s: READ\n", __func__);
+	if(!list_empty(&dd->fifo_list[WRITE]))
+		acs_printk("%s: WRITE\n", __func__);
+#endif
 	BUG_ON(!list_empty(&dd->fifo_list[READ]));
 	BUG_ON(!list_empty(&dd->fifo_list[WRITE]));
 

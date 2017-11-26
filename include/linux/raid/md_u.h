@@ -15,6 +15,18 @@
 #ifndef _MD_U_H
 #define _MD_U_H
 
+#ifndef	MD_GLOBAL_SPARE
+#define MD_GLOBAL_SPARE
+#endif  /* MD_GLOBAL_SPARE */
+
+#ifndef	MD_CHECK_STATUS
+#define	MD_CHECK_STATUS
+#endif	/* MD_CHECK_STATUS */
+
+#ifndef MD_ACCESS_STATUS
+#define MD_ACCESS_STATUS
+#endif /* MD_ACCESS_STATUS */
+
 /* ioctls */
 
 /* status */
@@ -23,7 +35,7 @@
 #define GET_DISK_INFO		_IOR (MD_MAJOR, 0x12, mdu_disk_info_t)
 #define PRINT_RAID_DEBUG	_IO (MD_MAJOR, 0x13)
 #define RAID_AUTORUN		_IO (MD_MAJOR, 0x14)
-#define GET_BITMAP_FILE		_IOR (MD_MAJOR, 0x15, mdu_bitmap_file_t)
+//#define GET_NVRAM_FROM		_IOR (MD_MAJOR, 0x15,int)
 
 /* configuration */
 #define CLEAR_ARRAY		_IO (MD_MAJOR, 0x20)
@@ -37,7 +49,6 @@
 #define HOT_ADD_DISK		_IO (MD_MAJOR, 0x28)
 #define SET_DISK_FAULTY		_IO (MD_MAJOR, 0x29)
 #define HOT_GENERATE_ERROR	_IO (MD_MAJOR, 0x2a)
-#define SET_BITMAP_FILE		_IOW (MD_MAJOR, 0x2b, int)
 
 /* usage */
 #define RUN_ARRAY		_IOW (MD_MAJOR, 0x30, mdu_param_t)
@@ -45,6 +56,32 @@
 #define STOP_ARRAY		_IO (MD_MAJOR, 0x32)
 #define STOP_ARRAY_RO		_IO (MD_MAJOR, 0x33)
 #define RESTART_ARRAY_RW	_IO (MD_MAJOR, 0x34)
+
+/* rebuild speed ioctl */
+#define MOD_BUILD_SPEED	_IO (MD_MAJOR, 0x35)
+
+/* global spare ioctl */
+#ifdef	MD_GLOBAL_SPARE
+#define ADD_GLOBAL_SPARE	_IO (MD_MAJOR, 0x50)
+#endif	/* MD_GLOBAL_SPARE */
+
+/* expand array ioctl */
+#ifdef  MD_EXPAND_ARRAY
+#define EXPAND_ARRAY		_IO (MD_MAJOR, 0x51)
+#endif  /* MD_EXPAND_ARRAY */
+
+/* check status ioctl */
+#ifdef	MD_CHECK_STATUS
+#define	CHECK_STATUS		_IO (MD_MAJOR, 0x52)
+#endif	/* MD_CHECK_STATUS */
+
+/* access status for nvram/ap */
+#ifdef 	MD_ACCESS_STATUS
+#define ACCESS_STATUS		_IO (MD_MAJOR, 0x53)
+#endif	/* MD_ACCESS_STATUS */
+
+/* get exist MD's minor */
+#define GET_MD_INFO		_IOR (MD_MAJOR, 0x54, mdinfo_t)
 
 typedef struct mdu_version_s {
 	int major;
@@ -108,11 +145,6 @@ typedef struct mdu_start_info_s {
 
 } mdu_start_info_t;
 
-typedef struct mdu_bitmap_file_s
-{
-	char pathname[4096];
-} mdu_bitmap_file_t;
-
 typedef struct mdu_param_s
 {
 	int			personality;	/* 1,2,3,4 */
@@ -120,5 +152,14 @@ typedef struct mdu_param_s
 	int			max_fault;	/* unused for now */
 } mdu_param_t;
 
+typedef struct mdinfo {
+	char mdinfo[128];
+} mdinfo_t;
+
+
 #endif 
 
+
+#undef  MD_GLOBAL_SPARE
+#undef  MD_CHECK_STATUS
+#undef  MD_ACCESS_STATUS

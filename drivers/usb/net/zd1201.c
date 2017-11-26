@@ -24,6 +24,10 @@
 #include <net/ieee80211.h>
 #include "zd1201.h"
 
+extern int request_firmware(const struct firmware **fw, const char *name,
+			struct device *device);
+extern void release_firmware(const struct firmware *fw);
+
 static struct usb_device_id zd1201_table[] = {
 	{USB_DEVICE(0x0586, 0x3400)}, /* Peabird Wireless USB Adapter */
 	{USB_DEVICE(0x0ace, 0x1201)}, /* ZyDAS ZD1201 Wireless USB Adapter */

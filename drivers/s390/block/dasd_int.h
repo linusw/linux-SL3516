@@ -6,7 +6,7 @@
  * Bugreports.to..: <Linux390@de.ibm.com>
  * (C) IBM Corporation, IBM Deutschland Entwicklung GmbH, 1999,2000
  *
- * $Revision: 1.65 $
+ * $Revision: 1.1.1.1 $
  */
 
 #ifndef DASD_INT_H

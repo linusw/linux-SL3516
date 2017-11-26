@@ -47,12 +47,17 @@
 #include <linux/rmap.h>
 #include <linux/mempolicy.h>
 #include <linux/key.h>
+#include <linux/dma-mapping.h>
+#include <linux/pci.h>
 #include <net/sock.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
 #include <asm/setup.h>
 #include <asm/sections.h>
+#include <asm/arch/ipi.h>
+#include <asm/pgtable.h>
+#include <asm/pgalloc.h>
 
 /*
  * This is one of the first .c files built. Error out early
@@ -76,6 +81,10 @@
  */
 #if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 95)
 #error Sorry, your GCC is too old. It builds incorrect kernels.
+#endif
+
+#ifdef CONFIG_GEMINI_IPI
+//void ipi_heart_bit();
 #endif
 
 static int init(void *);
@@ -118,6 +127,10 @@ extern void time_init(void);
 /* Default late time init is NULL. archs can override this later. */
 void (*late_time_init)(void);
 extern void softirq_init(void);
+
+#ifdef CONFIG_SL2312_LPC
+extern int InitLPCInterface(void);
+#endif
 
 /* Untouched command line (eg. for /proc) saved by arch-specific code. */
 char saved_command_line[COMMAND_LINE_SIZE];
@@ -495,6 +508,9 @@ asmlinkage void __init start_kernel(void)
 	 * we've done PCI setups etc, and console_init() must be aware of
 	 * this. But we do want output early, in case something goes wrong.
 	 */
+#ifdef CONFIG_SL2312_LPC
+    InitLPCInterface();
+#endif	 
 	console_init();
 	if (panic_later)
 		panic(panic_later, panic_param);
@@ -745,3 +761,25 @@ static int init(void * unused)
 
 	panic("No init found.  Try passing init= option to kernel.");
 }
+
+#if 0 //CONFIG_GEMINI_IPI
+void ipi_heart_bit()
+{
+	volatile struct s_mailbox *p_mbox = (struct s_mailbox *) __phys_to_virt(SHAREADDR);
+    int value;
+
+	printk("CPU1 ID test:\n");
+    if(getcpuid() != CPU1) {
+            printk("  CPU1 ID test failed\r\n");
+            while(1);
+    }
+    printk("  CPU1 ID test: Succeed\r\n");
+
+//	spin_lock_dt((spinlock_dt *)(&(p_mbox->lk)));
+	p_mbox->flag = MASTER_BIT | HEART_BIT;
+//	spin_unlock_dt((spinlock_dt *)(&(p_mbox->lk)));
+	//consistent_sync(__phys_to_virt(SHAREADDR), SHARE_MEM_SIZE, DMA_TO_DEVICE);
+	flush_cache_all();
+
+}
+#endif

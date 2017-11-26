@@ -48,6 +48,10 @@
 #include <linux/device.h>
 #include <linux/kmod.h>
 #include <linux/scatterlist.h>
+#include <asm/arch/gemini_gpio.h>
+#include <linux/acs_nas.h>
+#include <linux/hotswap.h>
+#include <linux/bad_blk_remap.h>
 
 #include <asm/byteorder.h>
 #include <asm/irq.h>
@@ -55,10 +59,103 @@
 #include <asm/io.h>
 #include <asm/bitops.h>
 
+#ifdef CONFIG_SL2312_SHARE_PIN
+extern struct wait_queue_head_t *wq;
+extern int share_pin_flag;
+extern int check_sleep_flag;
+extern spinlock_t sl2312_flash_lock;
+int check_and_wait_flash_idle(int);
+#endif
+
+#ifdef BBR_TEST
+unsigned long bad_block[4][512];
+int count[4];
+int bbr_ioctl(struct inode *inode,struct file *filp,unsigned int cmd,unsigned long arg)
+{
+	unsigned long sector;
+	unsigned char index;
+	unsigned char prm_scd,mst_slv;
+	unsigned long *p;
+	struct ide_disk_obj *idkp;
+	struct gendisk *disk;
+	ide_drive_t *drive;
+	remap_info_t *info;
+	remap_descriptor_t * desc;
+	int cnt = 0;
+	
+	switch(cmd){
+	case 2005://add
+		index = arg & 0x7;
+		sector = arg >> 3;
+		if(index == 0){
+			cnt = count[0];
+			count[0]++;
+		} else if(index == 1){
+			cnt = count[1];
+			count[1]++;
+		} else if(index == 2){
+			cnt = count[2];
+			count[2]++;
+		} else if(index ==3){
+			cnt = count[3];
+			count[3]++;
+		}
+
+		if(cnt >= 512){
+			printk(KERN_EMERG"bad block table is full!\n");
+			break;
+		}
+
+		bad_block[index][cnt] = sector;
+#ifdef  ACS_DEBUG
+                acs_printk("%s: add bad_block[%d][%d] = %lu\n", __func__,index,cnt,sector);
+#endif
+		break;
+	case 2006:
+		index = arg;
+		get_disk_intf(index,&prm_scd,&mst_slv);
+		drive = &ide_hwifs[prm_scd].drives[mst_slv];	
+		info = &remap_infos[index];
+		desc = &(info->remap_descriptor);
+		idkp = (struct ide_disk_obj *)(drive->driver_data);
+		disk = idkp->disk;
+		desc->count = 0;
+		desc->start_sec = REMAPPED_START_ADDRESS + disk->part[2]->start_sect + drive->sect0;
+		desc->end_sec   = REMAPPED_START_ADDRESS + disk->part[2]->start_sect + drive->sect0;
+#ifdef  ACS_DEBUG
+                acs_printk("%s: remove all bad sector\n", __func__);
+#endif
+
+		rw_remap_sector(index,(char *)desc,WIN_WRITE,REMAP_DESCRIPTOR_ADDRESS);
+		
+		if(index == 0){
+			printk("remove bbr hda!\n");
+			count[0] = 0;
+		} else if(index == 1){
+			printk("remove bbr hdb!\n");
+			count[1] = 0;
+		} else if(index == 2){
+			printk("remove bbr hdc!\n");
+			count[2] = 0;
+		} else if(index == 3){
+			printk("remove bbr hdd!\n");
+			count[3] = 0;
+		}
+
+		p = bad_block[index];
+		memset(p,0,sizeof(unsigned long)*512);
+	}
+	return 0;
+}
+#endif
+
 int __ide_end_request(ide_drive_t *drive, struct request *rq, int uptodate,
 		      int nr_sectors)
 {
 	int ret = 1;
+#ifdef	BAD_BLK_REMAP
+	int uptodate_new = uptodate;
+#endif
 
 	BUG_ON(!(rq->flags & REQ_STARTED));
 
@@ -81,6 +178,7 @@ int __ide_end_request(ide_drive_t *drive, struct request *rq, int uptodate,
 		HWGROUP(drive)->hwif->ide_dma_on(drive);
 	}
 
+#ifndef	BAD_BLK_REMAP
 	if (!end_that_request_first(rq, uptodate, nr_sectors)) {
 		add_disk_randomness(rq->rq_disk);
 
@@ -92,6 +190,27 @@ int __ide_end_request(ide_drive_t *drive, struct request *rq, int uptodate,
 		end_that_request_last(rq);
 		ret = 0;
 	}
+#else
+	if (unlikely(uptodate == 2)) {
+		if (end_that_request_first(rq, uptodate, nr_sectors))
+			uptodate_new = 0;
+		else
+			return 0;
+	}
+
+	if (!end_that_request_first(rq, uptodate_new, nr_sectors)) {
+		add_disk_randomness(rq->rq_disk);
+
+		if (blk_rq_tagged(rq))
+			blk_queue_end_tag(drive->queue, rq);
+
+		blkdev_dequeue_request(rq);
+		HWGROUP(drive)->rq = NULL;
+		end_that_request_last(rq);
+		ret = 0;
+	}
+#endif
+
 	return ret;
 }
 EXPORT_SYMBOL(__ide_end_request);
@@ -380,6 +499,17 @@ void ide_end_drive_cmd (ide_drive_t *drive, u8 stat, u8 err)
 	HWGROUP(drive)->rq = NULL;
 	rq->errors = err;
 	end_that_request_last(rq);
+#ifdef  CONFIG_SL2312_SHARE_PIN
+	if (drive->hwif->index == 0) {
+    		unsigned long flagss;
+    		spin_lock_irqsave(&sl2312_flash_lock, flagss);	
+    		clear_bit(IDE_CMD_SHARE_BIT, &share_pin_flag);
+    		check_sleep_flag &= ~0x00000002;
+    		spin_unlock_irqrestore(&sl2312_flash_lock, flagss);
+//		printk("IDE end cmd %x %x\n",share_pin_flag,check_sleep_flag);
+    		wake_up_interruptible(&wq);
+	}
+#endif
 	spin_unlock_irqrestore(&ide_lock, flags);
 }
 
@@ -441,6 +571,17 @@ static ide_startstop_t ide_ata_error(ide_drive_t *drive, struct request *rq, u8 
 		} else if (err & (BBD_ERR | ECC_ERR)) {
 			/* retries won't help these */
 			rq->errors = ERROR_MAX;
+#ifdef	BAD_BLK_REMAP
+#ifdef	ACS_DEBUG
+			acs_printk("%s: bad block remap start\n", __func__);
+#endif
+                	ide_end_request(drive, 2, rq->bio->bi_size/512);
+                	if (rq->bio != rq->biotail) {
+                        	return ide_stopped;
+                	} else {
+                        	return ide_started;
+                	}
+#endif
 		} else if (err & TRK0_ERR) {
 			/* help it find track zero */
 			rq->errors |= ERROR_RECAL;
@@ -523,11 +664,29 @@ ide_startstop_t ide_error (ide_drive_t *drive, const char *msg, u8 stat)
 {
 	struct request *rq;
 	u8 err;
-
+#ifdef BBR_TEST
+	int i;
+	int index = get_disk_num(drive->name);
+#endif
 	err = ide_dump_status(drive, msg, stat);
 
 	if ((rq = HWGROUP(drive)->rq) == NULL)
 		return ide_stopped;
+
+#ifdef BBR_TEST
+#ifdef  ACS_DEBUG
+        acs_printk("%s: index=%d\n", __func__,index);
+#endif
+	for(i = 0;i<count[index] && bad_block[index][i];i++){
+		unsigned long sector = bad_block[index][i];
+		if(rq->sector <= sector && (rq->sector + rq->nr_sectors) >= sector){
+			err |= BBD_ERR;
+#ifdef  ACS_DEBUG
+		        acs_printk("%s: secrtor=%lu,err=0x%x\n", __func__,sector,err);
+#endif
+		}
+	}
+#endif
 
 	/* retry only "normal" I/O: */
 	if (rq->flags & (REQ_DRIVE_CMD | REQ_DRIVE_TASK | REQ_DRIVE_TASKFILE)) {
@@ -615,6 +774,10 @@ static void ide_cmd (ide_drive_t *drive, u8 cmd, u8 nsect,
 		hwif->OUTB(drive->ctl,IDE_CONTROL_REG);	/* clear nIEN */
 	SELECT_MASK(drive,0);
 	hwif->OUTB(nsect,IDE_NSECTOR_REG);
+#ifdef CONFIG_SL2312_SHARE_PIN
+	if (drive->hwif->index == 0)
+    		check_and_wait_flash_idle(IDE_CMD_SHARE_BIT);
+#endif
 	ide_execute_command(drive, cmd, handler, WAIT_CMD, NULL);
 }
 
@@ -896,6 +1059,11 @@ static ide_startstop_t start_request (ide_drive_t *drive, struct request *rq)
 	printk("%s: start_request: current=0x%08lx\n",
 		HWIF(drive)->name, (unsigned long) rq);
 #endif
+#ifdef	CONFIG_ACS_DRIVERS_HOTSWAP
+        if (hotswap_stat[get_disk_num(drive->name)] & (0x10 | 0x20)) {
+                return ide_stopped;
+	}
+#endif
 
 	/* bail early if we've exceeded max_failures */
 	if (drive->max_failures && (drive->failures > drive->max_failures)) {
@@ -942,6 +1110,12 @@ static ide_startstop_t start_request (ide_drive_t *drive, struct request *rq)
 
 	SELECT_DRIVE(drive);
 	if (ide_wait_stat(&startstop, drive, drive->ready_stat, BUSY_STAT|DRQ_STAT, WAIT_READY)) {
+#ifdef ORION_430ST
+        	if (drive->queue->activity_fn)
+                	/* turn on status LED */
+                	drive->queue->activity_fn(drive->queue->activity_data, 3);
+#endif
+
 		printk(KERN_ERR "%s: drive not ready for command\n", drive->name);
 		return startstop;
 	}
@@ -1237,6 +1411,10 @@ static void ide_do_request (ide_hwgroup_t *hwgroup, int masked_irq)
 void do_ide_request(request_queue_t *q)
 {
 	ide_drive_t *drive = q->queuedata;
+#ifdef CONFIG_SL2312_SHARE_PIN
+	if (drive->hwif->index == 0)
+    		check_and_wait_flash_idle(IDE_RW_SHARE_BIT);
+#endif
 
 	ide_do_request(HWGROUP(drive), IDE_NO_IRQ);
 }
@@ -1317,6 +1495,10 @@ void ide_timer_expiry (unsigned long data)
 	unsigned long	flags;
 	unsigned long	wait = -1;
 
+#ifdef	CONFIG_ACS_DRIVERS_HOTSWAP
+        if(hotswap_stat[get_disk_num(hwgroup->drive->name)] & (0x10 | 0x20))
+		return;
+#endif
 	spin_lock_irqsave(&ide_lock, flags);
 
 	if ((handler = hwgroup->handler) == NULL) {
@@ -1645,6 +1827,13 @@ int ide_do_drive_cmd (ide_drive_t *drive, struct request *rq, ide_action_t actio
 
 	rq->errors = 0;
 	rq->rq_status = RQ_ACTIVE;
+
+#ifdef	CONFIG_ACS_DRIVERS_HOTSWAP
+        if(hotswap_stat[get_disk_num(drive->name)] & (0x10 | 0x20)){
+		blk_put_request(rq);
+                return 0;
+	}
+#endif
 
 	/*
 	 * we need to hold an extra reference to request for safe inspection

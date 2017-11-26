@@ -45,6 +45,8 @@
 #include <linux/hdreg.h>
 #include <linux/ide.h>
 #include <linux/bitops.h>
+#include <linux/acs_nas.h>
+#include <linux/hotswap.h>
 
 #include <asm/byteorder.h>
 #include <asm/irq.h>
@@ -100,6 +102,11 @@ ide_startstop_t do_rw_taskfile (ide_drive_t *drive, ide_task_t *task)
 	task_struct_t *taskfile	= (task_struct_t *) task->tfRegister;
 	hob_struct_t *hobfile	= (hob_struct_t *) task->hobRegister;
 	u8 HIHI			= (drive->addressing == 1) ? 0xE0 : 0xEF;
+
+#ifdef  CONFIG_ACS_DRIVERS_HOTSWAP
+        if(hotswap_stat[get_disk_num(drive->name)] & (0x10 | 0x20))
+                return ide_stopped;
+#endif
 
 	/* ALL Command Block Executions SHALL clear nIEN, unless otherwise */
 	if (IDE_CONTROL_REG) {
@@ -689,6 +696,7 @@ int ide_cmd_ioctl (ide_drive_t *drive, unsigned int cmd, unsigned long arg)
 	if (copy_from_user(args, (void __user *)arg, 4))
 		return -EFAULT;
 
+printk("Disk Power Management: CMD=0x%02x, TIME=%d\n",args[0], args[1]);
 	memset(&tfargs, 0, sizeof(ide_task_t));
 	tfargs.tfRegister[IDE_FEATURE_OFFSET] = args[2];
 	tfargs.tfRegister[IDE_NSECTOR_OFFSET] = args[3];

@@ -1,4 +1,4 @@
-/* $Id: loadmmu.c,v 1.56 2000/02/08 20:24:21 davem Exp $
+/* $Id: loadmmu.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * loadmmu.c:  This code loads up all the mm function pointers once the
  *             machine type has been determined.  It also sets the static
  *             mmu values such as PAGE_NONE, etc.

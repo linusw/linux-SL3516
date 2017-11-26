@@ -1,5 +1,5 @@
 /*
- * $Id: usbkbd.c,v 1.27 2001/12/27 10:37:41 vojtech Exp $
+ * $Id: usbkbd.c,v 1.1.1.1 2006/04/03 08:41:01 amos_lee Exp $
  *
  *  Copyright (c) 1999-2001 Vojtech Pavlik
  *

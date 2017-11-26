@@ -18,6 +18,9 @@
 #ifndef __XFS_DIR_SF_H__
 #define	__XFS_DIR_SF_H__
 
+//debug_Aaron on 08/18/2006 fix bug of XFS internal error xfs_da_do_buf(2) at line 2221 of file fs/xfs/xfs_da_btree.c
+#define JZ_PACKED __attribute__ ((packed))
+
 /*
  * Directory layout when stored internal to an inode.
  *
@@ -39,13 +42,19 @@ typedef struct xfs_dir_shortform {
 	struct xfs_dir_sf_hdr {		/* constant-structure header block */
 		xfs_dir_ino_t parent;	/* parent dir inode number */
 		__uint8_t count;	/* count of active entries */
-	} hdr;
+	//debug_Aaron
+	//} hdr;
+	} JZ_PACKED hdr;
 	struct xfs_dir_sf_entry {
 		xfs_dir_ino_t inumber;	/* referenced inode number */
 		__uint8_t namelen;	/* actual length of name (no NULL) */
 		__uint8_t name[1];	/* name */
-	} list[1];			/* variable sized array */
-} xfs_dir_shortform_t;
+	//debug_Aaron
+	//} list[1];			/* variable sized array */
+	} JZ_PACKED list[1];			/* variable sized array */
+//debug_Aaron
+//} xfs_dir_shortform_t;
+} JZ_PACKED xfs_dir_shortform_t;
 typedef struct xfs_dir_sf_hdr xfs_dir_sf_hdr_t;
 typedef struct xfs_dir_sf_entry xfs_dir_sf_entry_t;
 
@@ -60,7 +69,9 @@ typedef struct xfs_dir_sf_sort {
 	xfs_dahash_t	hash;		/* this entry's hash value */
 	xfs_intino_t	ino;		/* this entry's inode number */
 	char		*name;		/* name value, pointer into buffer */
-} xfs_dir_sf_sort_t;
+//debug_Aaron
+//} xfs_dir_sf_sort_t;
+} JZ_PACKED xfs_dir_sf_sort_t;
 
 #define	XFS_DIR_SF_GET_DIRINO(from,to)	xfs_dir_sf_get_dirino(from, to)
 static inline void xfs_dir_sf_get_dirino(xfs_dir_ino_t *from, xfs_ino_t *to)

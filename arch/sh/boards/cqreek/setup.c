@@ -1,4 +1,4 @@
-/* $Id: setup.c,v 1.5 2003/08/04 01:51:58 lethal Exp $
+/* $Id: setup.c,v 1.1.1.1 2006/04/03 08:40:41 amos_lee Exp $
  *
  * arch/sh/kernel/setup_cqreek.c
  *

@@ -30,7 +30,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#define ZFCP_FSF_C_REVISION "$Revision: 1.92 $"
+#define ZFCP_FSF_C_REVISION "$Revision: 1.1.1.1 $"
 
 #include "zfcp_ext.h"
 

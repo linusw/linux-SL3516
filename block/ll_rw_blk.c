@@ -27,6 +27,10 @@
 #include <linux/swap.h>
 #include <linux/writeback.h>
 #include <linux/blkdev.h>
+#include <linux/ide.h>
+#include <linux/acs_nas.h>
+#include <linux/hotswap.h>
+#include <linux/bad_blk_remap.h>
 
 /*
  * for max sense size
@@ -36,6 +40,14 @@
 static void blk_unplug_work(void *data);
 static void blk_unplug_timeout(unsigned long data);
 static void drive_stat_acct(struct request *rq, int nr_sectors, int new_io);
+
+#ifdef CONFIG_SL2312_SHARE_PIN
+DECLARE_WAIT_QUEUE_HEAD(flash_wait);
+extern struct wait_queue_head_t *wq;
+extern unsigned int share_pin_flag;
+extern unsigned int check_sleep_flag;
+int check_and_wait_flash_idle(int);
+#endif
 
 /*
  * For the allocated request tables
@@ -72,6 +84,38 @@ EXPORT_SYMBOL(blk_max_pfn);
 
 /* Number of requests a "batching" process may submit */
 #define BLK_BATCH_REQ	32
+
+#ifdef CONFIG_SL2312_SHARE_PIN
+int check_and_wait_flash_idle(int bit) {
+	unsigned int flag;
+
+	if (test_bit(FLASH_SHARE_BIT, &share_pin_flag)) {	 
+    		DECLARE_WAITQUEUE(wait, current);
+ 
+        	add_wait_queue(&flash_wait, &wait);
+        	//local_save_flags(flag);
+        	local_irq_save(flag);
+        	do {
+        		set_current_state(TASK_INTERRUPTIBLE);
+        		if (!test_bit(FLASH_SHARE_BIT, &share_pin_flag)) {
+            			set_bit(bit ,&share_pin_flag);
+            	   		//local_irq_restore(flag|0x80);
+            	   		local_irq_restore(flag);
+                   		break;
+            		}      
+            		check_sleep_flag |= 0x00000002; 
+			//local_irq_restore(flag&(~0x80));
+			local_irq_restore(flag);
+			wake_up_interruptible(&wq); //jenny 2007.02.02 for md0 sync
+            		schedule();
+      		} while (1);
+        	check_sleep_flag &= ~0x00000002; 
+        	current->state = TASK_RUNNING;
+        	remove_wait_queue(&flash_wait, &wait);
+        	return 0;
+     	} 	 
+}	
+#endif
 
 /*
  * Return the threshold (number of used requests) at which the queue is
@@ -1609,6 +1653,9 @@ void blk_cleanup_queue(request_queue_t * q)
 {
 	struct request_list *rl = &q->rq;
 
+#ifdef  ACS_DEBUG
+	acs_printk("%s: start\n", __func__);
+#endif
 	if (!atomic_dec_and_test(&q->refcnt))
 		return;
 
@@ -1619,6 +1666,11 @@ void blk_cleanup_queue(request_queue_t * q)
 
 	if (rl->rq_pool)
 		mempool_destroy(rl->rq_pool);
+
+#ifdef	ACS_MD_SPECIAL
+	if (rl->mdsb_rq_pool)
+		mempool_destroy(rl->mdsb_rq_pool);
+#endif
 
 	if (q->queue_tags)
 		__blk_queue_free_tags(q);
@@ -1646,10 +1698,22 @@ static int blk_init_free_list(request_queue_t *q)
 	if (!rl->rq_pool)
 		return -ENOMEM;
 
+#ifdef ACS_MD_SPECIAL
+	rl->mdsb_rq_pool = mempool_create_node(BLKDEV_MIN_RQ, mempool_alloc_slab,
+				mempool_free_slab, request_cachep, q->node);
+
+	if (!rl->mdsb_rq_pool)
+		return -ENOMEM;
+#endif
+
 	return 0;
 }
 
+#ifndef	BAD_BLK_REMAP
 static int __make_request(request_queue_t *, struct bio *);
+#else
+int __make_request(request_queue_t *, struct bio *);
+#endif
 
 request_queue_t *blk_alloc_queue(gfp_t gfp_mask)
 {
@@ -1783,14 +1847,30 @@ static inline void blk_free_request(request_queue_t *q, struct request *rq)
 {
 	if (rq->flags & REQ_ELVPRIV)
 		elv_put_request(q, rq);
+#ifndef ACS_MD_SPECIAL
 	mempool_free(rq, q->rq.rq_pool);
+#else
+	if (unlikely(rq->flags & REQ_RW_MDSB))
+		mempool_free(rq, q->rq.mdsb_rq_pool);
+	else
+		mempool_free(rq, q->rq.rq_pool);
+#endif
 }
 
 static inline struct request *
 blk_alloc_request(request_queue_t *q, int rw, struct bio *bio,
 		  int priv, gfp_t gfp_mask)
 {
-	struct request *rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
+	struct request *rq;
+
+#ifndef ACS_MD_SPECIAL
+	rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
+#else
+	if (unlikely(bio_rw_mdsb(bio)))
+		rq = mempool_alloc(q->rq.mdsb_rq_pool, gfp_mask);
+	else
+		rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
+#endif
 
 	if (!rq)
 		return NULL;
@@ -1803,12 +1883,18 @@ blk_alloc_request(request_queue_t *q, int rw, struct bio *bio,
 
 	if (priv) {
 		if (unlikely(elv_set_request(q, rq, bio, gfp_mask))) {
+#ifndef ACS_MD_SPECIAL
 			mempool_free(rq, q->rq.rq_pool);
+#else
+			if (unlikely(bio_rw_mdsb(bio)))
+				mempool_free(rq, q->rq.mdsb_rq_pool);
+			else
+				mempool_free(rq, q->rq.rq_pool);
+#endif
 			return NULL;
 		}
 		rq->flags |= REQ_ELVPRIV;
 	}
-
 	return rq;
 }
 
@@ -2401,14 +2487,30 @@ static inline void add_request(request_queue_t * q, struct request * req)
 {
 	drive_stat_acct(req, req->nr_sectors, 1);
 
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: start\n", __func__);
+#endif	
+#if defined(ORION_430ST) || defined(THECUS_N99)
+//#ifdef ORION_430ST
 	if (q->activity_fn)
 		q->activity_fn(q->activity_data, rq_data_dir(req));
+#endif
 
 	/*
 	 * elevator indicated where it wants this request to be
 	 * inserted at elevator_merge time
 	 */
+#ifndef ACS_MD_SPECIAL
 	__elv_add_request(q, req, ELEVATOR_INSERT_SORT, 0);
+#else
+	if (unlikely(req->flags & REQ_RW_MDSB)) {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: __elv_add_request.\n", __func__);
+#endif
+                __elv_add_request(q, req, ELEVATOR_INSERT_FRONT, 1);
+        } else
+                __elv_add_request(q, req, ELEVATOR_INSERT_SORT, 0);
+#endif
 }
  
 /*
@@ -2633,12 +2735,23 @@ void blk_attempt_remerge(request_queue_t *q, struct request *rq)
 
 EXPORT_SYMBOL(blk_attempt_remerge);
 
+#ifndef	BAD_BLK_REMAP
 static int __make_request(request_queue_t *q, struct bio *bio)
+#else
+int __make_request(request_queue_t *q, struct bio *bio)
+#endif
 {
 	struct request *req;
 	int el_ret, rw, nr_sectors, cur_nr_sectors, barrier, err, sync;
 	unsigned short prio;
 	sector_t sector;
+#ifdef  CONFIG_ACS_DRIVERS_HOTSWAP
+        struct ide_drive_s *drive = (ide_drive_t *)(q->queuedata);
+        if(hotswap_stat[get_disk_num(drive->name)] & (0x10 | 0x20)){
+      		bio_endio(bio, bio->bi_size, -EIO);
+                return 0;
+        }
+#endif
 
 	sector = bio->bi_sector;
 	nr_sectors = bio_sectors(bio);
@@ -2667,6 +2780,17 @@ static int __make_request(request_queue_t *q, struct bio *bio)
 
 	if (unlikely(barrier) || elv_queue_empty(q))
 		goto get_rq;
+
+#ifdef	ACS_MD_SPECIAL
+        if (unlikely(bio_rw_mdsb(bio))) {
+#ifdef	ACS_DEBUG
+		acs_printk("%s: get request for MD SB\n", __func__);
+#endif
+                req = get_request_wait(q, rw, bio);
+                req->flags |= REQ_RW_MDSB;
+                goto get_rq_ok;
+        }
+#endif
 
 	el_ret = elv_merge(q, &req, bio);
 	switch (el_ret) {
@@ -2721,6 +2845,10 @@ get_rq:
 	 * Returns with the queue unlocked.
 	 */
 	req = get_request_wait(q, rw, bio);
+
+#ifdef ACS_MD_SPECIAL
+get_rq_ok:
+#endif
 
 	/*
 	 * After dropping the lock and possibly sleeping here, our request
@@ -3026,12 +3154,15 @@ static int __end_that_request_first(struct request *req, int uptodate,
 		req->errors = 0;
 
 	if (!uptodate) {
+#if	0
 		if (blk_fs_request(req) && !(req->flags & REQ_QUIET))
 			printk("end_request: I/O error, dev %s, sector %llu\n",
 				req->rq_disk ? req->rq_disk->disk_name : "?",
 				(unsigned long long)req->sector);
+#endif
 	}
 
+#ifndef	BAD_BLK_REMAP
 	if (blk_fs_request(req) && req->rq_disk) {
 		const int rw = rq_data_dir(req);
 
@@ -3041,6 +3172,17 @@ static int __end_that_request_first(struct request *req, int uptodate,
 	total_bytes = bio_nbytes = 0;
 	while ((bio = req->bio) != NULL) {
 		int nbytes;
+
+#ifdef CONFIG_SL2312_SHARE_PIN
+		clear_bit(IDE_RW_SHARE_BIT,&share_pin_flag);
+		check_sleep_flag &= ~0x00000002;
+//jenny 2007.02.02
+//		if(check_sleep_flag & 0x00000001)
+//		{
+//			check_sleep_flag &= ~(0x00000001);
+			wake_up_interruptible(&wq);
+//		}
+#endif
 
 		if (nr_bytes >= bio->bi_size) {
 			req->bio = bio->bi_next;
@@ -3109,6 +3251,158 @@ static int __end_that_request_first(struct request *req, int uptodate,
 	blk_recalc_rq_sectors(req, total_bytes >> 9);
 	blk_recalc_rq_segments(req);
 	return 1;
+#else
+        if(likely(uptodate != 0x02)){
+        	if (blk_fs_request(req) && req->rq_disk) {
+                	const int rw = rq_data_dir(req);
+
+        	        __disk_stat_add(req->rq_disk, sectors[rw], nr_bytes >> 9);
+	        }
+
+                total_bytes = bio_nbytes = 0;
+                while ((bio = req->bio) != NULL) {
+                        int nbytes;
+
+#ifdef CONFIG_SL2312_SHARE_PIN
+                	clear_bit(IDE_RW_SHARE_BIT,&share_pin_flag);
+                	check_sleep_flag &= ~0x00000002;
+//jenny 2007.02.02
+//            	   	if(check_sleep_flag & 0x00000001)
+//                	{
+//                        	check_sleep_flag &= ~(0x00000001);
+                        	wake_up_interruptible(&wq);
+//                	}
+#endif
+
+                        if (nr_bytes >= bio->bi_size) {
+                                req->bio = bio->bi_next;
+                                nbytes = bio->bi_size;
+                                bio_endio(bio, nbytes, error);
+                                next_idx = 0;
+                                bio_nbytes = 0;
+                        } else {
+                                int idx = bio->bi_idx + next_idx;
+
+                                if (unlikely(bio->bi_idx >= bio->bi_vcnt)) {
+                                        blk_dump_rq_flags(req, "__end_that");
+                                        printk("%s: bio idx %d >= vcnt %d\n",
+                                                        __FUNCTION__,
+                                                        bio->bi_idx, bio->bi_vcnt);
+                                        break;
+                                }
+
+                                nbytes = bio_iovec_idx(bio, idx)->bv_len;
+                                BIO_BUG_ON(nbytes > bio->bi_size);
+                                if (unlikely(nbytes > nr_bytes)) {
+                                        bio_nbytes += nr_bytes;
+                                        total_bytes += nr_bytes;
+                                        break;
+                                }
+                                next_idx++;
+                                bio_nbytes += nbytes;
+                        }
+
+                        total_bytes += nbytes;
+                        nr_bytes -= nbytes;
+
+                        if ((bio = req->bio)) {
+                                if (unlikely(nr_bytes <= 0))
+                                        break;
+                        }
+                }
+                if (!req->bio)
+                        return 0;
+                if (bio_nbytes) {
+                        bio_endio(bio, bio_nbytes, error);
+                        bio->bi_idx += next_idx;
+                        bio_iovec(bio)->bv_offset += nr_bytes;
+                        bio_iovec(bio)->bv_len -= nr_bytes;
+                }
+                blk_recalc_rq_sectors(req, total_bytes >> 9);
+                blk_recalc_rq_segments(req);
+                return 1;
+        } else {	//Bad Block Remap
+		work_remap_t *work;
+
+                if (req->bio != req->biotail){
+                        request_queue_t *q = NULL;
+                        struct request *rq = NULL;
+                        struct list_head *head;
+                        unsigned long nsect;
+                        unsigned long sector = req->bio->bi_sector;
+
+                        bio = req->bio;
+                        q = req->q;
+                        if(rq = get_request_wait(q, bio_data_dir(bio), bio) == NULL){
+                                printk(KERN_EMERG "FAIL!\n");
+                                return 1;
+                        }
+                        nsect = bio->bi_size >> 9;
+                        req->bio= bio->bi_next;
+                        bio->bi_next = NULL;
+                        head = &q->queue_head;
+                        rq->flags |= REQ_CMD;
+                        //rq->flags |= REQ_REM_SPECIAL;
+                        if(bio_rw_ahead(bio) || bio_failfast(bio))
+                                rq->flags |= REQ_FAILFAST;
+                        rq->elevator_private = 0;
+                        rq->errors = 0;
+                        rq->hard_sector = rq->sector = sector;
+                        rq->hard_nr_sectors = rq->nr_sectors = nsect;
+                        rq->current_nr_sectors = nsect;
+                        rq->nr_phys_segments = bio_phys_segments(q, bio);
+                        rq->nr_hw_segments = bio_hw_segments(q, bio);
+                        rq->buffer = bio_data(bio);
+                        rq->waiting = NULL;
+                        rq->bio = rq->biotail = bio;
+                        rq->rq_disk = bio->bi_bdev->bd_disk;
+                        rq->start_time = jiffies;
+                        add_request(q,rq);
+                        if ((bio = req->bio) != NULL) {
+                                req->hard_sector += nsect;
+                                req->hard_nr_sectors -= nsect;
+                                req->sector = req->hard_sector;
+                                req->nr_sectors = req->hard_nr_sectors;
+                                req->current_nr_sectors = bio->bi_size >> 9;
+                                if (req->nr_sectors < req->current_nr_sectors) {
+                                        req->nr_sectors = req->current_nr_sectors;
+                                        printk("end_request: buffer-list destroyed\n");
+                                }
+                                req->buffer = bio_data(bio);
+                                return 0;
+                        }
+                        return 0;
+                } else {
+                        int index;
+                        ide_drive_t *drive = (ide_drive_t *)req->q->queuedata;
+                        index = drive->hwif->index;
+                        bio = req->bio;
+                        req->bio = bio->bi_next;
+                        bio->bi_next = NULL;
+                        add_disk_randomness(bio->bi_bdev->bd_disk);
+                        blkdev_dequeue_request(req);
+                        remap_set_hwgroup(index);
+                        req->waiting = NULL;
+                        end_that_request_last(req);
+                        work = kmalloc(sizeof(work_remap_t), GFP_KERNEL);
+
+                        if(!work){
+                                return 1;
+                        }
+
+                        if ((bio->bi_rw & 0x1) == READ){
+                                work->p_fn  = bad_block_remap_read;
+                        } else{
+                                work->p_fn  = bad_block_remap_write;
+                        }
+                        work->bio = bio;
+                        spin_lock_irq(&remap_lock);
+                        list_add(&work->list, &work_list);
+                        spin_unlock_irq(&remap_lock);
+                        return 0;
+                }
+        }
+#endif
 }
 
 /**
@@ -3177,6 +3471,7 @@ void end_that_request_last(struct request *req)
 		req->end_io(req);
 	else
 		__blk_put_request(req->q, req);
+
 }
 
 EXPORT_SYMBOL(end_that_request_last);

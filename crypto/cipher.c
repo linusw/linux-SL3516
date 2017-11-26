@@ -19,9 +19,29 @@
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/string.h>
+
+//debug_Aaron
+#include <asm/delay.h>
 #include <asm/scatterlist.h>
 #include "internal.h"
 #include "scatterwalk.h"
+
+#ifdef CONFIG_SL2312_IPSEC 
+#include <asm/arch/sl2312_ipsec.h>
+unsigned long flags;
+static spinlock_t cipher_done_lock = SPIN_LOCK_UNLOCKED;
+DECLARE_WAIT_QUEUE_HEAD(cipher_queue);
+static unsigned int cipher_done = 1;
+static struct IPSEC_PACKET_S cipher_op;
+
+static void cipher_callback(struct IPSEC_PACKET_S *op_info)
+{
+	spin_lock_irqsave(&cipher_done_lock,flags);
+	cipher_done = 1;
+	spin_unlock_irqrestore(&cipher_done_lock, flags);
+//	wake_up(&cipher_queue);
+}
+#endif
 
 static inline void xor_64(u8 *a, const u8 *b)
 {
@@ -267,14 +287,64 @@ static int setkey(struct crypto_tfm *tfm, const u8 *key, unsigned int keylen)
 		tfm->crt_flags |= CRYPTO_TFM_RES_BAD_KEY_LEN;
 		return -EINVAL;
 	} else
+#ifdef CONFIG_SL2312_IPSEC
+    {
+        /* get key & key length */
+        cipher_op.cipher_key_size = keylen;
+        memcpy(cipher_op.cipher_key,key,keylen);
+        return 0;
+    } 
+#else
 		return cia->cia_setkey(crypto_tfm_ctx(tfm), key, keylen,
 		                       &tfm->crt_flags);
+#endif
 }
 
 static int ecb_encrypt(struct crypto_tfm *tfm,
 		       struct scatterlist *dst,
                        struct scatterlist *src, unsigned int nbytes)
 {
+#ifdef CONFIG_SL2312_IPSEC
+	//wait_queue_t wait;
+	spin_lock_irqsave(&cipher_done_lock,flags);
+	if(cipher_done == 0)
+	{
+		//printk("%s :cipher not ready !!\n",__func__);
+		spin_unlock_irqrestore(&cipher_done_lock, flags);
+		return -1;
+	}
+    	cipher_done = 0;
+    	spin_unlock_irqrestore(&cipher_done_lock, flags);
+    	cipher_op.op_mode = CIPHER_ENC;
+    	cipher_op.cipher_algorithm = ipsec_get_cipher_algorithm((unsigned char *)tfm->__crt_alg->cra_name,ECB);;
+    	cipher_op.cipher_header_len = 0;
+    	cipher_op.cipher_algorithm_len = nbytes;
+//  	  memcpy(cipher_op.iv,tfm->crt_cipher.cit_iv,tfm->crt_cipher.cit_ivsize);
+//  	  cipher_op.iv_size = tfm->crt_cipher.cit_ivsize;
+    	cipher_op.in_packet = kmap(src->page) + src->offset;
+    	cipher_op.pkt_len = nbytes;
+    	cipher_op.callback = cipher_callback;
+    	cipher_op.out_packet = kmap(dst->page) + dst->offset;
+    	ipsec_crypto_hw_process(&cipher_op);
+    	
+		//add_wait_queue(&cipher_queue, &wait);
+		while (1) {
+			//udelay(10);
+//			set_current_state(TASK_INTERRUPTIBLE);
+			spin_lock_irqsave(&cipher_done_lock,flags);
+			if (cipher_done) /* whatever test your driver needs */
+			{
+				spin_unlock_irqrestore(&cipher_done_lock, flags);
+				break;
+			}
+			spin_unlock_irqrestore(&cipher_done_lock, flags);
+			//udelay(1);
+			schedule();
+		}
+		//set_current_state(TASK_RUNNING);
+		//remove_wait_queue(&cipher_queue, &wait);
+    	return 0;
+#else
 	struct cipher_desc desc;
 	struct cipher_alg *cipher = &tfm->__crt_alg->cra_cipher;
 
@@ -283,6 +353,7 @@ static int ecb_encrypt(struct crypto_tfm *tfm,
 	desc.prfn = cipher->cia_encrypt_ecb ?: ecb_process;
 
 	return crypt(&desc, dst, src, nbytes);
+#endif
 }
 
 static int ecb_decrypt(struct crypto_tfm *tfm,
@@ -290,6 +361,47 @@ static int ecb_decrypt(struct crypto_tfm *tfm,
                        struct scatterlist *src,
 		       unsigned int nbytes)
 {
+#ifdef CONFIG_SL2312_IPSEC
+	//wait_queue_t wait;
+	spin_lock_irqsave(&cipher_done_lock,flags);
+	if(cipher_done == 0)
+	{
+		//printk("%s :cipher not ready !!\n",__func__);
+		spin_unlock_irqrestore(&cipher_done_lock, flags);
+		return -1;
+	}
+    cipher_done = 0;
+    spin_unlock_irqrestore(&cipher_done_lock, flags);
+    cipher_op.op_mode = CIPHER_DEC;
+    cipher_op.cipher_algorithm = ipsec_get_cipher_algorithm((unsigned char *)tfm->__crt_alg->cra_name,ECB);;
+    cipher_op.cipher_header_len = 0;
+    cipher_op.cipher_algorithm_len = nbytes;
+//    memcpy(cipher_op.iv,tfm->crt_cipher.cit_iv,tfm->crt_cipher.cit_ivsize);
+//    cipher_op.iv_size = tfm->crt_cipher.cit_ivsize;
+    cipher_op.in_packet = kmap(src->page) + src->offset;
+    cipher_op.pkt_len = nbytes;
+    cipher_op.callback = cipher_callback;
+    cipher_op.out_packet = kmap(dst->page) + dst->offset;
+    ipsec_crypto_hw_process(&cipher_op);
+
+	//add_wait_queue(&cipher_queue, &wait);
+	while (1) {
+		//udelay(10);
+	//	set_current_state(TASK_INTERRUPTIBLE);
+		spin_lock_irqsave(&cipher_done_lock,flags);
+		if (cipher_done) /* whatever test your driver needs */
+		{
+			spin_unlock_irqrestore(&cipher_done_lock, flags);
+			break;
+		}
+		spin_unlock_irqrestore(&cipher_done_lock, flags);
+		//udelay(1);
+		schedule();
+	}
+	//set_current_state(TASK_RUNNING);
+	//remove_wait_queue(&cipher_queue, &wait);
+    return 0;
+#else
 	struct cipher_desc desc;
 	struct cipher_alg *cipher = &tfm->__crt_alg->cra_cipher;
 
@@ -298,6 +410,7 @@ static int ecb_decrypt(struct crypto_tfm *tfm,
 	desc.prfn = cipher->cia_decrypt_ecb ?: ecb_process;
 
 	return crypt(&desc, dst, src, nbytes);
+#endif
 }
 
 static int cbc_encrypt(struct crypto_tfm *tfm,
@@ -305,6 +418,47 @@ static int cbc_encrypt(struct crypto_tfm *tfm,
                        struct scatterlist *src,
 		       unsigned int nbytes)
 {
+#ifdef CONFIG_SL2312_IPSEC
+	//wait_queue_t wait;
+	spin_lock_irqsave(&cipher_done_lock,flags);
+	if(cipher_done == 0)
+	{
+		//printk("%s :cipher not ready !!\n",__func__);
+		spin_unlock_irqrestore(&cipher_done_lock, flags);
+		return -1;
+	}
+    cipher_done = 0;
+    spin_unlock_irqrestore(&cipher_done_lock, flags);
+    cipher_op.op_mode = CIPHER_ENC;
+    cipher_op.cipher_algorithm = ipsec_get_cipher_algorithm((unsigned char *)&tfm->__crt_alg->cra_name,CBC);
+    cipher_op.cipher_header_len = 0;
+    cipher_op.cipher_algorithm_len = nbytes;
+    memcpy(cipher_op.iv,tfm->crt_cipher.cit_iv,tfm->crt_cipher.cit_ivsize);
+    cipher_op.iv_size = tfm->crt_cipher.cit_ivsize;
+    cipher_op.in_packet = kmap(src->page) + src->offset;
+    cipher_op.pkt_len = nbytes;
+    cipher_op.callback = cipher_callback;
+    cipher_op.out_packet = kmap(dst->page) + dst->offset;
+    ipsec_crypto_hw_process(&cipher_op);
+
+	//add_wait_queue(&cipher_queue, &wait);
+	while (1) {
+		//udelay(10);
+//		set_current_state(TASK_INTERRUPTIBLE);
+		spin_lock_irqsave(&cipher_done_lock,flags);
+		if (cipher_done) /* whatever test your driver needs */
+		{
+			spin_unlock_irqrestore(&cipher_done_lock, flags);
+			break;
+		}
+		spin_unlock_irqrestore(&cipher_done_lock, flags);
+		//udelay(1);
+		schedule();
+	}
+	//set_current_state(TASK_RUNNING);
+	//remove_wait_queue(&cipher_queue, &wait);
+    return 0;
+#else
 	struct cipher_desc desc;
 	struct cipher_alg *cipher = &tfm->__crt_alg->cra_cipher;
 
@@ -314,6 +468,7 @@ static int cbc_encrypt(struct crypto_tfm *tfm,
 	desc.info = tfm->crt_cipher.cit_iv;
 
 	return crypt(&desc, dst, src, nbytes);
+#endif
 }
 
 static int cbc_encrypt_iv(struct crypto_tfm *tfm,
@@ -321,6 +476,48 @@ static int cbc_encrypt_iv(struct crypto_tfm *tfm,
                           struct scatterlist *src,
                           unsigned int nbytes, u8 *iv)
 {
+#ifdef CONFIG_SL2312_IPSEC
+	//wait_queue_t wait;
+
+    spin_lock_irqsave(&cipher_done_lock,flags);
+	if(cipher_done == 0)
+	{
+		//printk("%s :cipher not ready !!\n",__func__);
+		spin_unlock_irqrestore(&cipher_done_lock, flags);
+		return -1;
+	}
+    cipher_done = 0;
+    spin_unlock_irqrestore(&cipher_done_lock, flags);
+    cipher_op.op_mode = CIPHER_ENC;
+    cipher_op.cipher_algorithm = ipsec_get_cipher_algorithm((unsigned char *)&tfm->__crt_alg->cra_name,CBC);
+    cipher_op.cipher_header_len = 0;
+    cipher_op.cipher_algorithm_len = nbytes;
+    memcpy(cipher_op.iv,tfm->crt_cipher.cit_iv,tfm->crt_cipher.cit_ivsize);
+    cipher_op.iv_size = tfm->crt_cipher.cit_ivsize;
+    cipher_op.in_packet = kmap(src->page) + src->offset;
+    cipher_op.pkt_len = nbytes;
+    cipher_op.callback = cipher_callback;
+    cipher_op.out_packet = kmap(dst->page) + dst->offset;
+    ipsec_crypto_hw_process(&cipher_op);
+
+	//add_wait_queue(&cipher_queue, &wait);
+	while (1) {
+		//udelay(10);
+//		set_current_state(TASK_INTERRUPTIBLE);
+		spin_lock_irqsave(&cipher_done_lock,flags);
+		if (cipher_done) /* whatever test your driver needs */
+		{
+			spin_unlock_irqrestore(&cipher_done_lock, flags);
+			break;
+		}
+			spin_unlock_irqrestore(&cipher_done_lock, flags);
+		//udelay(1);
+		schedule();
+	}
+	//set_current_state(TASK_RUNNING);
+	//remove_wait_queue(&cipher_queue, &wait);
+    return 0;
+#else
 	struct cipher_desc desc;
 	struct cipher_alg *cipher = &tfm->__crt_alg->cra_cipher;
 
@@ -330,6 +527,7 @@ static int cbc_encrypt_iv(struct crypto_tfm *tfm,
 	desc.info = iv;
 
 	return crypt_iv_unaligned(&desc, dst, src, nbytes);
+#endif
 }
 
 static int cbc_decrypt(struct crypto_tfm *tfm,
@@ -337,6 +535,47 @@ static int cbc_decrypt(struct crypto_tfm *tfm,
                        struct scatterlist *src,
 		       unsigned int nbytes)
 {
+#ifdef CONFIG_SL2312_IPSEC
+	//wait_queue_t wait;
+	spin_lock_irqsave(&cipher_done_lock,flags);
+	if(cipher_done == 0)
+	{
+		//printk("%s :cipher not ready !!\n",__func__);
+		spin_unlock_irqrestore(&cipher_done_lock, flags);
+		return -1;
+	}
+    cipher_done = 0;
+    spin_unlock_irqrestore(&cipher_done_lock, flags);
+    cipher_op.op_mode = CIPHER_DEC;
+    cipher_op.cipher_algorithm = ipsec_get_cipher_algorithm((unsigned char *)&tfm->__crt_alg->cra_name,CBC);
+    cipher_op.cipher_header_len = 0;
+    cipher_op.cipher_algorithm_len = nbytes;
+    memcpy(cipher_op.iv,tfm->crt_cipher.cit_iv,tfm->crt_cipher.cit_ivsize);
+    cipher_op.iv_size = tfm->crt_cipher.cit_ivsize;
+    cipher_op.in_packet = kmap(src->page) + src->offset;
+    cipher_op.pkt_len = nbytes;
+    cipher_op.callback = cipher_callback;
+    cipher_op.out_packet = kmap(dst->page) + dst->offset;
+    ipsec_crypto_hw_process(&cipher_op);
+
+	//add_wait_queue(&cipher_queue, &wait);
+	while (1) {
+		//udelay(10);
+//		set_current_state(TASK_INTERRUPTIBLE);
+		spin_lock_irqsave(&cipher_done_lock,flags);
+		if (cipher_done) /* whatever test your driver needs */
+		{
+			spin_unlock_irqrestore(&cipher_done_lock, flags);
+			break;
+		}
+			spin_unlock_irqrestore(&cipher_done_lock, flags);
+		//udelay(1);
+		schedule();
+	}
+	//set_current_state(TASK_RUNNING);
+	//remove_wait_queue(&cipher_queue, &wait);
+    return 0;
+#else
 	struct cipher_desc desc;
 	struct cipher_alg *cipher = &tfm->__crt_alg->cra_cipher;
 
@@ -346,6 +585,7 @@ static int cbc_decrypt(struct crypto_tfm *tfm,
 	desc.info = tfm->crt_cipher.cit_iv;
 
 	return crypt(&desc, dst, src, nbytes);
+#endif
 }
 
 static int cbc_decrypt_iv(struct crypto_tfm *tfm,
@@ -353,6 +593,48 @@ static int cbc_decrypt_iv(struct crypto_tfm *tfm,
                           struct scatterlist *src,
                           unsigned int nbytes, u8 *iv)
 {
+#ifdef CONFIG_SL2312_IPSEC
+	//wait_queue_t wait;
+
+    spin_lock_irqsave(&cipher_done_lock,flags);
+	if(cipher_done == 0)
+	{
+		//printk("%s :cipher not ready !!\n",__func__);
+		spin_unlock_irqrestore(&cipher_done_lock, flags);
+		return -1;
+	}
+    cipher_done = 0;
+    spin_unlock_irqrestore(&cipher_done_lock, flags);
+    cipher_op.op_mode = CIPHER_DEC;
+    cipher_op.cipher_algorithm = ipsec_get_cipher_algorithm((unsigned char *)&tfm->__crt_alg->cra_name,CBC);
+    cipher_op.cipher_header_len = 0;
+    cipher_op.cipher_algorithm_len = nbytes;
+    memcpy(cipher_op.iv,tfm->crt_cipher.cit_iv,tfm->crt_cipher.cit_ivsize);
+    cipher_op.iv_size = tfm->crt_cipher.cit_ivsize;
+    cipher_op.in_packet = kmap(src->page) + src->offset;
+    cipher_op.pkt_len = nbytes;
+    cipher_op.callback = cipher_callback;
+    cipher_op.out_packet = kmap(dst->page) + dst->offset;
+    ipsec_crypto_hw_process(&cipher_op);
+
+	//add_wait_queue(&cipher_queue, &wait);
+	while (1) {
+		//udelay(10);
+//		set_current_state(TASK_INTERRUPTIBLE);
+		spin_lock_irqsave(&cipher_done_lock,flags);
+		if (cipher_done) /* whatever test your driver needs */
+		{
+			spin_unlock_irqrestore(&cipher_done_lock, flags);
+			break;
+		}
+			spin_unlock_irqrestore(&cipher_done_lock, flags);
+	//	udelay(1);
+		schedule();
+	}
+	//set_current_state(TASK_RUNNING);
+	//remove_wait_queue(&cipher_queue, &wait);
+    return 0;
+#else
 	struct cipher_desc desc;
 	struct cipher_alg *cipher = &tfm->__crt_alg->cra_cipher;
 
@@ -362,6 +644,7 @@ static int cbc_decrypt_iv(struct crypto_tfm *tfm,
 	desc.info = iv;
 
 	return crypt_iv_unaligned(&desc, dst, src, nbytes);
+#endif
 }
 
 static int nocrypt(struct crypto_tfm *tfm,

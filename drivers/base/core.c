@@ -20,6 +20,7 @@
 
 #include "base.h"
 #include "power/power.h"
+#include <linux/acs_nas.h>
 
 int (*platform_notify)(struct device * dev) = NULL;
 int (*platform_notify_remove)(struct device * dev) = NULL;
@@ -394,6 +395,9 @@ void device_del(struct device * dev)
 void device_unregister(struct device * dev)
 {
 	pr_debug("DEV: Unregistering device. ID = '%s'\n", dev->bus_id);
+#ifdef ACS_DEBUG
+	acs_printk("DEV: Unregistering device. ID = '%s'\n", dev->bus_id);
+#endif
 	device_del(dev);
 	put_device(dev);
 }

@@ -15,6 +15,7 @@
 #include <linux/kmod.h>
 #include <linux/kobj_map.h>
 #include <linux/buffer_head.h>
+#include <linux/acs_nas.h>
 
 #define MAX_PROBE_HASH 255	/* random */
 
@@ -196,11 +197,24 @@ static int exact_lock(dev_t dev, void *data)
  */
 void add_disk(struct gendisk *disk)
 {
+#ifdef	ACS_DEBUG
+	acs_printk("%s: start\n", __func__);
+#endif
+
 	disk->flags |= GENHD_FL_UP;
 	blk_register_region(MKDEV(disk->major, disk->first_minor),
 			    disk->minors, NULL, exact_match, exact_lock, disk);
+#ifdef	ACS_DEBUG
+	acs_printk("%s: step 1\n", __func__);
+#endif
 	register_disk(disk);
+#ifdef	ACS_DEBUG
+	acs_printk("%s: step 2\n", __func__);
+#endif
 	blk_register_queue(disk);
+#ifdef	ACS_DEBUG
+	acs_printk("%s: end\n", __func__);
+#endif
 }
 
 EXPORT_SYMBOL(add_disk);

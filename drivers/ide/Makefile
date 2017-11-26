@@ -13,7 +13,7 @@ EXTRA_CFLAGS				+= -Idrivers/ide
 
 obj-$(CONFIG_BLK_DEV_IDE)		+= pci/
 
-ide-core-y += ide.o ide-io.o ide-iops.o ide-lib.o ide-probe.o ide-taskfile.o
+ide-core-y += ide.o ide-hotswap.o ide-io.o ide-iops.o ide-lib.o ide-probe.o ide-taskfile.o 
 
 ide-core-$(CONFIG_BLK_DEV_CMD640)	+= pci/cmd640.o
 
@@ -44,6 +44,8 @@ obj-$(CONFIG_BLK_DEV_IDE)		+= ide-core.o
 obj-$(CONFIG_IDE_GENERIC)		+= ide-generic.o
 
 obj-$(CONFIG_BLK_DEV_IDEDISK)		+= ide-disk.o
+obj-y					+= ide-fdisk.o 	#Bob Cui
+obj-y					+= ide-bbr.o 	#Bob Cui
 obj-$(CONFIG_BLK_DEV_IDECD)		+= ide-cd.o
 obj-$(CONFIG_BLK_DEV_IDETAPE)		+= ide-tape.o
 obj-$(CONFIG_BLK_DEV_IDEFLOPPY)		+= ide-floppy.o

@@ -17,7 +17,7 @@
  *
  * This code is GPL
  *
- * $Id: cfi_cmdset_0002.c,v 1.122 2005/11/07 11:14:22 gleixner Exp $
+ * $Id: cfi_cmdset_0002.c,v 1.3 2006/06/28 10:25:02 middle Exp $
  *
  */
 
@@ -40,10 +40,15 @@
 #include <linux/mtd/cfi.h>
 #include <linux/mtd/xip.h>
 
+//****** Storlink SoC ******
 #define AMD_BOOTLOC_BUG
-#define FORCE_WORD_WRITE 0
+#define FORCE_WORD_WRITE 0    //jenny 2007.04.03
+//#define FORCE_WORD_WRITE 1
+#define FORCE_FAST_PROG 1
 
-#define MAX_WORD_RETRIES 3
+//#define MAX_WORD_RETRIES 3
+#define MAX_WORD_RETRIES CONFIG_MTD_CFI_AMDSTD_RETRY
+//**************************
 
 #define MANUFACTURER_AMD	0x0001
 #define MANUFACTURER_SST	0x00BF
@@ -158,6 +163,7 @@ static void fixup_use_write_buffers(struct mtd_info *mtd, void *param)
 	struct cfi_private *cfi = map->fldrv_priv;
 	if (cfi->cfiq->BufWriteTimeoutTyp) {
 		DEBUG(MTD_DEBUG_LEVEL1, "Using buffer write method\n" );
+		printk("Using buffer write method\n" );
 		mtd->write = cfi_amdstd_write_buffers;
 	}
 }
@@ -275,6 +281,13 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
 #endif
 
 		bootloc = extp->TopBottom;
+//****** Storlink SoC ******
+		if(bootloc == 5)
+		{
+			bootloc = 3;
+			extp->TopBottom = 3;
+		}
+//**************************
 		if ((bootloc != 2) && (bootloc != 3)) {
 			printk(KERN_WARNING "%s: CFI does not contain boot "
 			       "bank location. Assuming top.\n", map->name);
@@ -293,6 +306,9 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
 				cfi->cfiq->EraseRegionInfo[j] = swap;
 			}
 		}
+#ifdef CONFIG_MTD_MAP_BANK_WIDTH_1
+		cfi->device_type = CFI_DEVICETYPE_X8;
+#endif		
 		/* Set the default CFI lock/unlock addresses */
 		cfi->addr_unlock1 = 0x555;
 		cfi->addr_unlock2 = 0x2aa;
@@ -352,6 +368,7 @@ static struct mtd_info *cfi_amdstd_setup(struct mtd_info *mtd)
 	for (i=0; i<cfi->cfiq->NumEraseRegions; i++) {
 		unsigned long ernum, ersize;
 		ersize = ((cfi->cfiq->EraseRegionInfo[i] >> 8) & ~0xff) * cfi->interleave;
+		printk("%s: NumEraseRegions=%x ersize=%x\t\nEraseRegionInfo=%x interleave=%x\n", __func__, cfi->cfiq->NumEraseRegions, ersize, cfi->cfiq->EraseRegionInfo[i], cfi->interleave);
 		ernum = (cfi->cfiq->EraseRegionInfo[i] & 0xffff) + 1;
 
 		if (mtd->erasesize < ersize) {
@@ -412,6 +429,7 @@ static int __xipram chip_ready(struct map_info *map, unsigned long addr)
 	map_word d, t;
 
 	d = map_read(map, addr);
+	udelay(20);	//Storlink SoC
 	t = map_read(map, addr);
 
 	return map_word_equal(map, d, t);
@@ -445,11 +463,11 @@ static int __xipram chip_good(struct map_info *map, unsigned long addr, map_word
 
 static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr, int mode)
 {
-	DECLARE_WAITQUEUE(wait, current);
 	struct cfi_private *cfi = map->fldrv_priv;
 	unsigned long timeo;
 	struct cfi_pri_amdstd *cfip = (struct cfi_pri_amdstd *)cfi->cmdset_priv;
 
+	DECLARE_WAITQUEUE(wait, current);
  resettime:
 	timeo = jiffies + HZ;
  retry:
@@ -494,6 +512,13 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
 		/* Erase suspend */
 		/* It's harmless to issue the Erase-Suspend and Erase-Resume
 		 * commands when the erase algorithm isn't in progress. */
+
+		/* Jenny 2007.03.09 forbid erase suspend */
+		printk("%s &&&&&&&&&& who go here &&&&&&&&&\n", __func__);
+                printk("%s &&&&&&&&&& current->pid=%d &&&&&&&&&\n", __func__, current->pid);
+                printk("%s &&&&&&&&&&  goto sleep &&&&&&&&&\n", __func__);
+                goto sleep;
+	
 		map_write(map, CMD(0xB0), chip->in_progress_block_addr);
 		chip->oldstate = FL_ERASING;
 		chip->state = FL_ERASE_SUSPENDING;
@@ -575,7 +600,11 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
 	default:
 		printk(KERN_ERR "MTD: put_chip() called with oldstate %d!!\n", chip->oldstate);
 	}
-	wake_up(&chip->wq);
+//****** Storlink SoC ******
+//	wake_up(&chip->wq);
+	if((*(chip)).wq.task_list.next!=NULL)
+		wake_up(&chip->wq);
+//**************************
 }
 
 #ifdef CONFIG_MTD_XIP
@@ -847,10 +876,10 @@ static int cfi_amdstd_read (struct mtd_info *mtd, loff_t from, size_t len, size_
 
 static inline int do_read_secsi_onechip(struct map_info *map, struct flchip *chip, loff_t adr, size_t len, u_char *buf)
 {
-	DECLARE_WAITQUEUE(wait, current);
 	unsigned long timeo = jiffies + HZ;
 	struct cfi_private *cfi = map->fldrv_priv;
 
+	DECLARE_WAITQUEUE(wait, current);
  retry:
 	spin_lock(chip->mutex);
 
@@ -889,7 +918,11 @@ static inline int do_read_secsi_onechip(struct map_info *map, struct flchip *chi
 	cfi_send_gen_cmd(0x90, cfi->addr_unlock1, chip->start, map, cfi, cfi->device_type, NULL);
 	cfi_send_gen_cmd(0x00, cfi->addr_unlock1, chip->start, map, cfi, cfi->device_type, NULL);
 
-	wake_up(&chip->wq);
+//****** Storlink SoC ******
+//	wake_up(&chip->wq);
+	if((*(chip)).wq.task_list.next!=NULL)
+		wake_up(&chip->wq);
+//**************************
 	spin_unlock(chip->mutex);
 
 	return 0;
@@ -954,7 +987,10 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip, 
 	 */
 	unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
 	int ret = 0;
-	map_word oldd;
+//****** Storlink SoC ******
+//	map_word oldd;
+	map_word oldd, tmp;
+//**************************
 	int retry_cnt = 0;
 
 	adr += chip->start;
@@ -986,9 +1022,15 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip, 
 	ENABLE_VPP(map);
 	xip_disable(map, chip, adr);
  retry:
+//****** Storlink SoC ******
+#if FORCE_FAST_PROG  /* Unlock bypass */
+	cfi_send_gen_cmd(0xA0, cfi->addr_unlock1, chip->start, map, cfi, cfi->device_type, NULL);	
+#else
 	cfi_send_gen_cmd(0xAA, cfi->addr_unlock1, chip->start, map, cfi, cfi->device_type, NULL);
 	cfi_send_gen_cmd(0x55, cfi->addr_unlock2, chip->start, map, cfi, cfi->device_type, NULL);
 	cfi_send_gen_cmd(0xA0, cfi->addr_unlock1, chip->start, map, cfi, cfi->device_type, NULL);
+#endif
+//**************************
 	map_write(map, datum, adr);
 	chip->state = FL_WRITING;
 
@@ -1021,7 +1063,13 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip, 
 		}
 
 		if (chip_ready(map, adr))
-			break;
+		{
+			tmp = map_read(map, adr);
+			if(map_word_equal(map, tmp, datum))
+//				goto op_done;
+                break;
+			
+		}
 
 		/* Latency issues. Drop the lock, wait a while and retry */
 		UDELAY(map, chip, adr, 1);
@@ -1033,8 +1081,17 @@ static int __xipram do_write_oneword(struct map_info *map, struct flchip *chip, 
 		/* FIXME - should have reset delay before continuing */
 
 		if (++retry_cnt <= MAX_WORD_RETRIES)
+		{
+//****** Storlink SoC ******
+#if FORCE_FAST_PROG
+			cfi_send_gen_cmd(0xAA, cfi->addr_unlock1, chip->start, map, cfi, cfi->device_type, NULL);
+			cfi_send_gen_cmd(0x55, cfi->addr_unlock2, chip->start, map, cfi, cfi->device_type, NULL);
+			cfi_send_gen_cmd(0x20, cfi->addr_unlock1, chip->start, map, cfi, cfi->device_type, NULL);
+		//udelay(1);
+#endif	
+			udelay(1);
 			goto retry;
-
+		}
 		ret = -EIO;
 	}
 	xip_enable(map, chip, adr);
@@ -1120,7 +1177,14 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
 				return 0;
 		}
 	}
-
+//****** Storlink SoC ******
+	map_write( map, CMD(0xF0), chipstart );
+#if FORCE_FAST_PROG
+		cfi_send_gen_cmd(0xAA, cfi->addr_unlock1, chipstart, map, cfi, cfi->device_type, NULL);
+		cfi_send_gen_cmd(0x55, cfi->addr_unlock2, chipstart, map, cfi, cfi->device_type, NULL);
+		cfi_send_gen_cmd(0x20, cfi->addr_unlock1, chipstart, map, cfi, cfi->device_type, NULL);
+#endif
+//**************************
 	/* We are now aligned, write as much as possible */
 	while(len >= map_bankwidth(map)) {
 		map_word datum;
@@ -1130,7 +1194,15 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
 		ret = do_write_oneword(map, &cfi->chips[chipnum],
 				       ofs, datum);
 		if (ret)
+		{
+//****** Storlink SoC ******
+#if FORCE_FAST_PROG
+			/* Get out of unlock bypass mode */
+			cfi_send_gen_cmd(0x90, 0, chipstart, map, cfi, cfi->device_type, NULL);
+			cfi_send_gen_cmd(0x00, 0, chipstart, map, cfi, cfi->device_type, NULL);
+#endif			
 			return ret;
+		}
 
 		ofs += map_bankwidth(map);
 		buf += map_bankwidth(map);
@@ -1138,19 +1210,38 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
 		len -= map_bankwidth(map);
 
 		if (ofs >> cfi->chipshift) {
+//****** Storlink SoC ******
+#if FORCE_FAST_PROG
+			/* Get out of unlock bypass mode */
+			cfi_send_gen_cmd(0x90, 0, chipstart, map, cfi, cfi->device_type, NULL);
+			cfi_send_gen_cmd(0x00, 0, chipstart, map, cfi, cfi->device_type, NULL);
+#endif
 			chipnum ++;
 			ofs = 0;
 			if (chipnum == cfi->numchips)
 				return 0;
 			chipstart = cfi->chips[chipnum].start;
+#if FORCE_FAST_PROG
+			/* Go into unlock bypass mode for next set of chips */
+			cfi_send_gen_cmd(0xAA, cfi->addr_unlock1, chipstart, map, cfi, cfi->device_type, NULL);
+			cfi_send_gen_cmd(0x55, cfi->addr_unlock2, chipstart, map, cfi, cfi->device_type, NULL);
+			cfi_send_gen_cmd(0x20, cfi->addr_unlock1, chipstart, map, cfi, cfi->device_type, NULL);
+#endif
 		}
 	}
+
+#if FORCE_FAST_PROG
+	/* Get out of unlock bypass mode */
+	cfi_send_gen_cmd(0x90, 0, chipstart, map, cfi, cfi->device_type, NULL);
+	cfi_send_gen_cmd(0x00, 0, chipstart, map, cfi, cfi->device_type, NULL);
+#endif
 
 	/* Write the trailing bytes if any */
 	if (len & (map_bankwidth(map)-1)) {
 		map_word tmp_buf;
 
  retry1:
+ 
 		spin_lock(cfi->chips[chipnum].mutex);
 
 		if (cfi->chips[chipnum].state != FL_READY) {
@@ -1170,7 +1261,11 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
 #endif
 			goto retry1;
 		}
-
+#if FORCE_FAST_PROG
+		cfi_send_gen_cmd(0xAA, cfi->addr_unlock1, chipstart, map, cfi, cfi->device_type, NULL);
+		cfi_send_gen_cmd(0x55, cfi->addr_unlock2, chipstart, map, cfi, cfi->device_type, NULL);
+		cfi_send_gen_cmd(0x20, cfi->addr_unlock1, chipstart, map, cfi, cfi->device_type, NULL);
+#endif
 		tmp_buf = map_read(map, ofs + chipstart);
 
 		spin_unlock(cfi->chips[chipnum].mutex);
@@ -1180,11 +1275,23 @@ static int cfi_amdstd_write_words(struct mtd_info *mtd, loff_t to, size_t len,
 		ret = do_write_oneword(map, &cfi->chips[chipnum],
 				ofs, tmp_buf);
 		if (ret)
+		{
+#if FORCE_FAST_PROG
+	/* Get out of unlock bypass mode */
+	cfi_send_gen_cmd(0x90, 0, chipstart, map, cfi, cfi->device_type, NULL);
+	cfi_send_gen_cmd(0x00, 0, chipstart, map, cfi, cfi->device_type, NULL);
+#endif
 			return ret;
-
+		}
+#if FORCE_FAST_PROG
+	/* Get out of unlock bypass mode */
+	cfi_send_gen_cmd(0x90, 0, chipstart, map, cfi, cfi->device_type, NULL);
+	cfi_send_gen_cmd(0x00, 0, chipstart, map, cfi, cfi->device_type, NULL);
+#endif
 		(*retlen) += len;
 	}
 
+	map_write( map, CMD(0xF0), chipstart );
 	return 0;
 }
 
@@ -1224,6 +1331,7 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
 	ENABLE_VPP(map);
 	xip_disable(map, chip, cmd_adr);
 
+	map_write( map, CMD(0xF0), chip->start );	//Storlink
 	cfi_send_gen_cmd(0xAA, cfi->addr_unlock1, chip->start, map, cfi, cfi->device_type, NULL);
 	cfi_send_gen_cmd(0x55, cfi->addr_unlock2, chip->start, map, cfi, cfi->device_type, NULL);
 	//cfi_send_gen_cmd(0xA0, cfi->addr_unlock1, chip->start, map, cfi, cfi->device_type, NULL);
@@ -1393,9 +1501,9 @@ static int __xipram do_erase_chip(struct map_info *map, struct flchip *chip)
 	struct cfi_private *cfi = map->fldrv_priv;
 	unsigned long timeo = jiffies + HZ;
 	unsigned long int adr;
-	DECLARE_WAITQUEUE(wait, current);
 	int ret = 0;
 
+	DECLARE_WAITQUEUE(wait, current);
 	adr = cfi->addr_unlock1;
 
 	spin_lock(chip->mutex);
@@ -1481,9 +1589,9 @@ static int __xipram do_erase_oneblock(struct map_info *map, struct flchip *chip,
 {
 	struct cfi_private *cfi = map->fldrv_priv;
 	unsigned long timeo = jiffies + HZ;
-	DECLARE_WAITQUEUE(wait, current);
 	int ret = 0;
 
+	DECLARE_WAITQUEUE(wait, current);
 	adr += chip->start;
 
 	spin_lock(chip->mutex);
@@ -1661,7 +1769,9 @@ static void cfi_amdstd_sync (struct mtd_info *mtd)
 
 		if (chip->state == FL_SYNCING) {
 			chip->state = chip->oldstate;
-			wake_up(&chip->wq);
+			if((*(chip)).wq.task_list.next!=NULL)//Storlink
+				wake_up(&chip->wq);
+//			wake_up(&chip->wq);
 		}
 		spin_unlock(chip->mutex);
 	}
@@ -1712,7 +1822,9 @@ static int cfi_amdstd_suspend(struct mtd_info *mtd)
 
 			if (chip->state == FL_PM_SUSPENDED) {
 				chip->state = chip->oldstate;
-				wake_up(&chip->wq);
+//				wake_up(&chip->wq);
+				if((*(chip)).wq.task_list.next!=NULL)	//Storlink 
+					wake_up(&chip->wq);
 			}
 			spin_unlock(chip->mutex);
 		}
@@ -1738,7 +1850,9 @@ static void cfi_amdstd_resume(struct mtd_info *mtd)
 		if (chip->state == FL_PM_SUSPENDED) {
 			chip->state = FL_READY;
 			map_write(map, CMD(0xF0), chip->start);
-			wake_up(&chip->wq);
+//			wake_up(&chip->wq);
+			if((*(chip)).wq.task_list.next!=NULL) //Storlink
+				wake_up(&chip->wq);
 		}
 		else
 			printk(KERN_ERR "Argh. Chip not in PM_SUSPENDED state upon resume()\n");

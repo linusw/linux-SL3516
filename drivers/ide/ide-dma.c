@@ -86,6 +86,7 @@
 #include <linux/ide.h>
 #include <linux/delay.h>
 #include <linux/scatterlist.h>
+#include <linux/acs_nas.h>
 
 #include <asm/io.h>
 #include <asm/irq.h>
@@ -596,6 +597,11 @@ void ide_dma_start(ide_drive_t *drive)
 	ide_hwif_t *hwif	= HWIF(drive);
 	u8 dma_cmd		= hwif->INB(hwif->dma_command);
 
+#ifdef ORION_430ST
+	if (drive->queue->activity_fn)
+		/* turn on access LED */
+		drive->queue->activity_fn(drive->queue->activity_data, 1);
+#endif
 	/* Note that this is done *after* the cmd has
 	 * been issued to the drive, as per the BM-IDE spec.
 	 * The Promise Ultra33 doesn't work correctly when
@@ -615,6 +621,11 @@ int __ide_dma_end (ide_drive_t *drive)
 	ide_hwif_t *hwif	= HWIF(drive);
 	u8 dma_stat = 0, dma_cmd = 0;
 
+#ifdef ORION_430ST
+	if (drive->queue->activity_fn)
+		/* turn off access LED */
+		drive->queue->activity_fn(drive->queue->activity_data, 0);
+#endif
 	drive->waiting_for_dma = 0;
 	/* get dma_command mode */
 	dma_cmd = hwif->INB(hwif->dma_command);

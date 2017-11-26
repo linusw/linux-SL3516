@@ -1017,7 +1017,7 @@ long sys32_lookup_dcookie(u32 addr_low, u32 addr_high,
 
 static int __init ia32_init (void)
 {
-	printk("IA32 emulation $Id: sys_ia32.c,v 1.32 2002/03/24 13:02:28 ak Exp $\n");  
+	printk("IA32 emulation $Id: sys_ia32.c,v 1.1.1.1 2006/04/03 08:40:44 amos_lee Exp $\n");  
 	return 0;
 }
 

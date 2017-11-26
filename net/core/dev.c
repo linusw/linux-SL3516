@@ -114,6 +114,7 @@
 #include <net/iw_handler.h>
 #endif	/* CONFIG_NET_RADIO */
 #include <asm/current.h>
+#include <linux/mtd/mtd.h>	//Mtd write for MTU
 
 /*
  *	The list of packet types we will receive (as opposed to discard)
@@ -2229,6 +2230,10 @@ int dev_change_flags(struct net_device *dev, unsigned flags)
 int dev_set_mtu(struct net_device *dev, int new_mtu)
 {
 	int err;
+	struct mtd_info	*mtd;
+	unsigned long long	off;
+	unsigned int	len, retlen;
+	unsigned char *buf;
 
 	if (new_mtu == dev->mtu)
 		return 0;

@@ -76,6 +76,7 @@ asmlinkage long sys_time(time_t __user * tloc)
  * why not move it into the appropriate arch directory (for those
  * architectures that need it).
  */
+extern void rtc_set_time_second(unsigned int second);
  
 asmlinkage long sys_stime(time_t __user *tptr)
 {
@@ -86,6 +87,10 @@ asmlinkage long sys_stime(time_t __user *tptr)
 		return -EFAULT;
 
 	tv.tv_nsec = 0;
+
+#ifdef CONFIG_SL2312_RTC	
+    rtc_set_time_second(tv.tv_sec);
+#endif    
 
 	err = security_settime(&tv, NULL);
 	if (err)

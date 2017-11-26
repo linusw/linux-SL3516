@@ -5,7 +5,7 @@
  *	Authors:
  *	Ville Nuorvala		<vnuorval@tcs.hut.fi>	
  *
- *	$Id$
+ *	$Id: ip6_tunnel.c,v 1.1.1.1 2006/04/03 08:41:30 amos_lee Exp $
  *
  *      Based on:
  *      linux/net/ipv6/sit.c

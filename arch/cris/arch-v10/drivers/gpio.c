@@ -1,4 +1,4 @@
-/* $Id: gpio.c,v 1.17 2005/06/19 17:06:46 starvik Exp $
+/* $Id: gpio.c,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $
  *
  * Etrax general port I/O device
  *
@@ -9,6 +9,9 @@
  *             Johan Adolfsson  (read/set directions, write, port G)
  *
  * $Log: gpio.c,v $
+ * Revision 1.1.1.1  2006/04/03 08:40:32  amos_lee
+ * initial
+ *
  * Revision 1.17  2005/06/19 17:06:46  starvik
  * Merge of Linux 2.6.12.
  *

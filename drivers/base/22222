@@ -1,0 +1,73 @@
+./11111:./power/Makefile:obj-$(CONFIG_PM)	+= main.o suspend.o resume.o runtime.o sysfs.o
+./11111:./power/suspend.c: * Things are the reverse on the resume path - iterations are done in
+./11111:./power/suspend.c: *	If we hit a failure with any of the devices, call device_resume()
+./11111:./power/suspend.c:		 * to call resume() on them, in case they partially suspended
+./11111:./power/suspend.c:		dpm_resume();
+./11111:./power/sysfs.c: *	is requested, the device is first resumed, then suspended into the new
+Binary file ./attribute_container.o matches
+Binary file ./built-in.o matches
+Binary file ./bus.o matches
+Binary file ./class.o matches
+Binary file ./core.o matches
+Binary file ./cpu.o matches
+Binary file ./dd.o matches
+Binary file ./dmapool.o matches
+Binary file ./driver.o matches
+./platform.c:static int platform_drv_suspend(struct device *_dev, pm_message_t state)
+./platform.c:	return drv->suspend(dev, state);
+./platform.c:	if (drv->suspend)
+./platform.c:		drv->driver.suspend = platform_drv_suspend;
+./platform.c:static int platform_suspend(struct device * dev, pm_message_t state)
+./platform.c:	if (dev->driver && dev->driver->suspend)
+./platform.c:		ret = dev->driver->suspend(dev, state);
+./platform.c:	.suspend	= platform_suspend,
+Binary file ./platform.o matches
+./power/runtime.c: *	dpm_runtime_suspend - Put one device in low-power state.
+./power/runtime.c:int dpm_runtime_suspend(struct device * dev, pm_message_t state)
+./power/runtime.c:	if (!(error = suspend_device(dev, state)))
+./power/shutdown.c: * We handle system devices differently - we suspend and shut them
+./power/power.h: * suspend.c
+./power/power.h:extern int suspend_device(struct device *, pm_message_t);
+./power/Makefile:obj-$(CONFIG_PM)	+= main.o suspend.o resume.o runtime.o sysfs.o
+Binary file ./power/shutdown.o matches
+./power/resume.c: *	the dpm_suspended list.
+./power/suspend.c: * suspend.c - Functions for putting devices to sleep.
+./power/suspend.c:extern int sysdev_suspend(pm_message_t state);
+./power/suspend.c: * All list on the suspend path are done in reverse order, so we operate
+./power/suspend.c: *	suspend_device - Save state of one device.
+./power/suspend.c:int suspend_device(struct device * dev, pm_message_t state)
+./power/suspend.c:		dev_dbg(dev, "PM: suspend %d-->%d\n",
+./power/suspend.c:			"PM: suspend %d->%d, parent %s already %d\n",
+./power/suspend.c:	if (dev->bus && dev->bus->suspend && !dev->power.power_state.event) {
+./power/suspend.c:		dev_dbg(dev, "suspending\n");
+./power/suspend.c:		error = dev->bus->suspend(dev, state);
+./power/suspend.c: *	device_suspend - Save state and stop all devices in system.
+./power/suspend.c: *	Walk the dpm_active list, call ->suspend() for each device, and move
+./power/suspend.c: *	above to bring the suspended devices back to life.
+./power/suspend.c:int device_suspend(pm_message_t state)
+./power/suspend.c:		error = suspend_device(dev, state);
+./power/suspend.c:			printk(KERN_ERR "Could not suspend device %s: "
+./power/suspend.c:		 * to call resume() on them, in case they partially suspended
+./power/suspend.c:EXPORT_SYMBOL_GPL(device_suspend);
+./power/suspend.c:		if ((error = suspend_device(dev, state)))
+./power/suspend.c:	if ((error = sysdev_suspend(state)))
+./power/CVS/Entries:/suspend.c/1.1.1.1/Mon Apr  3 08:40:45 2006//
+Binary file ./power/built-in.o matches
+./power/sysfs.c: *	is requested, the device is first resumed, then suspended into the new
+./power/sysfs.c:		error = dpm_runtime_suspend(dev, state);
+./power/sysfs.c: *	used to activate devices from suspended or low power states.  Such
+./power/sysfs.c: *	will wake the entire system from a suspend state; others may just
+./sys.c: *	sysdev_suspend - Suspend all system devices.
+./sys.c:int sysdev_suspend(pm_message_t state)
+./sys.c:				if (drv->suspend) {
+./sys.c:					ret = drv->suspend(sysdev, state);
+./sys.c:				if (drv->suspend) {
+./sys.c:					ret = drv->suspend(sysdev, state);
+./sys.c:			if (cls->suspend) {
+./sys.c:				ret = cls->suspend(sysdev, state);
+./sys.c:	printk(KERN_ERR "Class suspend failed for %s\n",
+./sys.c:		printk(KERN_ERR "Class driver suspend failed for %s\n",
+./sys.c:		printk(KERN_ERR "sysdev driver suspend failed for %s\n",
+./sys.c: *	Similar to sys_device_suspend(), but we iterate the list forwards
+Binary file ./sys.o matches
+Binary file ./transport_class.o matches

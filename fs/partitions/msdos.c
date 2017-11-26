@@ -20,6 +20,7 @@
  */
 
 #include <linux/config.h>
+#include <linux/acs_nas.h>
 
 #include "check.h"
 #include "msdos.h"
@@ -385,6 +386,10 @@ int msdos_partition(struct parsed_partitions *state, struct block_device *bdev)
 	unsigned char *data;
 	struct partition *p;
 	int slot;
+
+#ifdef	ACS_DEBUG
+	acs_printk("%s: start\n", __func__);
+#endif
 
 	data = read_dev_sector(bdev, 0, &sect);
 	if (!data)

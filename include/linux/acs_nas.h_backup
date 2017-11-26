@@ -1,0 +1,631 @@
+/**
+ * 	Accusys NAS configuration header file
+ */
+
+#ifndef __ACS_NAS_H__
+#define __ACS_NAS_H__
+
+#ifndef __ASSEMBLY__
+#include <linux/types.h>
+#endif /* __ASSEMBLY */
+
+/* vendors and model */
+#define ORION_430ST
+#define MODEL_ORION_430ST       1
+
+/* Orion 430ST 4 disks */
+#ifdef  MODEL_ORION_430ST
+        #define DISK_NUM        4
+        #define NAS_MODEL       MODEL_ORION_430ST
+#endif
+
+/* configuration */
+#define CONFIG_ACS_DRIVERS_LCD 1
+#define CONFIG_ACS_DRIVERS_NAND 1
+#define CONFIG_ACS_DRIVERS_NVRAM 1
+#define CONFIG_ACS_DRIVERS_HOTSWAP 1
+#define CONFIG_ACS_DRIVERS_HEALTH 1
+#define CONFIG_ACS_DRIVERS_ACPI 1
+#define CONFIG_ACS_DRIVERS_KERNELLOG 1
+#define CONFIG_ACS_DRIVERS_ROOTFS 1
+#define CONFIG_ACS_DRIVERS_E100 1
+#define CONFIG_ACS_DRIVERS_E1000 1
+
+/* kernel debug definition */
+#define ACS_DEBUG	1
+#ifdef ACS_DEBUG
+	#define acs_printk(fmt, args...)	printk("[Accusys]: " fmt, ## args)
+#else
+	#define acs_printk(fmt, args...)
+#endif
+
+/**
+ * 	Boot from nand flash 							
+ *
+ * 	[arch/i386/boot/compressed/misc.c]
+ * 	[arch/i386/kernel/head.S]
+ * 	[arch/i386/kernel/setup.c]
+ * 	[drivers/block/rd.c]
+ */
+#define CONFIG_ACS_NAND_BOOT
+#ifdef CONFIG_ACS_NAND_BOOT
+
+	/**
+	 * 	ACS_COM1	-	Accusys console com port
+	 *
+	 * 	[arch/i386/boot/compressed/misc.c] 
+	 * 	[drivers/char/serial.c]
+	 * 	change com1 baud rate to 115200 bps
+	 */
+	#define ACS_COM1
+	#define BIO_ACS_SPECIAL 10
+	/**
+	 *	ACS_LOW_BUF_END	-	hard code the low buffer end
+	 *
+	 * 	[arch/i386/boot/compressed/misc.c]
+	 */
+	#define ACS_LOW_BUF_END	0x90000
+
+	/**
+	 * 	ACS_REBOOT	-	Accusys reboot for intel 815 chipset
+	 *
+	 * 	[arch/i386/kernel/process.c] 
+	 */
+	#define ACS_REBOOT
+
+	/**
+	 *	ACS_POWER_OFF	-	Accusys power off for intel 815 chipset
+	 *
+	 * 	[arch/i386/kernel/process.c] 
+	 */
+	#define ACS_POWER_OFF
+
+	#define ACS_ACPI_PORT	0x400
+
+	/** 
+	 *	ACS_SET_ROOT_DEV	-	set root filesystem dev to ram0
+	 *
+	 * 	[init/main.c]
+	 * 	set root dev, (1, 0) = ram0 
+	 */
+	#define ACS_SET_ROOT_DEV() ROOT_DEV = MKDEV(1, 0)
+
+	/** 
+	 * 	ACS_SET_RD_SOURCE	-	set rootfs image source device
+	 *
+	 * 	[drivers/block/rd.c] 
+	 * 	source device assigned to be nand flash device
+	 */
+	#define ACS_SET_RD_SOURCE ROOT_DEV = MKDEV(44, 0)
+
+	/**
+	 *	ACS_ROOTFS_PANIC	- 	if rootfs gunzip error, panic
+	 *
+	 *	[lib/inflate.c]
+	 *	while loading rootfs from nand flash to ram disk, if gunzip error
+	 *	force kernel panic and output message to both console & LCD panel
+	 */
+	#define ACS_ROOTFS_PANIC
+
+#endif /* CONFIG_ACS_NAND_BOOT */
+
+/**
+ * 	nfs modifications
+ *
+ * 	[fs/nfsd/vfs.c] 
+ * 	return err early in nfsd_readlink() and nfsd_symlink() 
+ * 	add nfsd_veto() for nfsd related operations 
+ */
+#define ACS_NFS
+
+
+/**
+ * 	appletalk modifications 						
+ *
+ * 	[net/appletalk/aarp.c] 
+ * 	while bonding, ignore the aarp packet from the other ethernet device 
+ * 	solve the problem that atalkd will lock rtnl_lock() while detect node 
+ * 	addr 
+ */
+#define ACS_APPLETALK_FOR_BONDING
+
+/**
+ * 	ext2 modifications
+ *
+ * 	[fs/ext2/balloc.c]
+ * 	[fs/ext2/ialloc.c] 
+ */
+#define ACS_EXT2
+
+/**
+ * 	nand char driver
+ *
+ * 	[drivers/char/nand.c] 
+ * 	enable nand flash remap 
+ *
+ * 	obsolete now, since our flash already need remap function
+ * 	09/03/2003
+ */
+//#define ACS_NAND_REMAP
+
+/**
+ * 	add support for 32MB flash
+ *
+ * 	[drivers/char/nand.c] [drivers/block/mybd.c]
+ *
+ * 	NAND_16MB: DID for SAMSUNG 16MB Flash
+ * 	NAND_32MB: DID for SAMSUNG 32MB Flash
+ */
+#define NAND_16MB	0x73
+#define NAND_32MB	0x75
+
+/**
+ * 	lcd / buzzer 								
+ *
+ * 	[driver/char/lcd.c]
+ * 	any value out to LCD_BASE (0x114) should be ored with buzzer state 
+ * 	we define the buzzer state here 
+ */
+#define BUZZER_STATE    ((force_buzzer_on ? 1 : (((buzz_on & buzz_mask) != 0) && buzzer_flag && hw_buzz_state)) << 3)
+
+
+/**
+ * 	ACS_LCD_BEAN	-	enable lcd bean on lcd panel while booting
+ *
+ * 	[init/main.c] 
+ */
+#define ACS_LCD_BEAN
+
+/**
+ * 	ACS_LCD_MSG	-	display kernel curcial messages on LCD
+ *
+ * 	[init/main.c] 
+ * 	[driver/block/rd.c]
+ * 	[driver/block/ll_rw_blk.c] 
+ */
+#define ACS_LCD_MSG
+
+/**
+ * 	ide modifications
+ *
+ * 	[driver/ide] 
+ */
+//#define NAS_BOOT_SECTOR
+
+/**
+ * 	hotswap char driver
+ *
+ * 	[driver/ide] 
+ * 	[drives/char/hotswap.c]
+ */
+#define NAS_PERFORMANCE
+
+/**
+ * 	block drivers
+ *
+ * 	[driver/block/ll_rw_blk.c] 
+ */
+#define ACS_MD_SPECIAL
+
+/*
+ *      BAD_SECTOR_REMAP
+ *      [driver/block/ll_rw_blk.c]
+ *      [driver/ide/ide.c]
+ *      [driver/md/md.c]
+ *      [driver/md/raid0.c]
+ *      [driver/md/raid1.c]
+ *      [driver/md/raid5.c]
+ *      [driver/char/hotswap.c]
+ *
+ */
+//#define BAD_SECTOR_REMAP
+//#define BAD_SECTOR_REMAP_TEST
+
+/*
+ *	Recollect all root file system partitions into md0 while booting.
+ * 
+ *	NAS_RFSP_RECOLLECT
+ *	[driver/md/md.c]
+ */
+#define	MD0_RECOLLECTING
+//#define BBR_TEST
+/*
+ *	Store and identify the unique ID in SB. Mainly for distinguishing
+ *	between different NAS models' disks switching. SB Version: 0.90.0
+ *
+ *	MD_UNIQ_IDENTIFY
+ *	[driver/md/md.c]
+ */
+//#define   MD_UNIQ_IDENTIFY
+
+/*
+ *  Global spares(hide in md0, 24~27) support hot-spare for any MD instance
+ *  which need a spare to do recovery.
+ *
+ *  MD_GLOBAL_SPARE
+ *  [driver/md/md.c]
+ *  [driver/md/raid1.c]
+ *  [driver/md/raid5.c]
+ */
+//#define MD_GLOBAL_SPARE
+
+/*
+ *	provide periodical check(WARN) ioctl interface CHECK_STATUS
+ *	for RAID 1 and 5 (!md0)
+ *  
+ *	MD_CHECK_STATUS
+ *	[driver/md/md.c]
+ *	[driver/md/raid1.c]
+ *	[driver/md/raid5.c]
+ *	[include/linux/raid/md_k.h]
+ *	[include/linux/raid/md_u.h]
+ */
+#define MD_CHECK_STATUS
+
+/**
+ * 	kernel log char driver							
+ */
+#define ERROR_LOG               3
+#define WARN_LOG                2
+#define INFO_LOG                1
+
+/**
+ * 	nvram char driver							
+ *
+ * 	[init/main.c] 
+ */
+#define ACS_NAS_INFO
+
+/**
+ * 	nas timer definition 							
+ *
+ * 	[init/main.c]
+ * 	[driver/char/health.c] 
+ * 	add timer to change NAS buzzer tone
+ */
+#define ACCUSYS_NAS_TIMER
+
+/**
+ * 	ethernet related definition
+ *
+ * 	[driver/net/bonding.c]
+ * 	add a bonding xmit scheme to improve load balance 
+ */
+#define ACS_BOND_XMIT
+
+#if 0 /* Richard */
+/**
+ *	ACCUSYS_82559_CSUM	-	enable 82559 HW CSUM
+ *
+ * 	[driver/net/eepro100.c]
+ * 	[net/ipv4/ip_input.c]
+ * 	defined to take advantage of hw csum
+ * 	for TCP check sum, include the whole TCP packet and conceptual header 
+ */
+#define ACCUSYS_82559_CSUM
+
+/** 
+ *	ACCUSYS_82559_ATTACH_CHECK	-	check LAN physical attachment
+ *
+ * 	[driver/net/eepro100.c]
+ * 	attach check for 82559
+ * 	do mdio_read in speedo_found1 to enable ap ethernet attach check 
+ * 	also we record the eth_index here to identify eth0 & eth1 here 
+ */
+#define ACCUSYS_82559_ATTACH_CHECK
+
+/** 
+ *	ACCUSYS_82559_PERFORMANCE	-	performance reporting
+ *
+ * 	[driver/net/eepro100.c] 
+ */
+#define ACCUSYS_82559_PERFORMANCE
+
+/* 
+ * 	ACCUSYS_82559_NO_EEPROM	-	remove the use of Ethernet EEPROM
+ *
+ * 	[driver/net/eepro100.c] 
+ * 	read ethernet mac address from nvram 
+ */ 
+#define ACCUSYS_82559_NO_EEPROM
+
+#ifdef ACCUSYS_82559_NO_EEPROM
+	/* pci device function */
+	#define ACCUSYS_ETH0_DEVFN	0x18
+	#define ACCUSYS_ETH1_DEVFN	0x20
+	/* MAC address */
+	#define ACCUSYS_ETH0_MACADDR	{0x00, 0x50, 0x41, 0x55, 0x4c, 0x01}
+	#define ACCUSYS_ETH1_MACADDR	{0x00, 0x50, 0x41, 0x55, 0x4c, 0x02}
+	/* compatibility fields (Intel, Multicast workaround may be omitted) */
+	#define ACCUSYS_82559_EEPROM3	0x0203
+	/* controller type and connectors */
+	#define ACCUSYS_82559_EEPROM5	0x0201
+	/* PHY device record: Primary & Secondary (i82559 PHY & No secondary) */
+	#define ACCUSYS_82559_EEPROM6	0x4701
+	#define ACCUSYS_82559_EEPROM7	0x0000
+	/* Board assembler number (printed wiring assembly) */
+	#define ACCUSYS_82559_EEPROM8	0x7213
+	#define ACCUSYS_82559_EEPROM9	0x8310
+
+	#define ACCUSYS_NVRAM_ETH0_INDEX	0x1BF0
+	#define ACCUSYS_NVRAM_ETH1_INDEX	0x1BF6
+	#define ACCUSYS_NVRAM_BONDING_INDEX	0x01FE
+
+	#define ACCUSYS_MACADDR_FROM_NVRAM	
+#endif	/* ACCUSYS_82559_NO_EEPROM */
+#endif /* 0 Richard */
+
+/* S Richard */
+
+/* for driver/char/nvram.c */
+#define ACCUSYS_NVRAM_ETH0_INDEX	0x1BF0
+#define ACCUSYS_NVRAM_ETH1_INDEX	0x1BF6
+#define ACCUSYS_NVRAM_BONDING_INDEX	0x01FE
+#define ACCUSYS_NVRAM_SRVNAME_INDEX     0x0400
+#define ACCUSYS_NVRAM_SRVNAME_LEN       17
+#define ACCUSYS_NVRAM_WORKGROUP_INDEX   0x0411
+#define ACCUSYS_NVRAM_WORKGROUP_LEN     16
+#define ACCUSYS_NVRAM_IFSPEED_INDEX     0x010B
+
+/* for driver/net/e100 */
+#define ACCUSYS_82559
+#define ACCUSYS_82559_PERFORMANCE
+
+/* for driver/net/e1000 */
+#define ACCUSYS_82540EM
+#define ACCUSYS_82540EM_PERFORMANCE
+
+/* E Richard */
+
+/**
+ * 	kernel debug functions
+ */
+#ifdef __ASSEMBLY__
+.macro  COM1_OUT  val
+	push	%ax
+	push	%dx
+33:
+        mov	$(0x3F8+0x5),%dx
+        in	%dx,%al
+        and	$0x20,%al
+        jz	33b
+
+	mov	$\val,%al
+	mov	$0x3F8,%dx
+	outb	%al,%dx
+	pop	%dx
+	pop	%ax
+.endm
+#else
+
+#define p_OUT1(s,x) \
+extern inline void p_out##s(unsigned x value, unsigned short port) {
+                                                                                
+#define p_OUT2(s,s1,s2) \
+__asm__ __volatile__ ("out" #s " %" s1 "0,%" s2 "1"
+                                                                                
+#define p_OUT(s,s1,x) \
+p_OUT1(s,x) p_OUT2(s,s1,"w") : : "a" (value), "Nd" (port)); } \
+p_OUT1(s##_p,x) p_OUT2(s,s1,"w") : : "a" (value), "Nd" (port));} \
+ 
+
+p_OUT(b,"b",char)
+
+#define p_IN1(s) \
+extern inline RETURN_TYPE p_in##s(unsigned short port) { RETURN_TYPE _v;
+                                                                                
+#define p_IN2(s,s1,s2) \
+__asm__ __volatile__ ("in" #s " %" s2 "1,%" s1 "0"
+                                                                                
+#define p_IN(s,s1,i...) \
+p_IN1(s) p_IN2(s,s1,"w") : "=a" (_v) : "Nd" (port) ,##i ); return _v; } \
+p_IN1(s##_p) p_IN2(s,s1,"w") : "=a" (_v) : "Nd" (port) ,##i); return _v; } \
+
+#define RETURN_TYPE unsigned char
+p_IN(b,"")
+#undef RETURN_TYPE
+
+extern inline void com1_putc(unsigned char c)
+{
+        unsigned char lsr;
+                                                                                
+        while(((lsr=p_inb(0x3f8+0x05)) & 0x20) == 0);
+        p_outb(c,0x3f8);
+}
+
+extern inline void com1_puts(const char *s)
+{
+        char c;
+
+        while ( ( c = *s++ ) != '\0' ) {
+                com1_putc(c);
+                if ( c == '\n' ) com1_putc('\r');
+        }
+}
+
+extern inline void com1_puthex(unsigned long val)
+{
+        unsigned char buf[10];
+        int i;
+                                                                                
+        for (i = 7;  i >= 0;  i--)
+        {
+                buf[i] = "0123456789ABCDEF"[val & 0x0F];
+                val >>= 4;
+        }
+        buf[8] = '\0';
+        com1_puts(buf);
+}
+#endif /* __ASSEMBLY__ */
+
+
+/**
+ *
+ *  	ACS3100.h
+ *
+ *  	Accusys definition file
+ */
+
+/**
+ *
+ * 	lcd_string definitions
+ *
+ * 	[driver/ide] 
+ * 	used for lcd_string(), LCD_L1:never expired, LCD_L2: last for 10secs 
+ */
+#define LCD_L0	0
+#define LCD_L1	1
+#define LCD_L2	2
+#define LCD_BUTTON_WFC	0x80000000 /* LCD_BUTTON Wait for clear */
+#define LCD_BUTTON_MASK	0x7FFFFFFF /* LCD_BUTTON MASK */
+
+
+/**
+ *
+ * 	buzzer source definitions
+ *
+ * 	[driver/char/fan.c]
+ * 	used for buzzer control, we use a global variable buzz_on to 
+ * 	store the current buzzer state 
+ */
+#define BUZZ_IDE_1	(unsigned long long)(((unsigned long long)1) << 0)
+#define BUZZ_IDE_2	(unsigned long long)(((unsigned long long)1) << 1)
+#define BUZZ_IDE_3	(unsigned long long)(((unsigned long long)1) << 2)
+#define BUZZ_IDE_4	(unsigned long long)(((unsigned long long)1) << 3)
+#define BUZZ_IDE_5	(unsigned long long)(((unsigned long long)1) << 4)
+#define BUZZ_IDE_6	(unsigned long long)(((unsigned long long)1) << 5)
+#define BUZZ_IDE_7	(unsigned long long)(((unsigned long long)1) << 6)
+#define BUZZ_IDE_8	(unsigned long long)(((unsigned long long)1) << 7)
+#define BUZZ_IDE_9	(unsigned long long)(((unsigned long long)1) << 8)
+#define BUZZ_IDE_10	(unsigned long long)(((unsigned long long)1) << 9)
+#define BUZZ_IDE_11	(unsigned long long)(((unsigned long long)1) << 10)
+#define BUZZ_IDE_12	(unsigned long long)(((unsigned long long)1) << 11)
+#define BUZZ_IDE_13	(unsigned long long)(((unsigned long long)1) << 12)
+#define BUZZ_IDE_14	(unsigned long long)(((unsigned long long)1) << 13)
+#define BUZZ_IDE_15	(unsigned long long)(((unsigned long long)1) << 14)
+#define BUZZ_IDE_16	(unsigned long long)(((unsigned long long)1) << 15)
+#define BUZZ_CPU_FAN	(unsigned long long)(((unsigned long long)1) << 16)
+#define BUZZ_SYSTEM_FAN1	(unsigned long long)(((unsigned long long)1) << 17)
+#define BUZZ_SYSTEM_FAN2	(unsigned long long)(((unsigned long long)1) << 18)
+#define BUZZ_SYSTEM_FAN3	(unsigned long long)(((unsigned long long)1) << 19)
+#define BUZZ_SYSTEM_FAN4	(unsigned long long)(((unsigned long long)1) << 20)
+#define BUZZ_CPU_OVERHEAT	(unsigned long long)(((unsigned long long)1) << 21)
+#define BUZZ_SYSTEM_OVERHEAT	(unsigned long long)(((unsigned long long)1) << 22)
+#define BUZZ_POWER_1	(unsigned long long)(((unsigned long long)1) << 23)
+#define BUZZ_POWER_2	(unsigned long long)(((unsigned long long)1) << 24)
+#define BUZZ_POWER_3	(unsigned long long)(((unsigned long long)1) << 25)
+#define BUZZ_VOLT_3_3	(unsigned long long)(((unsigned long long)1) << 26)
+#define BUZZ_VOLT_5	(unsigned long long)(((unsigned long long)1) << 27)
+#define BUZZ_VOLT_12	(unsigned long long)(((unsigned long long)1) << 28)
+#define BUZZ_MD_0	(unsigned long long)(((unsigned long long)1) << 29)
+#define BUZZ_VOL_1	(unsigned long long)(((unsigned long long)1) << 30)
+#define BUZZ_VOL_2	(unsigned long long)(((unsigned long long)1) << 31)
+#define BUZZ_VOL_3	(unsigned long long)(((unsigned long long)1) << 32)
+#define BUZZ_VOL_4	(unsigned long long)(((unsigned long long)1) << 33)
+#define BUZZ_VOL_5	(unsigned long long)(((unsigned long long)1) << 34)
+#define BUZZ_VOL_6	(unsigned long long)(((unsigned long long)1) << 35)
+#define BUZZ_VOL_7	(unsigned long long)(((unsigned long long)1) << 36)
+#define BUZZ_VOL_8	(unsigned long long)(((unsigned long long)1) << 37)
+#define BUZZ_VOL_9	(unsigned long long)(((unsigned long long)1) << 38)
+#define BUZZ_VOL_10	(unsigned long long)(((unsigned long long)1) << 39)
+#define BUZZ_VOL_11	(unsigned long long)(((unsigned long long)1) << 40)
+#define BUZZ_VOL_12	(unsigned long long)(((unsigned long long)1) << 41)
+#define BUZZ_VOL_13	(unsigned long long)(((unsigned long long)1) << 42)
+#define BUZZ_VOL_14	(unsigned long long)(((unsigned long long)1) << 43)
+#define BUZZ_VOL_15	(unsigned long long)(((unsigned long long)1) << 44)
+#define BUZZ_VOL_16	(unsigned long long)(((unsigned long long)1) << 45)
+#define BUZZ_IDE_OVERHEAT_1	(unsigned long long)(((unsigned long long)1) << 46)
+#define BUZZ_IDE_OVERHEAT_2	(unsigned long long)(((unsigned long long)1) << 47)
+#define BUZZ_IDE_OVERHEAT_3	(unsigned long long)(((unsigned long long)1) << 48)
+#define BUZZ_IDE_OVERHEAT_4	(unsigned long long)(((unsigned long long)1) << 49)
+#define BUZZ_IDE_OVERHEAT_5	(unsigned long long)(((unsigned long long)1) << 50)
+#define BUZZ_IDE_OVERHEAT_6	(unsigned long long)(((unsigned long long)1) << 51)
+#define BUZZ_IDE_OVERHEAT_7	(unsigned long long)(((unsigned long long)1) << 52)
+#define BUZZ_IDE_OVERHEAT_8	(unsigned long long)(((unsigned long long)1) << 53)
+#define BUZZ_CHASSIS	(unsigned long long)(((unsigned long long)1) << 54)
+
+#define BUZZ_VOL(x)	(unsigned long long)(((unsigned long long)1) << ((x)+29))
+#define BUZZ_IDE_OVERHEAT(x)	(unsigned long long)(((unsigned long long)1) << ((x)+45))
+
+#ifndef __ASSEMBLY__
+/** 
+ * 	pci configuration type 1 r/w 
+ */
+#include <asm/types.h>
+extern int pci_conf1_read (int seg, int bus, int dev,/* int fn,*/ int reg, int len, u32 *value);
+extern int pci_conf1_write (int seg, int bus, int dev,/* int fn,*/ int reg, int len, u32 value);
+/* write kernel prototype */
+extern void write_kernellog(const char * fmt, ...);
+
+/* buzzer related export functions and variables */
+extern unsigned long long buzz_on;
+extern unsigned long long buzz_warn;
+extern unsigned long long buzz_err;
+extern unsigned char buzzer_flag;
+extern unsigned char force_buzzer_on;
+extern unsigned long lcd_string_type;
+extern unsigned long long buzz_mask;
+extern unsigned char hw_buzz_state;
+
+unsigned char buzzer_state(unsigned long long buzz_source);
+void buzzer_on(unsigned long long buzz_source, int buzz_level);
+void buzzer_off(unsigned long long buzz_source, int buzz_level);
+extern void lcd_string(unsigned long type, const char* fmt, ...);
+
+/*
+ *	Buzzer Level
+ */
+#define ACS_BUZZ_ALL	0x00
+#define ACS_BUZZ_ERR 	0x01
+#define ACS_BUZZ_WARN 	0x02
+
+void write_buzzer_mask_to_nvram(unsigned long long buzzer_mask);
+#ifndef __ASSEMBLY__
+void nvram_read_bulk(char *buf, int len, loff_t nvram_index);
+#else /* __ASSEMBLY__ */
+#define nvram_read_bulk(buf, len, nvram_index)
+#endif /* __ASSEMBLY__ */
+
+#define accusys_read_ethernet_mac(eth, addr)	\
+	nvram_read_bulk((addr), 6, \
+			(((eth)==0)?ACCUSYS_NVRAM_ETH0_INDEX:ACCUSYS_NVRAM_ETH1_INDEX))
+
+#define accusys_read_bonding_mode(mode)	\
+	nvram_read_bulk((mode), 1, ACCUSYS_NVRAM_BONDING_INDEX)
+
+/* S Richard */
+#define accusys_read_srvname(srv_name)	\
+	nvram_read_bulk((srv_name), ACCUSYS_NVRAM_SRVNAME_LEN, \
+			ACCUSYS_NVRAM_SRVNAME_INDEX)
+
+#define accusys_read_workgroup(workgroup)	\
+	nvram_read_bulk((workgroup), ACCUSYS_NVRAM_WORKGROUP_LEN, \
+			ACCUSYS_NVRAM_WORKGROUP_INDEX)
+
+#define accusys_read_if_speed(speed)	\
+	nvram_read_bulk((speed), 1, ACCUSYS_NVRAM_IFSPEED_INDEX)
+
+/* E Richard */
+
+#define	ACCUSYS_NVRAM_BUZZER	264	
+/* for buzzer */
+#define accusys_read_buzzer_flag(buzzer_flag)	\
+	nvram_read_bulk((buzzer_flag), 1, ACCUSYS_NVRAM_BUZZER)
+
+/*
+ *	buzzer mask 
+ *
+ *	bytes: [270-277]
+ */
+#define ACS_NVRAM_BUZZER_MASK	270
+#define accusys_read_buzzer_mask(buzzer_mask)	\
+	nvram_read_bulk((buzzer_mask), 8, ACS_NVRAM_BUZZER_MASK)
+
+#define	ACCUSYS_NVRAM_DISK_SIZE	269	
+#define accusys_get_nvram_disk_size(part_size)	\
+	nvram_read_bulk((part_size), 1, ACCUSYS_NVRAM_DISK_SIZE)
+
+#endif /* __ASSEMBLY__ */
+
+#endif /* __ACS_NAS_H__ */
+//#define SUNNY_TEST_INIT 

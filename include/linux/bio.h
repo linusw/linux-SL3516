@@ -23,6 +23,7 @@
 #include <linux/highmem.h>
 #include <linux/mempool.h>
 #include <linux/ioprio.h>
+#include <linux/acs_nas.h>
 
 /* Platforms may set this to teach the BIO layer about IOMMU hardware. */
 #include <asm/io.h>
@@ -142,12 +143,16 @@ struct bio {
  * bit 2 -- barrier
  * bit 3 -- fail fast, don't want low level driver retries
  * bit 4 -- synchronous I/O hint: the block layer will unplug immediately
+ * bit 5 -- read or write super block of MD
  */
 #define BIO_RW		0
 #define BIO_RW_AHEAD	1
 #define BIO_RW_BARRIER	2
 #define BIO_RW_FAILFAST	3
 #define BIO_RW_SYNC	4
+#ifdef  ACS_MD_SPECIAL
+#define BIO_RW_MDSB  	5
+#endif
 
 /*
  * upper 16 bits of bi_rw define the io priority of this bio
@@ -178,6 +183,9 @@ struct bio {
 #define bio_sync(bio)		((bio)->bi_rw & (1 << BIO_RW_SYNC))
 #define bio_failfast(bio)	((bio)->bi_rw & (1 << BIO_RW_FAILFAST))
 #define bio_rw_ahead(bio)	((bio)->bi_rw & (1 << BIO_RW_AHEAD))
+#ifdef  ACS_MD_SPECIAL
+#define bio_rw_mdsb(bio)	((bio) && ((bio)->bi_rw & (1 << BIO_RW_MDSB)))
+#endif
 
 /*
  * will die

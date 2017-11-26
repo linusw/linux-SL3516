@@ -19,6 +19,7 @@
 #include <linux/kmod.h>
 #include <linux/ctype.h>
 #include <linux/devfs_fs_kernel.h>
+#include <linux/acs_nas.h>
 
 #include "check.h"
 #include "devfs.h"
@@ -176,6 +177,7 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
 		res = check_part[i++](state, bdev);
 	}
 	if (res > 0)
+		printk(" well partition table\n");
 		return state;
 	if (!res)
 		printk(" unknown partition table\n");
@@ -352,6 +354,9 @@ void register_disk(struct gendisk *disk)
 	char *s;
 	int err;
 
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: start\n", __func__);
+#endif
 	strlcpy(disk->kobj.name,disk->disk_name,KOBJ_NAME_LEN);
 	/* ewww... some of these buggers have / in name... */
 	s = strchr(disk->kobj.name, '/');
@@ -359,11 +364,23 @@ void register_disk(struct gendisk *disk)
 		*s = '!';
 	if ((err = kobject_add(&disk->kobj)))
 		return;
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step1\n", __func__);
+#endif
 	disk_sysfs_symlinks(disk);
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step2\n", __func__);
+#endif
 	kobject_hotplug(&disk->kobj, KOBJ_ADD);
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step3\n", __func__);
+#endif
 
 	/* No minors to use for partitions */
 	if (disk->minors == 1) {
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step4\n", __func__);
+#endif
 		if (disk->devfs_name[0] != '\0')
 			devfs_add_disk(disk);
 		return;
@@ -372,18 +389,37 @@ void register_disk(struct gendisk *disk)
 	/* always add handle for the whole disk */
 	devfs_add_partitioned(disk);
 
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step5\n", __func__);
+#endif
 	/* No such device (e.g., media were just removed) */
 	if (!get_capacity(disk))
 		return;
 
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step6\n", __func__);
+#endif
 	bdev = bdget_disk(disk, 0);
-	if (!bdev)
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step7\n", __func__);
+#endif
+	if (!bdev) {
+#ifdef	ACS_DEBUG
+		//acs_printk("%s: step7.5\n", __func__);
+#endif
 		return;
+	}
 
 	bdev->bd_invalidated = 1;
 	if (blkdev_get(bdev, FMODE_READ, 0) < 0)
 		return;
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step8\n", __func__);
+#endif
 	blkdev_put(bdev);
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: end\n", __func__);
+#endif
 }
 
 int rescan_partitions(struct gendisk *disk, struct block_device *bdev)
@@ -446,25 +482,47 @@ void del_gendisk(struct gendisk *disk)
 {
 	int p;
 
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: start\n", __func__);
+#endif
 	/* invalidate stuff */
 	for (p = disk->minors - 1; p > 0; p--) {
 		invalidate_partition(disk, p);
 		delete_partition(disk, p);
 	}
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step 1\n", __func__);
+#endif
 	invalidate_partition(disk, 0);
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step 2\n", __func__);
+#endif
 	disk->capacity = 0;
 	disk->flags &= ~GENHD_FL_UP;
 	unlink_gendisk(disk);
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step 3\n", __func__);
+#endif
 	disk_stat_set_all(disk, 0);
 	disk->stamp = 0;
 
 	devfs_remove_disk(disk);
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step 4\n", __func__);
+#endif
 
 	if (disk->driverfs_dev) {
 		sysfs_remove_link(&disk->kobj, "device");
 		sysfs_remove_link(&disk->driverfs_dev->kobj, "block");
 		put_device(disk->driverfs_dev);
 	}
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step 5\n", __func__);
+#endif
 	kobject_hotplug(&disk->kobj, KOBJ_REMOVE);
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step 6\n", __func__);
+#endif
 	kobject_del(&disk->kobj);
 }
+

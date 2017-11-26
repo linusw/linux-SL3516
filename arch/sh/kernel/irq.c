@@ -1,4 +1,4 @@
-/* $Id: irq.c,v 1.20 2004/01/13 05:52:11 kkojima Exp $
+/* $Id: irq.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  *
  * linux/arch/sh/kernel/irq.c
  *

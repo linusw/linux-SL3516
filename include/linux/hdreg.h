@@ -3,6 +3,7 @@
 
 #ifdef __KERNEL__
 #include <linux/ata.h>
+#include <linux/acs_nas.h>
 
 /*
  * This file contains some defines for the AT-hd-controller.
@@ -422,6 +423,13 @@ struct hd_geometry {
 #define HDIO_SET_BUSSTATE	0x032d	/* set the bus state of the hwif */
 #define HDIO_SET_QDMA		0x032e	/* change use-qdma flag */
 #define HDIO_SET_ADDRESS	0x032f	/* change lba addressing modes */
+//Neagus added
+#define HDIO_GET_FIRMWARE       0x0331  /* get firmware version of HD */
+
+#define GET_NAS_HD_INFO		0x0340
+#ifdef	BAD_BLK_REMAP
+#define HDIO_BBR_INIT		0x0341	/* bad block remap initial */
+#endif
 
 /* bus states */
 enum {

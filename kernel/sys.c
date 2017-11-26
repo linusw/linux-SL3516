@@ -33,6 +33,7 @@
 #include <linux/compat.h>
 #include <linux/syscalls.h>
 #include <linux/kprobes.h>
+#include <linux/acs_char.h>
 
 #include <asm/uaccess.h>
 #include <asm/io.h>
@@ -401,6 +402,7 @@ void kernel_restart(char *cmd)
 		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
 	}
 	printk(".\n");
+	force_buzzer_off();//Sunny 20070811
 	machine_restart(cmd);
 }
 EXPORT_SYMBOL_GPL(kernel_restart);

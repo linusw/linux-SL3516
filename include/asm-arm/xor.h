@@ -139,3 +139,18 @@ static struct xor_block_template xor_block_arm4regs = {
 		xor_speed(&xor_block_8regs);	\
 		xor_speed(&xor_block_32regs);	\
 	} while (0)
+
+#ifdef CONFIG_GEMINI_XOR_ACCE
+#include <asm/arch/xor.h>
+static struct xor_block_template xor_block_gemini = {
+	.name	= "gemini xor acceleration",
+	.do_2	= xor_gemini_2,
+	.do_3	= xor_gemini_3,
+	.do_4	= xor_gemini_4,
+	.do_5	= xor_gemini_5,};
+#undef XOR_TRY_TEMPLATES
+#define XOR_TRY_TEMPLATES			\
+	do {					\
+	xor_speed(&xor_block_gemini); \
+	} while (0)
+#endif

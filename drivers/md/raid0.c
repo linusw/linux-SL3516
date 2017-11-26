@@ -20,10 +20,40 @@
 
 #include <linux/module.h>
 #include <linux/raid/raid0.h>
+#include <linux/acs_nas.h>
+#include <linux/acs_char.h>
+#include <linux/hotswap.h>
 
+unsigned int raid0_count1=0;
+unsigned int raid0_count2=0;
+extern void system_led_act(unsigned char, int);
 #define MAJOR_NR MD_MAJOR
 #define MD_DRIVER
 #define MD_PERSONALITY
+
+/* 
+ * raid0_error: handle disc error, 2005/07/25, xia.
+ */
+static void raid0_error(mddev_t *mddev, mdk_rdev_t *rdev)
+{
+	char b[BDEVNAME_SIZE];
+
+	mddev->state |= (1 << MD_SB_ERRORS);
+#ifdef THECUS_N299
+	write_kernellog("%d RAID status is DAMAGED now.", ERROR_LOG);
+#else
+	write_kernellog("%d Volume%d: One disk in RAID0 were failed.", ERROR_LOG, md_to_volume(mddev));
+	lcd_string(LCD_L2, "V%d RAID fails!", md_to_volume(mddev));
+#endif
+	buzzer_on(BUZZ_VOL(md_to_volume(mddev)), ACS_BUZZ_ERR);	
+	
+	rdev->in_sync = 0;
+	rdev->faulty = 1;
+	mddev->sb_dirty = 1;
+	printk(KERN_ERR "raid0: Disk failure on %s, disabling device. \n",
+		bdevname(rdev->bdev,b));
+}
+
 
 static void raid0_unplug(request_queue_t *q)
 {
@@ -33,7 +63,12 @@ static void raid0_unplug(request_queue_t *q)
 	int i;
 
 	for (i=0; i<mddev->raid_disks; i++) {
-		request_queue_t *r_queue = bdev_get_queue(devlist[i]->bdev);
+		request_queue_t *r_queue;
+
+		/* BUG fix, 2005/08/25 */
+		if (!devlist[i] || devlist[i]->faulty)
+			continue;
+		r_queue = bdev_get_queue(devlist[i]->bdev);
 
 		if (r_queue->unplug_fn)
 			r_queue->unplug_fn(r_queue);
@@ -167,6 +202,7 @@ static int create_strip_zones (mddev_t *mddev)
 	if (cnt != mddev->raid_disks) {
 		printk("raid0: too few disks (%d of %d) - aborting!\n",
 			cnt, mddev->raid_disks);
+	
 		goto abort;
 	}
 	zone->nb_dev = cnt;
@@ -314,16 +350,16 @@ static int raid0_run (mddev_t *mddev)
 		sector_t space = conf->hash_spacing;
 		int round;
 		conf->preshift = 0;
-		if (sizeof(sector_t) > sizeof(u32)) {
+		if (sizeof(sector_t) > sizeof(unsigned long)) {
 			/*shift down space and s so that sector_div will work */
-			while (space > (sector_t) (~(u32)0)) {
+			while (space > (sector_t) (~(unsigned long)0)) {
 				s >>= 1;
 				space >>= 1;
 				s += 1; /* force round-up */
 				conf->preshift++;
 			}
 		}
-		round = sector_div(s, (u32)space) ? 1 : 0;
+		round = sector_div(s, (unsigned long)space) ? 1 : 0;
 		nb_zone = s + round;
 	}
 	printk("raid0 : nb_zone is %d.\n", nb_zone);
@@ -368,11 +404,14 @@ static int raid0_run (mddev_t *mddev)
 
 
 	blk_queue_merge_bvec(mddev->queue, raid0_mergeable_bvec);
+	printk("===== raid0_run func=%x\n", mddev->queue->merge_bvec_fn);
 	return 0;
 
 out_free_conf:
-	kfree(conf->strip_zone);
-	kfree(conf->devlist);
+	if (conf->strip_zone)
+		kfree(conf->strip_zone);
+	if (conf->devlist)
+		kfree (conf->devlist);
 	kfree(conf);
 	mddev->private = NULL;
 out:
@@ -384,13 +423,13 @@ static int raid0_stop (mddev_t *mddev)
 	raid0_conf_t *conf = mddev_to_conf(mddev);
 
 	blk_sync_queue(mddev->queue); /* the unplug fn references 'conf'*/
-	kfree(conf->hash_table);
+	kfree (conf->hash_table);
 	conf->hash_table = NULL;
-	kfree(conf->strip_zone);
+	kfree (conf->strip_zone);
 	conf->strip_zone = NULL;
-	kfree(conf);
+	kfree (conf);
 	mddev->private = NULL;
-
+	mddev->queue->merge_bvec_fn = NULL; //jenny 2007.03.14
 	return 0;
 }
 
@@ -403,21 +442,33 @@ static int raid0_make_request (request_queue_t *q, struct bio *bio)
 	mdk_rdev_t *tmp_dev;
 	unsigned long chunk;
 	sector_t block, rsect;
-	const int rw = bio_data_dir(bio);
+	unsigned char next_disknum;
 
-	if (unlikely(bio_barrier(bio))) {
-		bio_endio(bio, bio->bi_size, -EOPNOTSUPP);
-		return 0;
+	/* 2005/07/25 */
+	if (mddev->state & (1 << MD_SB_ERRORS))
+		goto outerr;
+//allen 
+#if 0
+	if (bio_data_dir(bio)==WRITE) {
+		disk_stat_inc(mddev->gendisk, writes);
+		disk_stat_add(mddev->gendisk, write_sectors, bio_sectors(bio));
+	} else {
+		disk_stat_inc(mddev->gendisk, reads);
+		disk_stat_add(mddev->gendisk, read_sectors, bio_sectors(bio));
 	}
-
-	disk_stat_inc(mddev->gendisk, ios[rw]);
-	disk_stat_add(mddev->gendisk, sectors[rw], bio_sectors(bio));
+#endif
+	if (bio_data_dir(bio)==WRITE) {
+                disk_stat_inc(mddev->gendisk, ios[0]);
+                disk_stat_add(mddev->gendisk, sectors[0], bio_sectors(bio));
+        } else {
+                disk_stat_inc(mddev->gendisk, ios[1]);
+                disk_stat_add(mddev->gendisk, sectors[1], bio_sectors(bio));
+        }
 
 	chunk_size = mddev->chunk_size >> 10;
 	chunk_sects = mddev->chunk_size >> 9;
 	chunksize_bits = ffz(~chunk_size);
 	block = bio->bi_sector >> 1;
-	
 
 	if (unlikely(chunk_sects < (bio->bi_sector & (chunk_sects - 1)) + (bio->bi_size >> 9))) {
 		struct bio_pair *bp;
@@ -444,7 +495,7 @@ static int raid0_make_request (request_queue_t *q, struct bio *bio)
 		volatile
 #endif
 		sector_t x = block >> conf->preshift;
-		sector_div(x, (u32)conf->hash_spacing);
+		sector_div(x, (unsigned long)conf->hash_spacing);
 		zone = conf->hash_table[x];
 	}
  
@@ -470,6 +521,64 @@ static int raid0_make_request (request_queue_t *q, struct bio *bio)
 	bio->bi_bdev = tmp_dev->bdev;
 	bio->bi_sector = rsect + tmp_dev->data_offset;
 
+	/* 2005/07/25 begin */
+	if (mddev->state & (1 << MD_SB_ERRORS)){
+		goto outerr;
+	}
+	if (disk_fail(get_disknum_by_dev(bio->bi_bdev->bd_dev))) {
+		mddev->state |= (1 << MD_SB_ERRORS);
+#if 0
+		if ((bh->b_page) && (bh->b_page->mapping) && (bh->b_page->mapping->host) && (bh->b_page->mapping->host->i_sb)) {
+			bh->b_page->mapping->host->i_sb->u.ext2_sb.s_mount_state |= EXT2_ERROR_FS;
+		}
+#endif
+/* Neagus 2007.08.11 */
+#ifdef THECUS_N299
+		if(((get_disknum_by_dev(bio->bi_bdev->bd_dev) == 2)&&(raid0_count1 == 0))
+			||((get_disknum_by_dev(bio->bi_bdev->bd_dev) == 3)&&(raid0_count2 == 0))){
+			raid0_error(mddev, tmp_dev);
+			write_kernellog("%d Disk %d has been removed.",
+			ERROR_LOG, get_disknum_by_dev(bio->bi_bdev->bd_dev)-1);
+			system_led_act(6, 1);
+		}
+		if(get_disknum_by_dev(bio->bi_bdev->bd_dev) == 2)
+			raid0_count1++;
+		else
+			raid0_count2++;
+#else
+		write_kernellog("%d Volume%d: RAID0 has failed disks[Disk%d].",
+		ERROR_LOG, md_to_volume(mddev), get_disknum_by_dev(bio->bi_bdev->bd_dev));
+		lcd_string(LCD_L2, "V%d RAID fails!", md_to_volume(mddev));
+#endif
+		buzzer_on(BUZZ_VOL(md_to_volume(mddev)), ACS_BUZZ_ERR);
+		goto outerr;
+	}
+
+	if (get_disknum_by_dev(bio->bi_bdev->bd_dev) == 2)
+		next_disknum = 3;
+	else
+		next_disknum = 2;
+
+	if (disk_fail(next_disknum)) {
+		mddev->state |= (1 << MD_SB_ERRORS);
+		if(((next_disknum == 2)&&(raid0_count1 == 0)) ||((next_disknum == 3)&&(raid0_count2 == 0))){
+			raid0_error(mddev, tmp_dev);
+               		write_kernellog("%d Disk %d has been removed.",
+               			ERROR_LOG, (next_disknum -1));
+                	buzzer_on(BUZZ_VOL(md_to_volume(mddev)), ACS_BUZZ_ERR);
+		
+			system_led_act(6, 1);
+		}
+
+		if(next_disknum == 2)
+			raid0_count1++;
+		else
+			raid0_count2++;
+
+		goto outerr;
+	}
+	/* end */
+
 	/*
 	 * Let the main block layer submit the IO and resolve recursion:
 	 */
@@ -479,7 +588,7 @@ bad_map:
 	printk("raid0_make_request bug: can't convert block across chunks"
 		" or bigger than %dk %llu %d\n", chunk_size, 
 		(unsigned long long)bio->bi_sector, bio->bi_size >> 10);
-
+outerr:
 	bio_io_error(bio, bio->bi_size);
 	return 0;
 }
@@ -512,6 +621,38 @@ static void raid0_status (struct seq_file *seq, mddev_t *mddev)
 	return;
 }
 
+static int raid0_remove_disk(mddev_t *mddev, int number)
+{
+	raid0_conf_t *conf = mddev->private;
+	mdk_rdev_t **devlist = conf->strip_zone[0].dev;
+	mdk_rdev_t *rdev = devlist[number];
+	int i;
+
+	char b[BDEVNAME_SIZE];
+	printk("raid0_remove_disk(): %s: %s,num=%d,in_sync=%d\n",
+		mdname(mddev),bdevname(rdev->bdev,b), number, rdev->in_sync);
+
+	if (rdev->in_sync) 
+		return -EBUSY;
+	/* BUG fix, 2005/08/25 */
+	for (i = 0; i < conf->nr_strip_zones*mddev->raid_disks; i++) {
+		if (devlist[i] == rdev)
+			devlist[i] = NULL;
+	}
+	return 0;
+}
+
+
+#ifdef	BAD_SECTOR_REMAP
+/*
+ * raid0_perform_remap :: we do not perform remap on RAID 0
+ */
+int raid0_perform_remap(mddev_t *mddev, struct bio *bio, int in_hash)
+{
+	return -1;
+}
+#endif	/* BAD_SECTOR_REMAP */
+
 static mdk_personality_t raid0_personality=
 {
 	.name		= "raid0",
@@ -520,6 +661,14 @@ static mdk_personality_t raid0_personality=
 	.run		= raid0_run,
 	.stop		= raid0_stop,
 	.status		= raid0_status,
+
+	.error_handler		= raid0_error,
+	.hot_remove_disk 	= raid0_remove_disk,
+
+	#ifdef	BAD_SECTOR_REMAP
+	/* Pers for performing remap, 2005/07/11 */
+	.perform_remap	=raid0_perform_remap,
+	#endif	/* BAD_SECTOR_REMAP */
 };
 
 static int __init raid0_init (void)

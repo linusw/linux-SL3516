@@ -22,6 +22,7 @@
 #include <asm/io.h>
 #include <asm/tlbflush.h>
 
+#if	0
 #define CONSISTENT_BASE	(0xffc00000)
 #define CONSISTENT_END	(0xffe00000)
 #define CONSISTENT_OFFSET(x)	(((unsigned long)(x) - CONSISTENT_BASE) >> PAGE_SHIFT)
@@ -31,6 +32,16 @@
  */
 static pte_t *consistent_pte;
 static DEFINE_SPINLOCK(consistent_lock);
+#else
+#define CONSISTENT_NUM	2	/* CONSISTENT_NUM <= 7 */
+#define CONSISTENT_BASE	(0xff000000)
+#define CONSISTENT_END 	(CONSISTENT_BASE + (0x200000 * CONSISTENT_NUM - 1))
+#define CONSISTENT_INDEX(x)	(((unsigned long)(x) - CONSISTENT_BASE) / 0x200000)
+#define CONSISTENT_OFFSET(x)	((((unsigned long)(x) - CONSISTENT_BASE) % 0x200000) >> PAGE_SHIFT)
+
+static pte_t *consistent_pte[CONSISTENT_NUM];
+static DEFINE_SPINLOCK(consistent_lock);
+#endif
 
 /*
  * VM region handling support.
@@ -69,11 +80,15 @@ struct vm_region {
 	int			vm_active;
 };
 
+#if	0
 static struct vm_region consistent_head = {
 	.vm_list	= LIST_HEAD_INIT(consistent_head.vm_list),
 	.vm_start	= CONSISTENT_BASE,
 	.vm_end		= CONSISTENT_END,
 };
+#else
+static struct vm_region consistent_head[CONSISTENT_NUM];
+#endif
 
 static struct vm_region *
 vm_region_alloc(struct vm_region *head, size_t size, gfp_t gfp)
@@ -82,20 +97,29 @@ vm_region_alloc(struct vm_region *head, size_t size, gfp_t gfp)
 	unsigned long flags;
 	struct vm_region *c, *new;
 
+	//printk("%s: start=%x end=%x\n", __func__, head->vm_start, head->vm_end);
 	new = kmalloc(sizeof(struct vm_region), gfp);
-	if (!new)
+	if (!new) {
+		//printk("%s: kmalloc fail\n", __func__);
 		goto out;
+	}
 
 	spin_lock_irqsave(&consistent_lock, flags);
 
 	list_for_each_entry(c, &head->vm_list, vm_list) {
-		if ((addr + size) < addr)
+		if ((addr + size) < addr) {
+			//printk("%s: nospc-1\n", __func__);
 			goto nospc;
-		if ((addr + size) <= c->vm_start)
+		}
+		if ((addr + size) <= c->vm_start) {
+			//printk("%s: found\n", __func__);
 			goto found;
+		}
 		addr = c->vm_end;
-		if (addr > end)
+		if (addr > end) {
+			//printk("%s: nospc-2\n", __func__);
 			goto nospc;
+		}
 	}
 
  found:
@@ -120,10 +144,13 @@ vm_region_alloc(struct vm_region *head, size_t size, gfp_t gfp)
 static struct vm_region *vm_region_find(struct vm_region *head, unsigned long addr)
 {
 	struct vm_region *c;
+	int i;
 	
-	list_for_each_entry(c, &head->vm_list, vm_list) {
-		if (c->vm_active && c->vm_start == addr)
-			goto out;
+	for (i = 0; i < CONSISTENT_NUM; i++) {
+		list_for_each_entry(c, &head[i].vm_list, vm_list) {
+			if (c->vm_active && c->vm_start == addr)
+				goto out;
+		}
 	}
 	c = NULL;
  out:
@@ -142,15 +169,20 @@ __dma_alloc(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp,
 	struct vm_region *c;
 	unsigned long order;
 	u64 mask = ISA_DMA_THRESHOLD, limit;
+	int i;
 
-	if (!consistent_pte) {
-		printk(KERN_ERR "%s: not initialised\n", __func__);
-		dump_stack();
-		return NULL;
+	//printk("%s: dev=%s, size=%d\n", __func__, dev->bus_id, size);
+	for (i = 0; i < CONSISTENT_NUM; i++) {
+		if (!consistent_pte[i]) {
+			printk(KERN_ERR "%s: not initialised\n", __func__);
+			dump_stack();
+			return NULL;
+		}
 	}
 
 	if (dev) {
 		mask = dev->coherent_dma_mask;
+		//printk("%s: dma_mask=%x\n", __func__, mask);
 
 		/*
 		 * Sanity check the DMA mask - it must be non-zero, and
@@ -158,6 +190,7 @@ __dma_alloc(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp,
 		 */
 		if (mask == 0) {
 			dev_warn(dev, "coherent DMA mask is unset\n");
+			//printk("%s: no_page-1\n", __func__);
 			goto no_page;
 		}
 
@@ -165,6 +198,7 @@ __dma_alloc(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp,
 			dev_warn(dev, "coherent DMA mask %#llx is smaller "
 				 "than system GFP_DMA mask %#llx\n",
 				 mask, (unsigned long long)ISA_DMA_THRESHOLD);
+			//printk("%s: no_page-2\n", __func__);
 			goto no_page;
 		}
 	}
@@ -173,22 +207,28 @@ __dma_alloc(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp,
 	 * Sanity check the allocation size.
 	 */
 	size = PAGE_ALIGN(size);
+	//printk("%s: new size=%lu\n", __func__, size);
 	limit = (mask + 1) & ~mask;
 	if ((limit && size >= limit) ||
 	    size >= (CONSISTENT_END - CONSISTENT_BASE)) {
 		printk(KERN_WARNING "coherent allocation too big "
 		       "(requested %#x mask %#llx)\n", size, mask);
+		//printk("%s: no_page-3\n", __func__);
 		goto no_page;
 	}
 
 	order = get_order(size);
 
-	if (mask != 0xffffffff)
+	if (mask != 0xffffffff) {
+		//printk("%s: GFP_DMA\n", __func__);
 		gfp |= GFP_DMA;
+	}
 
 	page = alloc_pages(gfp, order);
-	if (!page)
+	if (!page) {
+		//printk("%s: no_page-4\n", __func__);
 		goto no_page;
+	}
 
 	/*
 	 * Invalidate any data that might be lurking in the
@@ -203,47 +243,55 @@ __dma_alloc(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp,
 	/*
 	 * Allocate a virtual address in the consistent mapping region.
 	 */
-	c = vm_region_alloc(&consistent_head, size,
-			    gfp & ~(__GFP_DMA | __GFP_HIGHMEM));
-	if (c) {
-		pte_t *pte = consistent_pte + CONSISTENT_OFFSET(c->vm_start);
-		struct page *end = page + (1 << order);
+	for (i = 0; i < CONSISTENT_NUM; i++) {
+		c = vm_region_alloc(&consistent_head[i], size,
+			    	gfp & ~(__GFP_DMA | __GFP_HIGHMEM));
+		if (c) {
+			//printk("%s: vm_region_alloc OK\n", __func__);
+			//printk("%s: vm_start=%x vm_end=%x\n", __func__, c->vm_start, c->vm_end);
+			pte_t *pte = consistent_pte[i] + CONSISTENT_OFFSET(c->vm_start);
+			if (CONSISTENT_INDEX(c->vm_start) != i)
+				BUG_ON(1);
+			struct page *end = page + (1 << order);
+	
+			c->vm_pages = page;
 
-		c->vm_pages = page;
-
-		/*
-		 * Set the "dma handle"
-		 */
-		*handle = page_to_dma(dev, page);
-
-		do {
-			BUG_ON(!pte_none(*pte));
-
-			set_page_count(page, 1);
 			/*
-			 * x86 does not mark the pages reserved...
+			 * Set the "dma handle"
 			 */
-			SetPageReserved(page);
-			set_pte(pte, mk_pte(page, prot));
-			page++;
-			pte++;
-		} while (size -= PAGE_SIZE);
+			*handle = page_to_dma(dev, page);
 
-		/*
-		 * Free the otherwise unused pages.
-		 */
-		while (page < end) {
-			set_page_count(page, 1);
-			__free_page(page);
-			page++;
+			do {
+				BUG_ON(!pte_none(*pte));
+
+				set_page_count(page, 1);
+				/*
+				 * x86 does not mark the pages reserved...
+				 */
+				SetPageReserved(page);
+				set_pte(pte, mk_pte(page, prot));
+				page++;
+				pte++;
+			} while (size -= PAGE_SIZE);
+
+			/*
+			 * Free the otherwise unused pages.
+		 	 */
+			while (page < end) {
+				set_page_count(page, 1);
+				__free_page(page);
+				page++;
+			}
+
+			return (void *)c->vm_start;
 		}
-
-		return (void *)c->vm_start;
 	}
+	//printk("%s: vm region alloc fail\n", __func__);
 
 	if (page)
 		__free_pages(page, order);
  no_page:
+	//printk("%s: no_page\n", __func__);
 	*handle = ~0;
 	return NULL;
 }
@@ -282,7 +330,7 @@ static int dma_mmap(struct device *dev, struct vm_area_struct *vma,
 	user_size = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
 
 	spin_lock_irqsave(&consistent_lock, flags);
-	c = vm_region_find(&consistent_head, (unsigned long)cpu_addr);
+	c = vm_region_find(consistent_head, (unsigned long)cpu_addr);
 	spin_unlock_irqrestore(&consistent_lock, flags);
 
 	if (c) {
@@ -334,7 +382,7 @@ void dma_free_coherent(struct device *dev, size_t size, void *cpu_addr, dma_addr
 	size = PAGE_ALIGN(size);
 
 	spin_lock_irqsave(&consistent_lock, flags);
-	c = vm_region_find(&consistent_head, (unsigned long)cpu_addr);
+	c = vm_region_find(consistent_head, (unsigned long)cpu_addr);
 	if (!c)
 		goto no_area;
 
@@ -348,7 +396,7 @@ void dma_free_coherent(struct device *dev, size_t size, void *cpu_addr, dma_addr
 		size = c->vm_end - c->vm_start;
 	}
 
-	ptep = consistent_pte + CONSISTENT_OFFSET(c->vm_start);
+	ptep = consistent_pte[CONSISTENT_INDEX(c->vm_start)] + CONSISTENT_OFFSET(c->vm_start);
 	addr = c->vm_start;
 	do {
 		pte_t pte = ptep_get_and_clear(&init_mm, addr, ptep);
@@ -402,26 +450,34 @@ static int __init consistent_init(void)
 	pgd_t *pgd;
 	pmd_t *pmd;
 	pte_t *pte;
-	int ret = 0;
+	int ret = 0, i;
+	unsigned long congsistent_base = CONSISTENT_BASE;
 
 	do {
-		pgd = pgd_offset(&init_mm, CONSISTENT_BASE);
-		pmd = pmd_alloc(&init_mm, pgd, CONSISTENT_BASE);
-		if (!pmd) {
-			printk(KERN_ERR "%s: no pmd tables\n", __func__);
-			ret = -ENOMEM;
-			break;
-		}
-		WARN_ON(!pmd_none(*pmd));
+		for (i = 0; i < CONSISTENT_NUM; i++) {
+			INIT_LIST_HEAD(&(consistent_head[i].vm_list));
+			consistent_head[i].vm_start = congsistent_base;
+			consistent_head[i].vm_end = congsistent_base + 0x200000;
 
-		pte = pte_alloc_kernel(pmd, CONSISTENT_BASE);
-		if (!pte) {
-			printk(KERN_ERR "%s: no pte tables\n", __func__);
-			ret = -ENOMEM;
-			break;
-		}
+			pgd = pgd_offset(&init_mm, congsistent_base);
+			pmd = pmd_alloc(&init_mm, pgd, congsistent_base);
+			if (!pmd) {
+				printk(KERN_ERR "%s: no pmd tables\n", __func__);
+				ret = -ENOMEM;
+				break;
+			}
+			WARN_ON(!pmd_none(*pmd));
 
-		consistent_pte = pte;
+			pte = pte_alloc_kernel(pmd, congsistent_base);
+			if (!pte) {
+				printk(KERN_ERR "%s: no pte tables\n", __func__);
+				ret = -ENOMEM;
+				break;
+			}
+
+			consistent_pte[i] = pte;
+			congsistent_base = congsistent_base + 0x200000;
+		}
 	} while (0);
 
 	return ret;
@@ -451,4 +507,5 @@ void consistent_sync(void *vaddr, size_t size, int direction)
 		BUG();
 	}
 }
+
 EXPORT_SYMBOL(consistent_sync);

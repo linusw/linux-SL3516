@@ -11,11 +11,13 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/ide.h>
+#include <linux/acs_nas.h>
 
 static int __init ide_generic_init(void)
 {
-	if (ide_hwifs[0].io_ports[IDE_DATA_OFFSET])
+	if (ide_hwifs[0].io_ports[IDE_DATA_OFFSET]){
 		ide_get_lock(NULL, NULL); /* for atari only */
+	}
 
 	(void)ideprobe_init();
 

@@ -23,6 +23,8 @@
 #include <linux/mount.h>
 #include <linux/uio.h>
 #include <linux/namei.h>
+#include <linux/acs_nas.h>
+
 #include <asm/uaccess.h>
 
 struct bdev_inode {
@@ -564,6 +566,9 @@ static int do_open(struct block_device *bdev, struct file *file)
 	int ret = -ENXIO;
 	int part;
 
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: start\n", __func__);
+#endif
 	file->f_mapping = bdev->bd_inode->i_mapping;
 	lock_kernel();
 	disk = get_gendisk(bdev->bd_dev, &part);
@@ -572,13 +577,22 @@ static int do_open(struct block_device *bdev, struct file *file)
 		bdput(bdev);
 		return ret;
 	}
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: step1\n", __func__);
+#endif
 	owner = disk->fops->owner;
 
 	down(&bdev->bd_sem);
 	if (!bdev->bd_openers) {
+#ifdef	ACS_DEBUG
+		//acs_printk("%s: step2\n", __func__);
+#endif
 		bdev->bd_disk = disk;
 		bdev->bd_contains = bdev;
 		if (!part) {
+#ifdef	ACS_DEBUG
+			//acs_printk("%s: step2.1\n", __func__);
+#endif
 			struct backing_dev_info *bdi;
 			if (disk->fops->open) {
 				ret = disk->fops->open(bdev->bd_inode, file);
@@ -595,6 +609,9 @@ static int do_open(struct block_device *bdev, struct file *file)
 			if (bdev->bd_invalidated)
 				rescan_partitions(disk, bdev);
 		} else {
+#ifdef	ACS_DEBUG
+			//acs_printk("%s: step2.2\n", __func__);
+#endif
 			struct hd_struct *p;
 			struct block_device *whole;
 			whole = bdget_disk(disk, 0);
@@ -622,6 +639,9 @@ static int do_open(struct block_device *bdev, struct file *file)
 			up(&whole->bd_sem);
 		}
 	} else {
+#ifdef	ACS_DEBUG
+		//acs_printk("%s: step3\n", __func__);
+#endif
 		put_disk(disk);
 		module_put(owner);
 		if (bdev->bd_contains == bdev) {
@@ -638,6 +658,9 @@ static int do_open(struct block_device *bdev, struct file *file)
 			up(&bdev->bd_contains->bd_sem);
 		}
 	}
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: end\n", __func__);
+#endif
 	bdev->bd_openers++;
 	up(&bdev->bd_sem);
 	unlock_kernel();
@@ -673,7 +696,9 @@ int blkdev_get(struct block_device *bdev, mode_t mode, unsigned flags)
 	fake_file.f_flags = flags;
 	fake_file.f_dentry = &fake_dentry;
 	fake_dentry.d_inode = bdev->bd_inode;
-
+#ifdef	ACS_DEBUG
+	//acs_printk("%s: start\n", __func__);
+#endif
 	return do_open(bdev, &fake_file);
 }
 

@@ -21,6 +21,13 @@
 #include <linux/raid/md.h>
 #include <linux/slab.h>
 #include <linux/raid/linear.h>
+#include <linux/thecus_event.h>
+#include <linux/acs_char.h>
+#include <linux/hotswap.h>
+
+unsigned int count1=0;
+unsigned int count2=0;
+void check_raid_status(mddev_t *mddev,int status);
 
 #define MAJOR_NR MD_MAJOR
 #define MD_DRIVER
@@ -31,24 +38,24 @@
  */
 static inline dev_info_t *which_dev(mddev_t *mddev, sector_t sector)
 {
-	dev_info_t *hash;
+	struct linear_hash *hash;
 	linear_conf_t *conf = mddev_to_conf(mddev);
 	sector_t block = sector >> 1;
 
 	/*
 	 * sector_div(a,b) returns the remainer and sets a to a/b
 	 */
-	block >>= conf->preshift;
-	(void)sector_div(block, conf->hash_spacing);
-	hash = conf->hash_table[block];
+	(void)sector_div(block, conf->smallest->size);
+	hash = conf->hash_table + block;
 
-	while ((sector>>1) >= (hash->size + hash->offset))
-		hash++;
-	return hash;
+	if ((sector>>1) >= (hash->dev0->size + hash->dev0->offset))
+		return hash->dev1;
+	else
+		return hash->dev0;
 }
 
 /**
- *	linear_mergeable_bvec -- tell bio layer if two requests can be merged
+ *	linear_mergeable_bvec -- tell bio layer if a two requests can be merged
  *	@q: request queue
  *	@bio: the buffer head that's been built up so far
  *	@biovec: the request that could be merged to it.
@@ -90,6 +97,7 @@ static void linear_unplug(request_queue_t *q)
 		if (r_queue->unplug_fn)
 			r_queue->unplug_fn(r_queue);
 	}
+	//printk("linear_unplug  raid_disks=%d \n",mddev->raid_disks);
 }
 
 static int linear_issue_flush(request_queue_t *q, struct gendisk *disk,
@@ -99,43 +107,52 @@ static int linear_issue_flush(request_queue_t *q, struct gendisk *disk,
 	linear_conf_t *conf = mddev_to_conf(mddev);
 	int i, ret = 0;
 
-	for (i=0; i < mddev->raid_disks && ret == 0; i++) {
+	for (i=0; i < mddev->raid_disks; i++) {
 		struct block_device *bdev = conf->disks[i].rdev->bdev;
 		request_queue_t *r_queue = bdev_get_queue(bdev);
 
-		if (!r_queue->issue_flush_fn)
+		if (!r_queue->issue_flush_fn) {
 			ret = -EOPNOTSUPP;
-		else
-			ret = r_queue->issue_flush_fn(r_queue, bdev->bd_disk, error_sector);
+			break;
+		}
+		ret = r_queue->issue_flush_fn(r_queue, bdev->bd_disk, error_sector);
+		if (ret)
+			break;
 	}
 	return ret;
 }
 
-static int linear_run (mddev_t *mddev)
+static linear_conf_t *linear_conf (mddev_t *mddev, int raid_disks)
 {
 	linear_conf_t *conf;
-	dev_info_t **table;
+	struct linear_hash *table;
 	mdk_rdev_t *rdev;
 	int i, nb_zone, cnt;
-	sector_t min_spacing;
+	sector_t start;
 	sector_t curr_offset;
 	struct list_head *tmp;
 
-	conf = kmalloc (sizeof (*conf) + mddev->raid_disks*sizeof(dev_info_t),
+	conf = kmalloc (sizeof (*conf) + raid_disks*sizeof(dev_info_t),
 			GFP_KERNEL);
 	if (!conf)
-		goto out;
-	memset(conf, 0, sizeof(*conf) + mddev->raid_disks*sizeof(dev_info_t));
-	mddev->private = conf;
+		return NULL;
 
+	memset(conf, 0, sizeof(*conf) + raid_disks*sizeof(dev_info_t));
+
+	/*
+	 * Find the smallest device.
+	 */
+
+	conf->smallest = NULL;
 	cnt = 0;
-	mddev->array_size = 0;
+	conf->array_size = 0;
 
 	ITERATE_RDEV(mddev,rdev,tmp) {
 		int j = rdev->raid_disk;
 		dev_info_t *disk = conf->disks + j;
 
-		if (j < 0 || j > mddev->raid_disks || disk->rdev) {
+		//printk("linear: (j,raid_disks,disk->rdev,rdev)=(%d,%d,%X,%X)\n",j,raid_disks,disk->rdev,rdev);
+		if (j < 0 || j > raid_disks || disk->rdev) {
 			printk("linear: disk numbering problem. Aborting!\n");
 			goto out;
 		}
@@ -153,45 +170,18 @@ static int linear_run (mddev_t *mddev)
 			blk_queue_max_sectors(mddev->queue, PAGE_SIZE>>9);
 
 		disk->size = rdev->size;
-		mddev->array_size += rdev->size;
+		conf->array_size += rdev->size;
 
+		if (!conf->smallest || (disk->size < conf->smallest->size))
+			conf->smallest = disk;
 		cnt++;
 	}
-	if (cnt != mddev->raid_disks) {
+	if (cnt != raid_disks) {
 		printk("linear: not enough drives present. Aborting!\n");
+
 		goto out;
 	}
 
-	min_spacing = mddev->array_size;
-	sector_div(min_spacing, PAGE_SIZE/sizeof(struct dev_info *));
-
-	/* min_spacing is the minimum spacing that will fit the hash
-	 * table in one PAGE.  This may be much smaller than needed.
-	 * We find the smallest non-terminal set of consecutive devices
-	 * that is larger than min_spacing as use the size of that as
-	 * the actual spacing
-	 */
-	conf->hash_spacing = mddev->array_size;
-	for (i=0; i < cnt-1 ; i++) {
-		sector_t sz = 0;
-		int j;
-		for (j=i; i<cnt-1 && sz < min_spacing ; j++)
-			sz += conf->disks[j].size;
-		if (sz >= min_spacing && sz < conf->hash_spacing)
-			conf->hash_spacing = sz;
-	}
-
-	/* hash_spacing may be too large for sector_div to work with,
-	 * so we might need to pre-shift
-	 */
-	conf->preshift = 0;
-	if (sizeof(sector_t) > sizeof(u32)) {
-		sector_t space = conf->hash_spacing;
-		while (space > (sector_t)(~(u32)0)) {
-			space >>= 1;
-			conf->preshift++;
-		}
-	}
 	/*
 	 * This code was restructured to work around a gcc-2.95.3 internal
 	 * compiler error.  Alter it with care.
@@ -201,91 +191,156 @@ static int linear_run (mddev_t *mddev)
 		unsigned round;
 		unsigned long base;
 
-		sz = mddev->array_size >> conf->preshift;
-		sz += 1; /* force round-up */
-		base = conf->hash_spacing >> conf->preshift;
+		sz = conf->array_size;
+		base = conf->smallest->size;
 		round = sector_div(sz, base);
-		nb_zone = sz + (round ? 1 : 0);
+		nb_zone = conf->nr_zones = sz + (round ? 1 : 0);
 	}
-	BUG_ON(nb_zone > PAGE_SIZE / sizeof(struct dev_info *));
-
-	conf->hash_table = kmalloc (sizeof (struct dev_info *) * nb_zone,
+			
+	conf->hash_table = kmalloc (sizeof (struct linear_hash) * nb_zone,
 					GFP_KERNEL);
 	if (!conf->hash_table)
 		goto out;
 
 	/*
 	 * Here we generate the linear hash table
-	 * First calculate the device offsets.
 	 */
-	conf->disks[0].offset = 0;
-	for (i=1; i<mddev->raid_disks; i++)
-		conf->disks[i].offset =
-			conf->disks[i-1].offset +
-			conf->disks[i-1].size;
-
 	table = conf->hash_table;
+	start = 0;
 	curr_offset = 0;
-	i = 0;
-	for (curr_offset = 0;
-	     curr_offset < mddev->array_size;
-	     curr_offset += conf->hash_spacing) {
+	for (i = 0; i < cnt; i++) {
+		dev_info_t *disk = conf->disks + i;
 
-		while (i < mddev->raid_disks-1 &&
-		       curr_offset >= conf->disks[i+1].offset)
-			i++;
+		if (start > curr_offset)
+			table[-1].dev1 = disk;
 
-		*table ++ = conf->disks + i;
-	}
+		disk->offset = curr_offset;
+		curr_offset += disk->size;
 
-	if (conf->preshift) {
-		conf->hash_spacing >>= conf->preshift;
-		/* round hash_spacing up so that when we divide by it,
-		 * we err on the side of "too-low", which is safest.
+		/* 'curr_offset' is the end of this disk
+		 * 'start' is the start of table
 		 */
-		conf->hash_spacing++;
-	}
+		while (start < curr_offset) {
 
-	BUG_ON(table - conf->hash_table > nb_zone);
+			table->dev0 = disk;
+			table->dev1 = NULL;
+			start += conf->smallest->size;
+			table++;
+		}
+	}
+	if (table-conf->hash_table != nb_zone)
+		BUG();
+
+	return conf;
+
+out:
+	kfree(conf);
+	return NULL;
+}
+
+static int linear_run (mddev_t *mddev)
+{
+	linear_conf_t *conf;
+
+        printk("****** %s linear_run mddev->raid_disk:%d***** \n", __func__, mddev->raid_disks);
+	conf = linear_conf(mddev, mddev->raid_disks);
+
+	if (!conf) {
+		return 1;
+	}
+	mddev->private = conf;
+	mddev->array_size = conf->array_size;
 
 	blk_queue_merge_bvec(mddev->queue, linear_mergeable_bvec);
 	mddev->queue->unplug_fn = linear_unplug;
 	mddev->queue->issue_flush_fn = linear_issue_flush;
+	
+	check_raid_status(mddev,RAID_STATUS_HEALTHY);
 	return 0;
-
-out:
-	kfree(conf);
-	return 1;
 }
+
+int linear_add(mddev_t *mddev, mdk_rdev_t *rdev)
+{
+	/* Adding a drive to a linear array allows the array to grow.
+	 * It is permitted if the new drive has a matching superblock
+	 * already on it, with raid_disk equal to raid_disks.
+	 * It is achieved by creating a new linear_private_data structure
+	 * and swapping it in in-place of the current one.
+	 * The current one is never freed until the array is stopped.
+	 * This avoids races.
+	 */
+	linear_conf_t *newconf;
+	if (rdev->raid_disk != mddev->raid_disks)
+		return -EINVAL;
+
+	newconf = linear_conf(mddev,mddev->raid_disks+1);
+	if (!newconf)
+		return -ENOMEM;
+
+	newconf->prev = mddev_to_conf(mddev);
+	mddev->private = newconf;
+	mddev->raid_disks++;
+	mddev->array_size = newconf->array_size;
+	set_capacity(mddev->gendisk, mddev->array_size << 1);
+	return 0;
+}
+
 
 static int linear_stop (mddev_t *mddev)
 {
 	linear_conf_t *conf = mddev_to_conf(mddev);
   
 	blk_sync_queue(mddev->queue); /* the unplug fn references 'conf'*/
-	kfree(conf->hash_table);
-	kfree(conf);
+	do {
+		linear_conf_t *t = conf->prev;
+		kfree(conf->hash_table);
+        	printk("&&&&&&& %s stop start &&&& \n", __func__);
+        	conf->hash_table = NULL; //jenny 2007.03.13
+		kfree(conf);
+        	mddev->private = NULL; //jenny 2007.03.13
+       		mddev->queue->merge_bvec_fn = NULL; //jenny 2007.03.13
+        	printk("&&&&&&& %s stop end &&&&& \n", __func__);
+		conf = t;
+	} while (conf);
+	mddev->private = NULL;
 
 	return 0;
 }
 
+extern void system_led_act(unsigned char, int);
 static int linear_make_request (request_queue_t *q, struct bio *bio)
 {
-	const int rw = bio_data_dir(bio);
 	mddev_t *mddev = q->queuedata;
 	dev_info_t *tmp_dev;
 	sector_t block;
+	unsigned char next_disknum;
 
-	if (unlikely(bio_barrier(bio))) {
-		bio_endio(bio, bio->bi_size, -EOPNOTSUPP);
-		return 0;
-	}
-
-	disk_stat_inc(mddev->gendisk, ios[rw]);
-	disk_stat_add(mddev->gendisk, sectors[rw], bio_sectors(bio));
+#if 0
+        if (bio_data_dir(bio)==WRITE) {
+                disk_stat_inc(mddev->gendisk, writes);
+                disk_stat_add(mddev->gendisk, write_sectors, bio_sectors(bio));
+        } else {
+                disk_stat_inc(mddev->gendisk, reads);
+                disk_stat_add(mddev->gendisk, read_sectors, bio_sectors(bio));
+        }
+#endif
+        if (bio_data_dir(bio)==WRITE) {
+                disk_stat_inc(mddev->gendisk, ios[0]);
+                disk_stat_add(mddev->gendisk, sectors[0], bio_sectors(bio));
+        } else {
+                disk_stat_inc(mddev->gendisk, ios[1]);
+                disk_stat_add(mddev->gendisk, sectors[1], bio_sectors(bio));
+        }
 
 	tmp_dev = which_dev(mddev, bio->bi_sector);
 	block = bio->bi_sector >> 1;
+  
+	if (unlikely(!tmp_dev)) {
+		printk("linear_make_request: hash->dev1==NULL for block %llu\n",
+			(unsigned long long)block);
+		bio_io_error(bio, bio->bi_size);
+		return 0;
+	}
     
 	if (unlikely(block >= (tmp_dev->size + tmp_dev->offset)
 		     || block < tmp_dev->offset)) {
@@ -296,7 +351,7 @@ static int linear_make_request (request_queue_t *q, struct bio *bio)
 			(unsigned long long)block,
 			bdevname(tmp_dev->rdev->bdev, b),
 			(unsigned long long)tmp_dev->size,
-		        (unsigned long long)tmp_dev->offset);
+			(unsigned long long)tmp_dev->offset);
 		bio_io_error(bio, bio->bi_size);
 		return 0;
 	}
@@ -306,8 +361,9 @@ static int linear_make_request (request_queue_t *q, struct bio *bio)
 		 * split it.
 		 */
 		struct bio_pair *bp;
+		//2007.04.03
 		bp = bio_split(bio, bio_split_pool,
-			       ((tmp_dev->offset + tmp_dev->size)<<1) - bio->bi_sector);
+				((tmp_dev->offset + tmp_dev->size)<<1) - bio->bi_sector);
 		if (linear_make_request(q, &bp->bio1))
 			generic_make_request(&bp->bio1);
 		if (linear_make_request(q, &bp->bio2))
@@ -318,6 +374,51 @@ static int linear_make_request (request_queue_t *q, struct bio *bio)
 		    
 	bio->bi_bdev = tmp_dev->rdev->bdev;
 	bio->bi_sector = bio->bi_sector - (tmp_dev->offset << 1) + tmp_dev->rdev->data_offset;
+	/* Neagus 2007.08.11 */
+	if (disk_fail(get_disknum_by_dev(bio->bi_bdev->bd_dev))) {
+		mddev->state |= (1 << MD_SB_ERRORS);
+		if(((get_disknum_by_dev(bio->bi_bdev->bd_dev) == 2)&&(count1 == 0))
+			||((get_disknum_by_dev(bio->bi_bdev->bd_dev) == 3)&&(count2 == 0))){
+               		write_kernellog("%d Disk %d has been removed.",
+               			ERROR_LOG, get_disknum_by_dev(bio->bi_bdev->bd_dev)-1);
+			write_kernellog("%d RAID status is DAMAGED now.", ERROR_LOG);
+                	buzzer_on(BUZZ_VOL(md_to_volume(mddev)), ACS_BUZZ_ERR);
+		
+			system_led_act(6, 1);
+		}
+		if(get_disknum_by_dev(bio->bi_bdev->bd_dev) == 2)
+			count1++;
+		else
+			count2++;
+		bio_io_error(bio, bio->bi_size);
+		return 0;
+	}
+
+if (mddev->raid_disks == 2) {//Just do it when JBOD has 2 disks
+	if (get_disknum_by_dev(bio->bi_bdev->bd_dev) == 2)
+		next_disknum = 3;
+	else
+		next_disknum = 2;
+
+	if (disk_fail(next_disknum)) {
+		mddev->state |= (1 << MD_SB_ERRORS);
+		if(((next_disknum == 2)&&(count1 == 0)) ||((next_disknum == 3)&&(count2 == 0))){
+               		write_kernellog("%d Disk %d has been removed.",
+               			ERROR_LOG, (next_disknum -1));
+			write_kernellog("%d RAID status is DAMAGED now.", ERROR_LOG);
+                	buzzer_on(BUZZ_VOL(md_to_volume(mddev)), ACS_BUZZ_ERR);
+		
+			system_led_act(6, 1);
+		}
+
+		if(next_disknum == 2)
+			count1++;
+		else
+			count2++;
+		bio_io_error(bio, bio->bi_size);
+		return 0;
+	}
+}
 
 	return 1;
 }
@@ -329,20 +430,17 @@ static void linear_status (struct seq_file *seq, mddev_t *mddev)
 #ifdef MD_DEBUG
 	int j;
 	linear_conf_t *conf = mddev_to_conf(mddev);
-	sector_t s = 0;
   
 	seq_printf(seq, "      ");
-	for (j = 0; j < mddev->raid_disks; j++)
+	for (j = 0; j < conf->nr_zones; j++)
 	{
 		char b[BDEVNAME_SIZE];
-		s += conf->smallest_size;
 		seq_printf(seq, "[%s",
-			   bdevname(conf->hash_table[j][0].rdev->bdev,b));
+			   bdevname(conf->hash_table[j].dev0->rdev->bdev,b));
 
-		while (s > conf->hash_table[j][0].offset +
-		           conf->hash_table[j][0].size)
+		if (conf->hash_table[j].dev1)
 			seq_printf(seq, "/%s] ",
-				   bdevname(conf->hash_table[j][1].rdev->bdev,b));
+				   bdevname(conf->hash_table[j].dev1->rdev->bdev,b));
 		else
 			seq_printf(seq, "] ");
 	}
@@ -350,7 +448,6 @@ static void linear_status (struct seq_file *seq, mddev_t *mddev)
 #endif
 	seq_printf(seq, " %dk rounding", mddev->chunk_size/1024);
 }
-
 
 static mdk_personality_t linear_personality=
 {
@@ -360,6 +457,7 @@ static mdk_personality_t linear_personality=
 	.run		= linear_run,
 	.stop		= linear_stop,
 	.status		= linear_status,
+	.hot_add_disk   = linear_add,
 };
 
 static int __init linear_init (void)

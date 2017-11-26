@@ -6,7 +6,7 @@
  *  Nov 2001 Dave Jones <davej@suse.de>
  *  Forked from i386 setup code.
  *
- *  $Id$
+ *  $Id: setup.c,v 1.1.1.1 2006/04/03 08:40:44 amos_lee Exp $
  */
 
 /*

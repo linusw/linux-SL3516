@@ -1,5 +1,5 @@
 /*
- * $Id: l440gx.c,v 1.18 2005/11/07 11:14:27 gleixner Exp $
+ * $Id: l440gx.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  * BIOS Flash chip on Intel 440GX board.
  *

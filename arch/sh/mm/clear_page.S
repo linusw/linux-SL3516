@@ -1,4 +1,4 @@
-/* $Id: clear_page.S,v 1.13 2003/08/25 17:03:10 lethal Exp $
+/* $Id: clear_page.S,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  *
  * __clear_user_page, __clear_user, clear_page implementation of SuperH
  *

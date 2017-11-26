@@ -11,7 +11,6 @@
 #ifndef __ASM_ARM_ATOMIC_H
 #define __ASM_ARM_ATOMIC_H
 
-#include <linux/config.h>
 #include <linux/compiler.h>
 
 typedef struct { volatile int counter; } atomic_t;
@@ -175,6 +174,8 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
 
 #endif /* __LINUX_ARM_ARCH__ */
 
+#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+
 static inline int atomic_add_unless(atomic_t *v, int a, int u)
 {
 	int c, old;
@@ -205,5 +206,6 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
 #define smp_mb__before_atomic_inc()	barrier()
 #define smp_mb__after_atomic_inc()	barrier()
 
+#include <asm-generic/atomic.h>
 #endif
 #endif

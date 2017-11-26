@@ -1,7 +1,7 @@
 #ifndef _ASM_M32R_SCATTERLIST_H
 #define _ASM_M32R_SCATTERLIST_H
 
-/* $Id$ */
+/* $Id: scatterlist.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $ */
 
 struct scatterlist {
     char *  address;    /* Location data is to be transferred to, NULL for

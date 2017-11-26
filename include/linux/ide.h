@@ -177,8 +177,10 @@ typedef unsigned char	byte;	/* used everywhere */
  */
 #define WAIT_DRQ	(HZ/10)		/* 100msec - spec allows up to 20ms */
 #define WAIT_READY	(5*HZ)		/* 5sec - some laptops are very slow */
-#define WAIT_PIDENTIFY	(10*HZ)	/* 10sec  - should be less than 3ms (?), if all ATAPI CD is closed at boot */
-#define WAIT_WORSTCASE	(30*HZ)	/* 30sec  - worst case when spinning up */
+//#define WAIT_PIDENTIFY	(10*HZ)	/* 10sec  - should be less than 3ms (?), if all ATAPI CD is closed at boot */
+//#define WAIT_WORSTCASE	(30*HZ)	/* 30sec  - worst case when spinning up */
+#define WAIT_PIDENTIFY	(3*HZ)	/* 10sec  - should be less than 3ms (?), if all ATAPI CD is closed at boot */
+#define WAIT_WORSTCASE	(6*HZ)	/* 3sec  - Storlink SL3516 board p */
 #define WAIT_CMD	(10*HZ)	/* 10sec  - maximum wait for an IRQ to happen */
 #define WAIT_MIN_SLEEP	(2*HZ/100)	/* 20msec - minimum sleep time */
 
@@ -202,7 +204,7 @@ typedef enum {	ide_unknown,	ide_generic,	ide_pci,
 		ide_rz1000,	ide_trm290,
 		ide_cmd646,	ide_cy82c693,	ide_4drives,
 		ide_pmac,	ide_etrax100,	ide_acorn,
-		ide_au1xxx, ide_forced
+		ide_au1xxx, ide_forced,     ide_sl2312
 } hwif_chipset_t;
 
 /*
@@ -1369,5 +1371,12 @@ static inline int hwif_to_node(ide_hwif_t *hwif)
 	struct pci_dev *dev = hwif->pci_dev;
 	return dev ? pcibus_to_node(dev->bus) : -1;
 }
+
+struct ide_disk_obj {
+        ide_drive_t     *drive;
+        ide_driver_t    *driver;
+        struct gendisk  *disk;
+        struct kref     kref;
+};
 
 #endif /* _IDE_H */

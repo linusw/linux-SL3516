@@ -1,6 +1,9 @@
 #
 # Makefile for the kernel block device drivers.
 #
+
+CFLAGS_loop.o:=$(shell if grep -q -s "current->rlim" kernel/sys.c; then echo "-DOLD_PER_THREAD_RLIMITS"; fi)
+
 # 12 June 2000, Christoph Hellwig <hch@infradead.org>
 # Rewritten to use lists instead of if-statements.
 # 
@@ -31,3 +34,4 @@ obj-$(CONFIG_VIODASD)		+= viodasd.o
 obj-$(CONFIG_BLK_DEV_SX8)	+= sx8.o
 obj-$(CONFIG_BLK_DEV_UB)	+= ub.o
 
+obj-y	+=thecus_event.o

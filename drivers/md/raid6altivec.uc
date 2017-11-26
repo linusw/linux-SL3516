@@ -27,20 +27,16 @@
 #ifdef CONFIG_ALTIVEC
 
 #include <altivec.h>
-#ifdef __KERNEL__
-# include <asm/system.h>
-# include <asm/cputable.h>
-#endif
+#include <asm/system.h>
+#include <asm/cputable.h>
 
 /*
- * This is the C data type to use.  We use a vector of
- * signed char so vec_cmpgt() will generate the right
- * instruction.
+ * This is the C data type to use
  */
 
-typedef vector signed char unative_t;
+typedef vector unsigned char unative_t;
 
-#define NBYTES(x) ((vector signed char) {x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x})
+#define NBYTES(x) ((vector unsigned char) {x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x})
 #define NSIZE	sizeof(unative_t)
 
 /*
@@ -112,11 +108,7 @@ int raid6_have_altivec(void);
 int raid6_have_altivec(void)
 {
 	/* This assumes either all CPUs have Altivec or none does */
-# ifdef __KERNEL__
 	return cpu_has_feature(CPU_FTR_ALTIVEC);
-# else
-	return 1;
-# endif
 }
 #endif
 

@@ -78,6 +78,23 @@ config SERIAL_NONSTANDARD
 
 	  Most people can say N here.
 
+###### for Storlink SoC ######
+config IT8712_GPIO
+    bool "Support for IT8712 GPIO"
+    depends on SL2312_LPC
+
+config GEMINI_GPIO
+    bool "Support for GEMINI GPIO"
+    depends on ARCH_SL2312
+
+config GEMINI_CIR
+    bool "Support for GEMINI CIR"
+    depends on ARCH_SL2312
+
+config GEMINI_PWC
+    bool "Gemini Power Control"
+    depends on ARCH_SL2312
+
 config COMPUTONE
 	tristate "Computone IntelliPort Plus serial support"
 	depends on SERIAL_NONSTANDARD && BROKEN_ON_SMP
@@ -581,6 +598,12 @@ source "drivers/char/ipmi/Kconfig"
 
 source "drivers/char/watchdog/Kconfig"
 
+###  for Storlink SoC ###
+config SL2312_WATCHDOG
+    tristate "SL2312 hardware watchdog timer support"
+    depends on ARCH_SL2312
+    help
+
 config DS1620
 	tristate "NetWinder thermometer support"
 	depends on ARCH_NETWINDER
@@ -710,6 +733,11 @@ config RTC
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called rtc.
+
+###### for Storlink SoC ######
+config SL2312_RTC
+    tristate "Storlink Real Time Clock Support"
+    depends on ARCH_SL2312
 
 config SGI_DS1286
 	tristate "SGI DS1286 RTC support"

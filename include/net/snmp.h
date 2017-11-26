@@ -14,7 +14,7 @@
  *		as published by the Free Software Foundation; either version
  *		2 of the License, or (at your option) any later version.
  *
- *		$Id: snmp.h,v 1.19 2001/06/14 13:40:46 davem Exp $
+ *		$Id: snmp.h,v 1.1.1.1 2006/04/03 08:41:21 amos_lee Exp $
  *
  */
  

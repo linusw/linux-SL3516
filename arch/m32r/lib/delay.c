@@ -5,7 +5,7 @@
  * Copyright (c) 2004  Hirokazu Takata
  */
 
-/* $Id$ */
+/* $Id: delay.c,v 1.1.1.1 2006/04/03 08:40:34 amos_lee Exp $ */
 
 #include <linux/config.h>
 #include <linux/param.h>

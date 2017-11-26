@@ -40,10 +40,11 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 	int			status;
 
 	init_completion(&done); 	
+//	printk("***done %x\n",&done);
 	urb->context = &done;
 	urb->actual_length = 0;
 	status = usb_submit_urb(urb, GFP_NOIO);
-
+//        printk("******status %x \n",status);
 	if (status == 0) {
 		if (timeout > 0) {
 			init_timer(&timer);
@@ -53,8 +54,11 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 			/* grr.  timeout _should_ include submit delays. */
 			add_timer(&timer);
 		}
+//		printk("wait_for_completion begin done %x\n",&done);
 		wait_for_completion(&done);
+//		printk("wait_for_completion end done %x\n",&done);
 		status = urb->status;
+//		printk("usb_start_wait_urb status %x timeout %x \n",status,timeout);
 		/* note:  HCDs return ETIMEDOUT for other reasons too */
 		if (status == -ECONNRESET) {
 			dev_dbg(&urb->dev->dev,
@@ -65,18 +69,19 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 				urb->actual_length,
 				urb->transfer_buffer_length
 				);
-			if (urb->actual_length > 0)
-				status = 0;
-			else
+//			if (urb->actual_length > 0)
+//				status = 0;
+//			else
 				status = -ETIMEDOUT;
 		}
 		if (timeout > 0)
 			del_timer_sync(&timer);
 	}
-
+//        printk("actual_length %x\n",actual_length); 
 	if (actual_length)
 		*actual_length = urb->actual_length;
 	usb_free_urb(urb);
+//	printk("******status %x end\n",status);
 	return status;
 }
 
@@ -139,7 +144,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request, __u
 	
 	if (!dr)
 		return -ENOMEM;
-
+//        printk("data %x\n",data);
 	dr->bRequestType= requesttype;
 	dr->bRequest = request;
 	dr->wValue = cpu_to_le16p(&value);
@@ -149,7 +154,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request, __u
 	//dbg("usb_control_msg");	
 
 	ret = usb_internal_control_msg(dev, pipe, dr, data, size, timeout);
-
+//        printk("data1 %x\n",data);
 	kfree(dr);
 
 	return ret;

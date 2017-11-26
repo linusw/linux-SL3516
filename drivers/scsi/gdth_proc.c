@@ -1,5 +1,5 @@
 /* gdth_proc.c 
- * $Id: gdth_proc.c,v 1.42 2004/03/05 15:50:20 achim Exp $
+ * $Id: gdth_proc.c,v 1.1.1.1 2006/04/03 08:40:58 amos_lee Exp $
  */
 
 #include <linux/completion.h>

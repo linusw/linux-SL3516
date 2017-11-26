@@ -215,4 +215,26 @@ extern struct apm_info	apm_info;
 #define APM_IOC_STANDBY		_IO('A', 1)
 #define APM_IOC_SUSPEND		_IO('A', 2)
 
+#define OBC_GET_SIGNAL		_IO('A', 5)
+#define OBC_RESET_SIGNAL		_IO('A', 6)
+// add by jason for power control
+struct pwc_ioctl_data {
+	unsigned int action;	// sword struct
+	unsigned int data;	// stand shutdown time for PWC_SET_SHUT_TIME
+				// stand shutdown source for PWC_WAIT_BTN
+};
+
+#define POWEROFF		0x02
+#define RESTORE_DEFAULT	0x01
+#define SYSTEM_REBOOT	0x04
+
+#define PWR_SRC_CIR		0x10
+#define PWR_SRC_RTC		0x20
+#define PWR_SRC_BTN		0x40
+
+#define	PWC_IOCTL_BASE			'A'				// use linux APM ioctl
+#define PWC_SET_SHUT_TIME		_IOW('A', 16, struct pwc_ioctl_data)
+#define PWC_WAIT_BTN			_IOR('A', 17, struct pwc_ioctl_data)
+#define PWC_SHUTDOWN			_IO ('A', 18)
+
 #endif	/* LINUX_APM_H */

@@ -23,6 +23,7 @@
 #include <scsi/sg.h>
 #include <scsi/scsi_dbg.h>
 
+#include "../usb/storage/usb.h" //allen
 #include "scsi_logging.h"
 
 #define NORMAL_RETRIES			5
@@ -48,7 +49,8 @@ static int ioctl_probe(struct Scsi_Host *host, void __user *buffer)
 			return -EFAULT;
 
 		if (host->hostt->info)
-			string = host->hostt->info(host);
+			;//allen modify for unknown reason
+			//string = host->hostt->info(host);
 		else
 			string = host->hostt->name;
 		if (string) {
@@ -59,6 +61,7 @@ static int ioctl_probe(struct Scsi_Host *host, void __user *buffer)
 				return -EFAULT;
 		}
 	}
+
 	return 1;
 }
 
@@ -360,7 +363,9 @@ static int scsi_ioctl_get_pci(struct scsi_device *sdev, void __user *arg)
 int scsi_ioctl(struct scsi_device *sdev, int cmd, void __user *arg)
 {
 	char scsi_cmd[MAX_COMMAND_SIZE];
+	struct us_data *us;//allen ++
 
+	//printk("allen:%s\n",__func__);	
 	/* No idea how this happens.... */
 	if (!sdev)
 		return -ENXIO;
@@ -391,6 +396,12 @@ int scsi_ioctl(struct scsi_device *sdev, int cmd, void __user *arg)
 	}
 
 	switch (cmd) {
+//allen add 20070315
+	case SCSI_IOCTL_GET_USBBUS_NUM:
+		us = host_to_us(sdev->host);
+		printk("allen:scsi_ioctl:get_usb_bus_num,busnum = %d\n",us->pusb_dev->bus->busnum);
+		return put_user(us->pusb_dev->bus->busnum,(int __user *)arg);
+/******************/
 	case SCSI_IOCTL_GET_IDLUN:
 		if (!access_ok(VERIFY_WRITE, arg, sizeof(struct scsi_idlun)))
 			return -EFAULT;

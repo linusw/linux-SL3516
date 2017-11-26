@@ -1,4 +1,4 @@
-/* $Id: time.c,v 1.42 2002/01/23 14:33:55 davem Exp $
+/* $Id: time.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * time.c: UltraSparc timer and TOD clock support.
  *
  * Copyright (C) 1997 David S. Miller (davem@caip.rutgers.edu)

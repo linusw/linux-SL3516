@@ -15,8 +15,29 @@
 #ifndef _MD_K_H
 #define _MD_K_H
 
-/* and dm-bio-list.h is not under include/linux because.... ??? */
-#include "../../../drivers/md/dm-bio-list.h"
+#ifndef BAD_SECTOR_REMAP
+#define BAD_SECTOR_REMAP
+#endif /* BAD_SECTOR_REMAP */
+
+#ifndef MD_GLOBAL_SPARE
+#define MD_GLOBAL_SPARE
+#endif  /* MD_GLOBAL_SPARE */
+
+#ifndef MD_CHECK_STATUS
+#define	MD_CHECK_STATUS
+#endif	/* MD_CHECK_STATUS */
+
+#ifndef MD_ADD_IN_ERROR
+#define MD_ADD_IN_ERROR
+#endif  /* MD_ADD_IN_ERROR */
+
+#ifndef MD_SYNC_CONTINUOUSLY
+#define MD_SYNC_CONTINUOUSLY
+#endif  /* MD_SYNC_CONTINUOUSLY */
+
+#ifndef MD_SINGLE_DISK
+#define MD_SINGLE_DISK
+#endif	/* MD_SINGLE_DISK */
 
 #define MD_RESERVED       0UL
 #define LINEAR            1UL
@@ -29,7 +50,15 @@
 #define RAID6		  8UL
 #define	RAID10		  9UL
 #define FAULTY		  10UL
+/* Accusys single disk support. Luke xia, 2005/11/04 */
+#ifndef MD_SINGLE_DISK
 #define MAX_PERSONALITY   11UL
+#else
+#define SINGLE		  11UL
+#define MAX_PERSONALITY	  12UL
+
+#define LEVEL_SINGLE	  	(-10)
+#endif /* MD_SINGLE_DISK */
 
 #define	LEVEL_MULTIPATH		(-4)
 #define	LEVEL_LINEAR		(-1)
@@ -51,6 +80,9 @@ static inline int pers_to_level (int pers)
 		case RAID5:		return 5;
 		case RAID6:		return 6;
 		case RAID10:		return 10;
+#ifdef MD_SINGLE_DISK
+		case SINGLE:		return LEVEL_SINGLE;
+#endif
 	}
 	BUG();
 	return MD_RESERVED;
@@ -70,8 +102,20 @@ static inline int level_to_pers (int level)
 		case 5: return RAID5;
 		case 6: return RAID6;
 		case 10: return RAID10;
+#ifdef MD_SINGLE_DISK
+		case LEVEL_SINGLE: return SINGLE;
+#endif
 	}
 	return MD_RESERVED;
+}
+
+static inline char *mdlevel_to_mdname (int level)
+{
+	switch (level) {
+		case LEVEL_LINEAR: return "JBOD";
+		case 0: return "RAID0";
+		case 1: return "RAID1";
+	}
 }
 
 typedef struct mddev_s mddev_t;
@@ -84,6 +128,94 @@ typedef struct mdk_rdev_s mdk_rdev_t;
  */
 
 #define MAX_CHUNK_SIZE (4096*1024)
+
+#ifdef	MD_GLOBAL_SPARE
+static inline int disk_global_spare(mdp_disk_t * d)
+{
+	return d->state & (1 << MD_DISK_GLOBAL_SPARE);
+}
+
+static inline void mark_disk_global_spare(mdp_disk_t * d)
+{
+	d->state = 0;
+	d->state |= (1 << MD_DISK_GLOBAL_SPARE);
+}
+
+static inline void mark_disk_nonglobal_spare(mdp_disk_t * d)
+{
+	d->state &= ~(1 << MD_DISK_GLOBAL_SPARE);
+}
+#endif  /* MD_GLOBAL_SPARE */
+
+static inline int disk_faulty(mdp_disk_t * d)
+{
+	return d->state & (1 << MD_DISK_FAULTY);
+}
+
+static inline int disk_active(mdp_disk_t * d)
+{
+	return d->state & (1 << MD_DISK_ACTIVE);
+}
+
+static inline int disk_sync(mdp_disk_t * d)
+{
+	return d->state & (1 << MD_DISK_SYNC);
+}
+
+static inline int disk_spare(mdp_disk_t * d)
+{
+#ifdef	MD_GLOBAL_SPARE
+	return !disk_sync(d) && !disk_active(d) && !disk_faulty(d) &&
+			!disk_global_spare(d);
+#else 
+	return !disk_sync(d) && !disk_active(d) && !disk_faulty(d);
+#endif /* MD_GLOBAL_SPARE */
+}
+
+static inline int disk_removed(mdp_disk_t * d)
+{
+	return d->state & (1 << MD_DISK_REMOVED);
+}
+
+static inline void mark_disk_faulty(mdp_disk_t * d)
+{
+	d->state |= (1 << MD_DISK_FAULTY);
+}
+
+static inline void mark_disk_active(mdp_disk_t * d)
+{
+	d->state |= (1 << MD_DISK_ACTIVE);
+}
+
+static inline void mark_disk_sync(mdp_disk_t * d)
+{
+	d->state |= (1 << MD_DISK_SYNC);
+}
+
+static inline void mark_disk_spare(mdp_disk_t * d)
+{
+	d->state = 0;
+}
+
+static inline void mark_disk_removed(mdp_disk_t * d)
+{
+#ifdef	MD_GLOBAL_SPARE
+	d->state = (1 << MD_DISK_FAULTY) | (1 << MD_DISK_REMOVED)
+			| ( (disk_global_spare(d) ? 1 : 0 ) << MD_DISK_GLOBAL_SPARE);
+#else
+	d->state = (1 << MD_DISK_FAULTY) | (1 << MD_DISK_REMOVED);
+#endif
+}
+
+static inline void mark_disk_inactive(mdp_disk_t * d)
+{
+	d->state &= ~(1 << MD_DISK_ACTIVE);
+}
+
+static inline void mark_disk_nonsync(mdp_disk_t * d)
+{
+	d->state &= ~(1 << MD_DISK_SYNC);
+}
 
 /*
  * MD's 'extended' device
@@ -102,10 +234,7 @@ struct mdk_rdev_s
 	int		sb_loaded;
 	sector_t	data_offset;	/* start of data in array */
 	sector_t	sb_offset;
-	int		sb_size;	/* bytes in the superblock */
 	int		preferred_minor;	/* autorun support */
-
-	struct kobject	kobj;
 
 	/* A device can be in one of three states based on two flags:
 	 * Not working:   faulty==1 in_sync==0
@@ -117,26 +246,21 @@ struct mdk_rdev_s
 	 * It can never have faulty==1, in_sync==1
 	 * This reduces the burden of testing multiple flags in many cases
 	 */
-
-	unsigned long	flags;
-#define	Faulty		1		/* device is known to have a fault */
-#define	In_sync		2		/* device is in_sync with rest of array */
-#define	WriteMostly	4		/* Avoid reading if at all possible */
-#define	BarriersNotsupp	5		/* BIO_RW_BARRIER is not supported */
+	int faulty;			/* if faulty do not issue IO requests */
+	int in_sync;			/* device is a full member of the array */
+	/* Accusys extent disks' state:
+	 * -rebuild: device doing rebuilding, not in sync: faulty==0 in_sync==0
+	 */
+#ifdef MD_SYNC_CONTINUOUSLY
+	int rebuild;			/* device is rebuilding */
+#endif
 
 	int desc_nr;			/* descriptor index in the superblock */
 	int raid_disk;			/* role of device in array */
-	int saved_raid_disk;		/* role that device used to have in the
-					 * array and could again if we did a partial
-					 * resync from the bitmap
-					 */
 
 	atomic_t	nr_pending;	/* number of pending requests.
 					 * only maintained for arrays that
 					 * support hot removal
-					 */
-	atomic_t	read_errors;	/* number of consecutive read errors that
-					 * we have tried to ignore.
 					 */
 };
 
@@ -153,8 +277,6 @@ struct mddev_s
 	int				ro;
 
 	struct gendisk			*gendisk;
-
-	struct kobject			kobj;
 
 	/* Superblock information */
 	int				major_version,
@@ -179,10 +301,6 @@ struct mddev_s
 	sector_t			resync_mark_cnt;/* blocks written at resync_mark */
 
 	sector_t			resync_max_sectors; /* may be set by personality */
-
-	sector_t			resync_mismatches; /* count of sectors where
-							    * parity/replica mismatch found
-							    */
 	/* recovery/resync flags 
 	 * NEEDED:   we might need to start a resync/recover
 	 * RUNNING:  a thread is running, or about to be started
@@ -190,8 +308,6 @@ struct mddev_s
 	 * ERR:      and IO error was detected - abort the resync/recovery
 	 * INTR:     someone requested a (clean) early abort.
 	 * DONE:     thread is done and is waiting to be reaped
-	 * REQUEST:  user-space has requested a sync (used with SYNC)
-	 * CHECK:    user-space request for for check-only, no repair
 	 */
 #define	MD_RECOVERY_RUNNING	0
 #define	MD_RECOVERY_SYNC	1
@@ -199,8 +315,10 @@ struct mddev_s
 #define	MD_RECOVERY_INTR	3
 #define	MD_RECOVERY_DONE	4
 #define	MD_RECOVERY_NEEDED	5
-#define	MD_RECOVERY_REQUESTED	6
-#define	MD_RECOVERY_CHECK	7
+
+#ifdef 	MD_SYNC_CONTINUOUSLY
+#define MD_RECOVERY_RECHECK	6
+#endif  /* MD_SYNC_CONTINUOUSLY */
 	unsigned long			recovery;
 
 	int				in_sync;	/* know to not need resync */
@@ -211,22 +329,13 @@ struct mddev_s
 	int				degraded;	/* whether md should consider
 							 * adding a spare
 							 */
-	int				barriers_work;	/* initialised to true, cleared as soon
-							 * as a barrier request to slave
-							 * fails.  Only supported
-							 */
-	struct bio			*biolist; 	/* bios that need to be retried
-							 * because BIO_RW_BARRIER is not supported
-							 */
+	int                     	raid_status;  //hot add disk, Neagus
+					//MAPPING to thecus_event.h "RAID_STATUS_XXXXXX"
+
 
 	atomic_t			recovery_active; /* blocks scheduled, but not written */
 	wait_queue_head_t		recovery_wait;
 	sector_t			recovery_cp;
-
-	spinlock_t			write_lock;
-	wait_queue_head_t		sb_wait;	/* for waiting on superblock updates */
-	atomic_t			pending_writes;	/* number of active superblock writes */
-
 	unsigned int			safemode;	/* if set, update "clean" superblock
 							 * when no writes pending.
 							 */ 
@@ -235,27 +344,28 @@ struct mddev_s
 	atomic_t			writes_pending; 
 	request_queue_t			*queue;	/* for plugging ... */
 
-	atomic_t                        write_behind; /* outstanding async IO */
-	unsigned int                    max_write_behind; /* 0 = sync */
-
-	struct bitmap                   *bitmap; /* the bitmap for the device */
-	struct file			*bitmap_file; /* the bitmap file */
-	long				bitmap_offset; /* offset from superblock of
-							* start of bitmap. May be
-							* negative, but not '0'
-							*/
-	long				default_bitmap_offset; /* this is the offset to use when
-								* hot-adding a bitmap.  It should
-								* eventually be settable by sysfs.
-								*/
-
 	struct list_head		all_mddevs;
+
+	/* ---Accusys add--- */
+	/* state of mddev: CLEAN, ERROR, WARN. */
+	unsigned long 			state;
+	int 				sync_speed;
+	int 				volumeid;
+
+/* For MD_ADD_IN_ERROR, count update superblock failure. Luke, 2005/11/03 */
+#ifdef	MD_ADD_IN_ERROR
+	int				update_fail; /* update sb fail count */
+#endif	/* MD_ADD_IN_ERROR */
+
+#ifdef	MD_CHECK_STATUS
+	unsigned long			last_warn; /* time stamp last warning */
+#endif	/* MD_CHECK_STATUS */	
 };
 
 
 static inline void rdev_dec_pending(mdk_rdev_t *rdev, mddev_t *mddev)
 {
-	int faulty = test_bit(Faulty, &rdev->flags);
+	int faulty = rdev->faulty;
 	if (atomic_dec_and_test(&rdev->nr_pending) && faulty)
 		set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
 }
@@ -280,25 +390,30 @@ struct mdk_personality_s
 	int (*hot_add_disk) (mddev_t *mddev, mdk_rdev_t *rdev);
 	int (*hot_remove_disk) (mddev_t *mddev, int number);
 	int (*spare_active) (mddev_t *mddev);
-	sector_t (*sync_request)(mddev_t *mddev, sector_t sector_nr, int *skipped, int go_faster);
+	int (*sync_request)(mddev_t *mddev, sector_t sector_nr, int go_faster);
 	int (*resize) (mddev_t *mddev, sector_t sectors);
 	int (*reshape) (mddev_t *mddev, int raid_disks);
 	int (*reconfig) (mddev_t *mddev, int layout, int chunk_size);
-	/* quiesce moves between quiescence states
-	 * 0 - fully active
-	 * 1 - no new requests allowed
-	 * others - reserved
-	 */
-	void (*quiesce) (mddev_t *mddev, int state);
+
+#ifdef MD_ADD_IN_ERROR
+	/* Pers for removed disk back to error-array */
+	int (*hot_add_disk_in_error) (mddev_t *mddev, mdk_rdev_t *rdev);
+#endif  /* MD_ADD_IN_ERROR */
+
+#ifdef	BAD_SECTOR_REMAP
+	/* Pers for performing remap */
+	int (*perform_remap)(mddev_t *mddev, struct bio *bio, int in_hash);
+#endif	/* BAD_SECTOR_REMAP */
 };
 
-
-struct md_sysfs_entry {
-	struct attribute attr;
-	ssize_t (*show)(mddev_t *, char *);
-	ssize_t (*store)(mddev_t *, const char *, size_t);
-};
-
+#ifdef MD_CHECK_STATUS
+extern struct timezone sys_tz;
+static inline long get_nowsec(void)
+{
+	struct timespec now = CURRENT_TIME_SEC;
+	return (long)(now.tv_sec + (-1 * sys_tz.tz_minuteswest * 60));
+}
+#endif
 
 static inline char * mdname (mddev_t * mddev)
 {
@@ -334,8 +449,9 @@ typedef struct mdk_thread_s {
 	mddev_t			*mddev;
 	wait_queue_head_t	wqueue;
 	unsigned long           flags;
+	struct completion	*event;
 	struct task_struct	*tsk;
-	unsigned long		timeout;
+	const char		*name;
 } mdk_thread_t;
 
 #define THREAD_WAKEUP  0
@@ -368,3 +484,9 @@ do {									\
 
 #endif
 
+
+#undef	MD_ADD_IN_ERROR
+#undef  BAD_SECTOR_REMAP
+#undef  MD_GLOBAL_SPARE
+#undef  MD_CHECK_STATUS
+#undef  MD_SYNC_CONTINUOUSLY

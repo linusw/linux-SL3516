@@ -1,7 +1,7 @@
 /* 
  * RNDIS MSG parser
  * 
- * Version:     $Id: rndis.c,v 1.19 2004/03/25 21:33:46 robert Exp $
+ * Version:     $Id: rndis.c,v 1.1.1.1 2006/04/03 08:41:01 amos_lee Exp $
  * 
  * Authors:	Benedikt Spranger, Pengutronix
  * 		Robert Schwebel, Pengutronix

@@ -5,7 +5,7 @@
  *
  * This code is GPL
  *
- * $Id: mtdpart.c,v 1.55 2005/11/07 11:14:20 gleixner Exp $
+ * $Id: mtdpart.c,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
  *
  * 	02-21-2002	Thomas Gleixner <gleixner@autronix.de>
  *			added support for read_oob, write_oob
@@ -380,6 +380,7 @@ int add_mtd_partitions(struct mtd_info *master,
 	int i;
 
 	printk (KERN_NOTICE "Creating %d MTD partitions on \"%s\":\n", nbparts, master->name);
+	printk(KERN_EMERG " jenny master->erasesize is %x \n",master->erasesize);
 
 	for (i = 0; i < nbparts; i++) {
 
@@ -478,8 +479,8 @@ int add_mtd_partitions(struct mtd_info *master,
 			slave->mtd.size = master->size - slave->offset;
 		cur_offset = slave->offset + slave->mtd.size;
 
-		printk (KERN_NOTICE "0x%08x-0x%08x : \"%s\"\n", slave->offset,
-			slave->offset + slave->mtd.size, slave->mtd.name);
+		printk (KERN_NOTICE "0x%08x-0x%08x-0x%08x : \"%s\"\n", slave->offset,
+			slave->offset + slave->mtd.size, slave->mtd.size, slave->mtd.name);
 
 		/* let's do some sanity checks */
 		if (slave->offset >= master->size) {

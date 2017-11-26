@@ -55,6 +55,10 @@
 #include <net/dst.h>
 #include <net/checksum.h>
 
+#ifdef CONFIG_SL2312_TSO
+struct page_chain;
+#endif
+
 /*
  * This structure really needs to be cleaned up.
  * Most of it is for TCP, and not used by any of
@@ -251,6 +255,12 @@ struct sock {
   	int			(*sk_backlog_rcv)(struct sock *sk,
 						  struct sk_buff *skb);  
 	void                    (*sk_destruct)(struct sock *sk);
+
+#ifdef CONFIG_BRIDGE
+	/*++beck*/
+	int tss_flag;   /*1=TSS ON, 0=TSS OFF */
+#endif
+	
 };
 
 /*
@@ -527,6 +537,20 @@ struct proto {
 					int *addr_len);
 	int			(*sendpage)(struct sock *sk, struct page *page,
 					int offset, size_t size, int flags);
+#ifdef CONFIG_SL2312_TSO
+	int			(*send_mpages)(struct sock *sk, struct page_chain* chain,
+					int offset, size_t size, int flags);
+#endif
+#ifdef CONFIG_SL2312_RECVFILE
+	int			(*recvpage)(struct sock *sk, char* buf,
+					size_t size, int nonblock, int flags);
+#endif
+#if defined(CONFIG_SL2312_RECVFLE) && defined(CONFIG_SL2312_MPAGE)
+	int			(*recv_mpages)(struct sock *sk, struct page_chain* chain,
+				        //int offset, size_t size, int nonblock, int flags);
+				        int offset, size_t size, int nonblock, int flags, int *ftpFinFlag); // Zachary
+#endif
+
 	int			(*bind)(struct sock *sk, 
 					struct sockaddr *uaddr, int addr_len);
 

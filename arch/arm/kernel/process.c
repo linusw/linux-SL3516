@@ -77,7 +77,7 @@ __setup("hlt", hlt_setup);
 void (*pm_idle)(void);
 EXPORT_SYMBOL(pm_idle);
 
-void (*pm_power_off)(void);
+//void (*pm_power_off)(void);
 EXPORT_SYMBOL(pm_power_off);
 
 /*
@@ -142,13 +142,37 @@ __setup("reboot=", reboot_setup);
 
 void machine_halt(void)
 {
+	unsigned int reg_v;
+	
+	printk("arch_power_off\n");
+	
+	reg_v = readl(IO_ADDRESS(SL2312_POWER_CTRL_BASE) + 0x04);
+	reg_v &= ~0x00000002;
+	reg_v |= 0x1;
+	mdelay(5);
+	// Power off
+	__raw_writel( reg_v, IO_ADDRESS(SL2312_POWER_CTRL_BASE) + 0x04);
+	
 }
 
 
 void machine_power_off(void)
 {
+	unsigned int reg_v;
+	
 	if (pm_power_off)
+//	if (&pm_power_off!=NULL)
 		pm_power_off();
+	
+	printk("arch_power_off\n");
+	
+	reg_v = readl(IO_ADDRESS(SL2312_POWER_CTRL_BASE) + 0x04);
+	reg_v &= ~0x00000002;
+	reg_v |= 0x1;
+	mdelay(5);
+	// Power off
+	__raw_writel( reg_v, IO_ADDRESS(SL2312_POWER_CTRL_BASE) + 0x04);
+	
 }
 
 

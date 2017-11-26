@@ -9,7 +9,7 @@
  * Public License.  See the file "COPYING" in the main directory of
  * this archive for more details.
  *
- * $Id: opsput_lcd.h,v 1.1 2004/07/27 06:54:20 sakugawa Exp $
+ * $Id: opsput_lcd.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $
  */
 
 #ifndef _OPSPUT_OPSPUT_LCD_H
