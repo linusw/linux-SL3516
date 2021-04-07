@@ -73,7 +73,7 @@
 
 
 
-static const char *enternow_pci_rev = "$Revision: 1.1.4.5 $";
+static const char *enternow_pci_rev = "$Revision: 1.1.1.1 $";
 
 
 /* für PowerISDN PCI */

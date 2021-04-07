@@ -11,6 +11,9 @@
  * partition split defined below.
  *
  * $Log: axisflashmap.c,v $
+ * Revision 1.1.1.1  2006/04/03 08:40:32  amos_lee
+ * initial
+ *
  * Revision 1.11  2004/11/15 10:27:14  starvik
  * Corrected typo (Thanks to Milton Miller <miltonm@bga.com>).
  *

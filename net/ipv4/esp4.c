@@ -11,6 +11,12 @@
 #include <net/icmp.h>
 #include <net/udp.h>
 
+#ifdef CONFIG_SL2312_IPSEC
+extern unsigned long crypto_flags, crypto_go;
+extern  spinlock_t crypto_done_lock;
+extern  unsigned int crypto_done ;
+#endif
+
 /* decapsulation data for use when post-processing */
 struct esp_decap_data {
 	xfrm_address_t	saddr;
@@ -102,17 +108,52 @@ static int esp_output(struct xfrm_state *x, struct sk_buff *skb)
 
 	do {
 		struct scatterlist *sg = &esp->sgbuf[0];
-
+		//printk("%s :--> &esp->sgbuf[0]:0x%x \n",__func__,&esp->sgbuf[0]);
 		if (unlikely(nfrags > ESP_NUM_FAST_SG)) {
 			sg = kmalloc(sizeof(struct scatterlist)*nfrags, GFP_ATOMIC);
 			if (!sg)
 				goto error;
 		}
 		skb_to_sgvec(skb, sg, esph->enc_data+esp->conf.ivlen-skb->data, clen);
+
+		//tfm->crt_u.cipher.key = esp->conf.key;
+		//tfm->crt_u.cipher.keylen = esp->conf.key_len;
+#ifdef CONFIG_SL2312_IPSEC		
+	unsigned int ret;
+		//while (1) {
+		//if (crypto_go){
+		//	break;
+		//}
+		//schedule();
+		//};
+		ret = -1;
+		crypto_cipher_setkey(esp->conf.tfm, esp->conf.key, esp->conf.key_len);
+		//while (ret)
+    {
+    	//if(crypto_go == 1)
+				ret = crypto_cipher_encrypt(tfm, sg, sg, clen);
+			//if (ret)
+			//	msleep(1);
+		}
+		
+		if (unlikely(sg != &esp->sgbuf[0]))
+		{
+			//printk("sg:0x$x  &esp->sgbuf[0]:0x%x \n",sg,&esp->sgbuf[0]);
+			kfree(sg);
+		}	
+		crypto_go = 1;
+#else	
+		//printk("33\n");
+		crypto_cipher_setkey(esp->conf.tfm, esp->conf.key, esp->conf.key_len);
 		crypto_cipher_encrypt(tfm, sg, sg, clen);
 		if (unlikely(sg != &esp->sgbuf[0]))
+		{
+			//printk("%s :--> &esp->sgbuf[0]:0x%x   sg:0x%x\n",__func__,&esp->sgbuf[0],sg);
 			kfree(sg);
+		}
+#endif			
 	} while (0);
+	//printk("44\n");
 
 	if (esp->conf.ivlen) {
 		memcpy(esph->enc_data, esp->conf.ivec, crypto_tfm_alg_ivsize(tfm));
@@ -120,8 +161,21 @@ static int esp_output(struct xfrm_state *x, struct sk_buff *skb)
 	}
 
 	if (esp->auth.icv_full_len) {
+#ifdef CONFIG_SL2312_IPSEC		
+		//while (1) {
+		//if (crypto_go){
+		//	break;
+		//}
+		//schedule();
+		//};
+#endif		
+		//printk("eocc\n");
 		esp->auth.icv(esp, skb, (u8*)esph-skb->data,
 		              sizeof(struct ip_esp_hdr) + esp->conf.ivlen+clen, trailer->tail);
+		//printk("eodd\n");
+#ifdef CONFIG_SL2312_IPSEC			
+		crypto_go = 1;
+#endif	
 		pskb_put(skb, trailer, alen);
 	}
 
@@ -149,7 +203,8 @@ static int esp_input(struct xfrm_state *x, struct xfrm_decap_state *decap, struc
 	int elen = skb->len - sizeof(struct ip_esp_hdr) - esp->conf.ivlen - alen;
 	int nfrags;
 	int encap_len = 0;
-
+	
+	
 	if (!pskb_may_pull(skb, sizeof(struct ip_esp_hdr)))
 		goto out;
 
@@ -161,8 +216,23 @@ static int esp_input(struct xfrm_state *x, struct xfrm_decap_state *decap, struc
 		u8 sum[esp->auth.icv_full_len];
 		u8 sum1[alen];
 		
-		esp->auth.icv(esp, skb, 0, skb->len-alen, sum);
+#ifdef CONFIG_SL2312_IPSEC		
+	
+		//while (1) {
+		//if (crypto_go){
+		//	break;
+		//}
+		//schedule();
+		//};
 
+		//printk("eiaa\n");		
+		esp->auth.icv(esp, skb, 0, skb->len-alen, sum);
+		//printk("eibb\n");
+			
+		crypto_go = 1;
+#else
+		esp->auth.icv(esp, skb, 0, skb->len-alen, sum);
+#endif		
 		if (skb_copy_bits(skb, skb->len-alen, sum1, alen))
 			BUG();
 
@@ -196,10 +266,44 @@ static int esp_input(struct xfrm_state *x, struct xfrm_decap_state *decap, struc
 				goto out;
 		}
 		skb_to_sgvec(skb, sg, sizeof(struct ip_esp_hdr) + esp->conf.ivlen, elen);
+		
+
+		
+#ifdef CONFIG_SL2312_IPSEC
+		unsigned int ret;
+		//while (1) {
+		//if (crypto_go){
+		//	break;
+		//}
+		//schedule();
+		//};		
+		ret = -1;
+		crypto_cipher_setkey(esp->conf.tfm, esp->conf.key, esp->conf.key_len);
+
+		
+		//printk("11\n");
+		//while (ret)
+    {
+    	//if(crypto_go == 1)
+				ret = crypto_cipher_decrypt(esp->conf.tfm, sg, sg, elen);
+			//if (ret)
+			//	msleep(1);
+		}
+		if (unlikely(sg != &esp->sgbuf[0]))
+			kfree(sg);
+		//printk("22\n");
+
+		crypto_go = 1;
+	
+#else
+		crypto_cipher_setkey(esp->conf.tfm, esp->conf.key, esp->conf.key_len);
+
+		
+		//printk("11\n");
 		crypto_cipher_decrypt(esp->conf.tfm, sg, sg, elen);
 		if (unlikely(sg != &esp->sgbuf[0]))
 			kfree(sg);
-
+#endif
 		if (skb_copy_bits(skb, skb->len-alen-2, nexthdr, 2))
 			BUG();
 

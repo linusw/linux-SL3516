@@ -1,4 +1,4 @@
-/* $Id: hysdn_init.c,v 1.6.6.6 2001/09/23 22:24:54 kai Exp $
+/* $Id: hysdn_init.c,v 1.1.1.1 2006/04/03 08:40:49 amos_lee Exp $
  *
  * Linux driver for HYSDN cards, init functions.
  *
@@ -32,7 +32,7 @@ MODULE_DESCRIPTION("ISDN4Linux: Driver for HYSDN cards");
 MODULE_AUTHOR("Werner Cornelius");
 MODULE_LICENSE("GPL");
 
-static char *hysdn_init_revision = "$Revision: 1.6.6.6 $";
+static char *hysdn_init_revision = "$Revision: 1.1.1.1 $";
 static int cardmax;		/* number of found cards */
 hysdn_card *card_root = NULL;	/* pointer to first card */
 

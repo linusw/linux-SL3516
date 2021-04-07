@@ -29,7 +29,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * $Id: msnd_pinnacle.c,v 1.8 2000/12/30 00:33:21 sycamore Exp $
+ * $Id: msnd_pinnacle.c,v 1.1.1.1 2006/04/03 08:41:33 amos_lee Exp $
  *
  * 12-3-2000  Modified IO port validation  Steve Sycamore
  *

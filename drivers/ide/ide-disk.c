@@ -60,7 +60,6 @@
 #include <linux/genhd.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
-
 #define _IDE_DISK
 
 #include <linux/ide.h>
@@ -70,6 +69,7 @@
 #include <asm/uaccess.h>
 #include <asm/io.h>
 #include <asm/div64.h>
+#include <asm/arch/sl2312.h>
 
 struct ide_disk_obj {
 	ide_drive_t	*drive;
@@ -77,6 +77,80 @@ struct ide_disk_obj {
 	struct gendisk	*disk;
 	struct kref	kref;
 };
+//#define GEMINI_FAN_CONTROL
+
+#ifdef GEMINI_FAN_CONTROL
+
+#define    SSP_DEVICE_ID      0x00
+#define    SSP_CTRL_STATUS    0x04
+#define    SSP_FRAME_CTRL           0x08
+#define    SSP_BAUD_RATE            0x0c
+#define    SSP_FRAME_CTRL2          0x10
+#define    SSP_FIFO_CTRL            0x14
+#define    SSP_TX_SLOT_VALID0       0x18
+#define    SSP_TX_SLOT_VALID1       0x1c
+#define    SSP_TX_SLOT_VALID2       0x20
+#define    SSP_TX_SLOT_VALID3       0x24
+#define    SSP_RX_SLOT_VALID0       0x28
+#define    SSP_RX_SLOT_VALID1       0x2c
+#define    SSP_RX_SLOT_VALID2       0x30
+#define    SSP_RX_SLOT_VALID3       0x34
+#define    SSP_SLOT_SIZE0           0x38
+#define    SSP_SLOT_SIZE1           0x3c
+#define    SSP_SLOT_SIZE2           0x40
+#define    SSP_SLOT_SIZE3           0x44
+#define    SSP_READ_PORT            0x48
+#define    SSP_WRITE_PORT           0x4c
+ 
+/***************************************/
+/* define GPIO module base address     */
+/***************************************/
+#define SSP_BASE  (IO_ADDRESS(SL2312_SSP_CTRL_BASE))
+#define GLOBAL_BASE      (IO_ADDRESS(SL2312_GLOBAL_BASE))
+ 
+/* define read/write register utility */
+#define SSP_READ_REG(offset)   (__raw_readl(offset+SSP_BASE))
+#define SSP_WRITE_REG(offset,val)  (__raw_writel(val,offset+SSP_BASE))
+ 
+#define READ_GLOBAL_REG(offset)   (__raw_readl(offset+GLOBAL_BASE))
+#define WRITE_GLOBAL_REG(offset,val)  (__raw_writel(val,offset+GLOBAL_BASE))
+
+
+struct ata_smart_attribute {
+  unsigned char id;
+  // meaning of flag bits: see MACROS just below
+  // WARNING: MISALIGNED!
+  unsigned char flags; 
+  unsigned char flag2;
+  unsigned char curr;
+  unsigned char worst;
+  unsigned char raw[6];
+  unsigned char reserv;
+};
+
+#define NUMBER_ATA_SMART_ATTRIBUTES     30
+
+struct ata_smart_values {
+  unsigned char revnumber;
+  unsigned char revnumber2;
+  struct ata_smart_attribute vendor_attributes [NUMBER_ATA_SMART_ATTRIBUTES];
+  unsigned char offline_data_collection_status;
+  unsigned char self_test_exec_status;  //IBM # segments for offline collection
+  unsigned short int total_time_to_complete_off_line; // IBM different
+  unsigned char vendor_specific_366; // Maxtor & IBM curent segment pointer
+  unsigned char offline_data_collection_capability;
+  unsigned short int smart_capability;
+  unsigned char errorlog_capability;
+  unsigned char vendor_specific_371;  // Maxtor, IBM: self-test failure checkpoint see below!
+  unsigned char short_test_completion_time;
+  unsigned char extend_test_completion_time;
+  unsigned char conveyance_test_completion_time;
+  unsigned char reserved_375_385[11];
+  unsigned char vendor_specific_386_510[125]; // Maxtor bytes 508-509 Attribute/Threshold Revision #
+  unsigned char chksum;
+}; 
+void get_temperature(void *data);
+#endif
 
 static DECLARE_MUTEX(idedisk_ref_sem);
 
@@ -675,6 +749,138 @@ static ide_proc_entry_t idedisk_proc[] = {
 	{ NULL, 0, NULL, NULL }
 };
 
+#ifdef GEMINI_FAN_CONTROL
+
+void ssp_init_ctl()
+{
+	unsigned int data=0;
+#ifdef CONFIG_SL3516_ASIC
+	data = READ_GLOBAL_REG(0x30);
+	data|=0x100;
+	data&=0xfffeffbf;
+	WRITE_GLOBAL_REG(0x30,data);
+	
+	SSP_WRITE_REG(SSP_FRAME_CTRL, 0x04010FFF ); //0x04010030//ext clk : bit17
+	SSP_WRITE_REG(SSP_BAUD_RATE, 0x3f020601);
+#else
+	
+	SSP_WRITE_REG(SSP_FRAME_CTRL, 0x04010030 ); //0x04010030//ext clk : bit17
+	SSP_WRITE_REG(SSP_BAUD_RATE, 0x1F020502);
+	
+#endif
+	
+	SSP_WRITE_REG(SSP_FRAME_CTRL2, 0x000F807F);//0x0003800f
+	SSP_WRITE_REG(SSP_FIFO_CTRL, 0x00004714);
+	SSP_WRITE_REG(SSP_TX_SLOT_VALID0, 0x00000001);
+	SSP_WRITE_REG(SSP_TX_SLOT_VALID1, 0x00000000);
+	SSP_WRITE_REG(SSP_TX_SLOT_VALID2, 0x00000000);
+	SSP_WRITE_REG(SSP_TX_SLOT_VALID3, 0x00000000);
+	SSP_WRITE_REG(SSP_RX_SLOT_VALID0, 0x00000001);
+	SSP_WRITE_REG(SSP_RX_SLOT_VALID1, 0x00000000);
+	SSP_WRITE_REG(SSP_RX_SLOT_VALID2, 0x00000000);
+	SSP_WRITE_REG(SSP_RX_SLOT_VALID3, 0x00000000);
+	SSP_WRITE_REG(SSP_SLOT_SIZE0, 0xffffffff);
+	SSP_WRITE_REG(SSP_SLOT_SIZE1, 0xffffffff);
+	SSP_WRITE_REG(SSP_SLOT_SIZE2, 0xffffffff);
+	SSP_WRITE_REG(SSP_SLOT_SIZE3, 0xffffffff);
+	SSP_WRITE_REG(SSP_CTRL_STATUS, 0x1F100000);//0x9F100000
+	mdelay(250);
+	SSP_WRITE_REG(SSP_CTRL_STATUS, 0x00100000);//0x80100000
+
+}
+
+void ssp_fan_ctl(unsigned char duty)
+{
+	unsigned int val;
+	
+	val = SSP_READ_REG(SSP_FRAME_CTRL2);//0x0003800f
+	val &= ~0x7F;
+	val |= (duty&0x7F);
+	SSP_WRITE_REG(SSP_FRAME_CTRL2, val);//0x0003800f
+}
+
+pid_t mon_temperature_pid;
+static int get_hd_temperature(void)
+{
+	int i,unit,index;
+	u8 buf[1024*4];
+	int cur_temp=0;
+	for (index = 0; index < MAX_HWIFS; index++){
+		for (unit = 0; unit < MAX_DRIVES; unit++){
+			//printk("%d %d:%d %d\n",index,unit,ide_hwifs[index].drives[unit].present,ide_hwifs[index].drives[unit].media);
+			if (ide_hwifs[index].drives[unit].present && (ide_hwifs[index].drives[unit].media == ide_disk) ){
+				get_smart_values(&ide_hwifs[index].drives[unit], buf);
+				for (i=0; i<NUMBER_ATA_SMART_ATTRIBUTES; i++){
+					 //struct ata_smart_attribute *disk=data->vendor_attributes;
+					 struct ata_smart_attribute *disk=&buf[2];
+					 disk += i;
+					 if(disk->id == 194)
+					 {
+					 	//printk("%s temperature:%d\n",ide_hwifs[index].drives[unit].name,disk->raw[0]);
+					 	if(disk->raw[0] > cur_temp)
+					 		cur_temp = disk->raw[0];
+					 }
+				}
+				
+			}
+		}
+	}
+	return cur_temp;
+}
+EXPORT_SYMBOL(get_hd_temperature);
+
+#define LOW_TEMP	39
+#define HIGH_TEMP	LOW_TEMP + 6
+wait_queue_head_t   thr_wait;
+void get_temperature(void *data)
+{
+	unsigned long	timeout;
+	unsigned int	temperature ;
+	unsigned char	speed=0,pre_speed=0x7f;
+	printk("SMART Thread start\n");
+	daemonize("S.M.A.R.T"); 
+	allow_signal(SIGTERM);
+
+	ssp_init_ctl();
+	
+	while (1)
+	{
+		
+		temperature = get_hd_temperature();	// get H.D. temperature
+		
+		/*  add fan control code here */
+		if(temperature > HIGH_TEMP)
+			speed = 0x7F;			// MAXMUM speed
+		else if((temperature>LOW_TEMP))
+			speed = (1<<(temperature-LOW_TEMP))+0x0F ;
+		else
+			speed =0x0;			// stop fan
+			
+		if((pre_speed < 0x10) && (speed > 0x0F)){
+			ssp_fan_ctl(0x7f);
+			msleep(1000);			// wait fan to work
+		}
+		
+		if(pre_speed != speed)	{		// change fan speed
+			pre_speed = speed;
+			ssp_fan_ctl(speed);
+		}
+		
+		timeout = 5*HZ;
+		do
+		{
+			timeout = interruptible_sleep_on_timeout (&thr_wait, timeout);
+		} while (!signal_pending (current) && (timeout > 0));
+	
+		if (signal_pending (current))
+		{
+			//			spin_lock_irq(&current->sigmask_lock);
+			flush_signals(current);
+			//			spin_unlock_irq(&current->sigmask_lock);
+		}
+	} 
+}
+#endif
 #else
 
 #define	idedisk_proc	NULL
@@ -1253,6 +1459,15 @@ static int ide_disk_probe(struct device *dev)
 	set_capacity(g, idedisk_capacity(drive));
 	g->fops = &idedisk_ops;
 	add_disk(g);
+
+#ifdef GEMINI_FAN_CONTROL	
+	init_waitqueue_head (&thr_wait);
+	mon_temperature_pid = kernel_thread ((void *)get_temperature, NULL, CLONE_FS | CLONE_FILES);
+	if (mon_temperature_pid < 0)
+    	{
+    		printk ("Unable to start S.M.A.R.T.thread\n");
+    	}
+#endif    	
 	return 0;
 
 out_free_idkp:

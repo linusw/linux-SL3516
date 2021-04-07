@@ -1,4 +1,4 @@
-// $Id: vcs_hook.c,v 1.2 2003/08/12 12:01:06 starvik Exp $
+// $Id: vcs_hook.c,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $
 //
 // Call simulator hook. This is the part running in the
 // simulated program.

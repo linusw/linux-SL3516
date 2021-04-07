@@ -1,4 +1,4 @@
-/* $Id: diddfunc.c,v 1.14.6.2 2004/08/28 20:03:53 armin Exp $
+/* $Id: diddfunc.c,v 1.1.1.1 2006/04/03 08:40:49 amos_lee Exp $
  *
  * DIDD Interface module for Eicon active cards.
  * 

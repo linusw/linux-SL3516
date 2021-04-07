@@ -18,6 +18,9 @@
 *! Jul 21 1999  Bjorn Wesen     eLinux port
 *!
 *! $Log: kgdb.c,v $
+*! Revision 1.1.1.1  2006/04/03 08:40:32  amos_lee
+*! initial
+*!
 *! Revision 1.6  2005/01/14 10:12:17  starvik
 *! KGDB on separate port.
 *! Console fixes from 2.4.
@@ -75,7 +78,7 @@
 *!
 *!---------------------------------------------------------------------------
 *!
-*! $Id: kgdb.c,v 1.6 2005/01/14 10:12:17 starvik Exp $
+*! $Id: kgdb.c,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $
 *!
 *! (C) Copyright 1999, Axis Communications AB, LUND, SWEDEN
 *!

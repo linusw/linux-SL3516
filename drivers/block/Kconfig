@@ -408,6 +408,46 @@ config BLK_DEV_INITRD
 	  "real" root file system, etc. See <file:Documentation/initrd.txt>
 	  for details.
 
+config LZMA_INITRD
+       boolean "Allow LZMA compression on initrd"
+       depends on BLK_DEV_INITRD=y
+       default "y"
+       help
+         Use lzma compression on initrd, example 'lzma e initrd initrd.7z -d16'.
+         If you have sufficient memory, you could compress using bigger dictionary size,
+         'lzma e initrd initrd.7z'.
+
+config LZMA_INITRD_KMALLOC_ONLY
+       boolean "Use only kmalloc, do not use vmalloc on lzma initrd"
+       depends on LZMA_INITRD=y
+       default "n"
+       help
+         Set to y if you do not want to use vmalloc, ie use only kmalloc.
+
+config LZMA_INITRAM_FS
+       boolean "Allow LZMA compression on initramfs"
+       depends on BLK_DEV_RAM=y
+       default "y"
+       help
+         Use lzma compression on initramfs, example 'lzma e initramfs.cpio initramfs.cpio.lzma'.
+
+config LZMA_INITRAM_FS_SMALLMEM
+       boolean "Use lzma compression with small dictonary size."
+       depends on LZMA_INITRAM_FS=y
+       default "y"
+       help
+         Use lzma compression on initramfs with small dictionary size, example
+         'lzma e initramfs.cpio initramfs.cpio.lzma -d16'.
+         Affects only the initramfs.cpio in the ~usr directory, which is compiled into
+         the kernel. If you prepared initramfs.cpio for use with bootloader, you would
+         need to specify the commandline options (-d16) yourself.
+
+config LZMA_INITRAM_FS_KMALLOC_ONLY
+       boolean "Use only kmalloc, do not use vmalloc on lzma initramfs"
+       depends on LZMA_INITRAM_FS=y
+       default "n"
+       help
+         Set to y if you do not want to use vmalloc, ie use only kmalloc.
 
 config CDROM_PKTCDVD
 	tristate "Packet writing on CD/DVD media"

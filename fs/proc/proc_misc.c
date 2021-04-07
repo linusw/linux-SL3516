@@ -51,6 +51,8 @@
 #include <asm/tlb.h>
 #include <asm/div64.h>
 #include "internal.h"
+#include <asm/hardware.h>
+#include <asm/arch/sl2312.h>
 
 #define LOAD_INT(x) ((x) >> FSHIFT)
 #define LOAD_FRAC(x) LOAD_INT(((x) & (FIXED_1-1)) * 100)
@@ -114,6 +116,26 @@ static int uptime_read_proc(char *page, char **start, off_t off,
 
 	return proc_calc_metrics(page, start, off, count, eof, len);
 }
+
+#if defined(CONFIG_SCSI_SATA_LEPUS_MODULE) || defined(CONFIG_SCSI_SATA_LEPUS)
+extern unsigned char sata0_name[4];
+extern unsigned char sata1_name[4];
+static int sata_stat_read_proc(char *page, char **start, off_t off,
+				 int count, int *eof, void *data)
+{
+	int len;
+	unsigned int sata_p0,sata_p1,reg;
+	
+	reg = readl(IO_ADDRESS(SL2312_SATA_BASE)+0x8);
+	sata_p0 = reg&0x1 ;
+	reg = readl(IO_ADDRESS(SL2312_SATA_BASE)+0xC);
+	sata_p1 = reg&0x1 ;
+	
+	len = sprintf(page,"P0: %d %s\n"
+			   "P1: %d %s\n",sata_p0,sata0_name,sata_p1,sata1_name);
+	return proc_calc_metrics(page, start, off, count, eof, len);
+}
+#endif
 
 static int meminfo_read_proc(char *page, char **start, off_t off,
 				 int count, int *eof, void *data)
@@ -585,6 +607,9 @@ void __init proc_misc_init(void)
 		{"cmdline",	cmdline_read_proc},
 		{"locks",	locks_read_proc},
 		{"execdomains",	execdomains_read_proc},
+#if defined(CONFIG_SCSI_SATA_LEPUS_MODULE) || defined(CONFIG_SCSI_SATA_LEPUS)
+		{"sata_stat",	sata_stat_read_proc},
+#endif
 		{NULL,}
 	};
 	for (p = simple_ones; p->name; p++)

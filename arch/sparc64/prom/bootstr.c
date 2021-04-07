@@ -1,4 +1,4 @@
-/* $Id: bootstr.c,v 1.6 1999/08/31 06:55:01 davem Exp $
+/* $Id: bootstr.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  * bootstr.c:  Boot string/argument acquisition from the PROM.
  *
  * Copyright(C) 1995 David S. Miller (davem@caip.rutgers.edu)

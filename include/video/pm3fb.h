@@ -8,7 +8,7 @@
  *  License. See the file COPYING in the main directory of this archive for
  *  more details.
  *
- *  $Header: /cvsroot/linux/drivers/video/pm3fb.h,v 1.1 2002/02/25 19:11:06 marcelo Exp $
+ *  $Header: /home/cvs/gemini-2.6.15/include/video/pm3fb.h,v 1.1.1.1 2006/04/03 08:41:22 amos_lee Exp $
  *
  */
 

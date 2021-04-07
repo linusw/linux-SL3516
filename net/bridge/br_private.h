@@ -4,7 +4,7 @@
  *	Authors:
  *	Lennert Buytenhek		<buytenh@gnu.org>
  *
- *	$Id: br_private.h,v 1.7 2001/12/24 00:59:55 davem Exp $
+ *	$Id: br_private.h,v 1.2 2006/04/20 02:33:47 beckerh Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License
@@ -241,5 +241,11 @@ extern void br_sysfs_delbr(struct net_device *dev);
 #define br_sysfs_addbr(dev)	(0)
 #define br_sysfs_delbr(dev)	do { } while(0)
 #endif /* CONFIG_SYSFS */
+
+#if defined(CONFIG_SL2312_TSO)
+/*br_fdb.c*/
+extern int br_fdb_check_eth0(unsigned char * addr);
+
+#endif
 
 #endif

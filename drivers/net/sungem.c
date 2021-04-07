@@ -1,4 +1,4 @@
-/* $Id: sungem.c,v 1.44.2.22 2002/03/13 01:18:12 davem Exp $
+/* $Id: sungem.c,v 1.1.1.1 2006/04/03 08:40:53 amos_lee Exp $
  * sungem.c: Sun GEM ethernet driver.
  *
  * Copyright (C) 2000, 2001, 2002, 2003 David S. Miller (davem@redhat.com)

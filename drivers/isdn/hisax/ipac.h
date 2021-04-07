@@ -1,4 +1,4 @@
-/* $Id: ipac.h,v 1.7.2.2 2004/01/12 22:52:26 keil Exp $
+/* $Id: ipac.h,v 1.1.1.1 2006/04/03 08:40:49 amos_lee Exp $
  *
  * IPAC specific defines
  *

@@ -18,6 +18,9 @@
 #ifndef __XFS_DIR2_DATA_H__
 #define	__XFS_DIR2_DATA_H__
 
+//debug_Aaron on 08/18/2006 fix bug of XFS internal error xfs_da_do_buf(2) at line 2221 of file fs/xfs/xfs_da_btree.c
+#define JZ_PACKED __attribute__ ((packed))
+
 /*
  * Directory format 2, data block structures.
  */
@@ -90,7 +93,9 @@ typedef struct xfs_dir2_data_entry {
 	__uint8_t		name[1];	/* name bytes, no null */
 						/* variable offset */
 	xfs_dir2_data_off_t	tag;		/* starting offset of us */
-} xfs_dir2_data_entry_t;
+//debug_Aaron
+//} xfs_dir2_data_entry_t;
+} JZ_PACKED xfs_dir2_data_entry_t;
 
 /*
  * Unused entry in a data block.  Aligned to 8 bytes.
@@ -101,7 +106,9 @@ typedef struct xfs_dir2_data_unused {
 	xfs_dir2_data_off_t	length;		/* total free length */
 						/* variable offset */
 	xfs_dir2_data_off_t	tag;		/* starting offset of us */
-} xfs_dir2_data_unused_t;
+//debug_Aaron
+//} xfs_dir2_data_unused_t;
+} JZ_PACKED xfs_dir2_data_unused_t;
 
 typedef union {
 	xfs_dir2_data_entry_t	entry;

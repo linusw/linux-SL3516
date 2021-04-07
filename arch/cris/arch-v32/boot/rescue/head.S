@@ -1,4 +1,4 @@
-/* $Id: head.S,v 1.4 2004/11/01 16:10:28 starvik Exp $
+/* $Id: head.S,v 1.1.1.1 2006/04/03 08:40:32 amos_lee Exp $
  *
  * This used to be the rescue code but now that is handled by the
  * RedBoot based RFL instead. Nothing to see here, move along.

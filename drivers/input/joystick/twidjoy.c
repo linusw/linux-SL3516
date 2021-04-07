@@ -1,5 +1,5 @@
 /*
- * $Id: twidjoy.c,v 1.5 2002/01/22 20:31:53 vojtech Exp $
+ * $Id: twidjoy.c,v 1.1.1.1 2006/04/03 08:40:48 amos_lee Exp $
  *
  *  derived from CVS-ID "stinger.c,v 1.5 2001/05/29 12:57:18 vojtech Exp"
  *

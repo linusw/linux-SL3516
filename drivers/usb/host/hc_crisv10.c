@@ -35,7 +35,7 @@
 #define ETRAX_USB_RX_IRQ USB_DMA_RX_IRQ_NBR
 #define ETRAX_USB_TX_IRQ USB_DMA_TX_IRQ_NBR
 
-static const char *usb_hcd_version = "$Revision: 1.2 $";
+static const char *usb_hcd_version = "$Revision: 1.1.1.1 $";
 
 #undef KERN_DEBUG
 #define KERN_DEBUG ""

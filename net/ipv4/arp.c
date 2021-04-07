@@ -1,6 +1,6 @@
 /* linux/net/inet/arp.c
  *
- * Version:	$Id: arp.c,v 1.99 2001/08/30 22:55:42 davem Exp $
+ * Version:	$Id: arp.c,v 1.2 2006/04/20 02:33:47 beckerh Exp $
  *
  * Copyright (C) 1994 by Florian  La Roche
  *
@@ -1059,7 +1059,8 @@ static unsigned arp_state_to_flags(struct neighbour *neigh)
  *	Get an ARP cache entry.
  */
 
-static int arp_req_get(struct arpreq *r, struct net_device *dev)
+//static int arp_req_get(struct arpreq *r, struct net_device *dev)
+int arp_req_get(struct arpreq *r, struct net_device *dev)
 {
 	u32 ip = ((struct sockaddr_in *) &r->arp_pa)->sin_addr.s_addr;
 	struct neighbour *neigh;

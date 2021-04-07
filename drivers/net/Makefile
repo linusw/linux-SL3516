@@ -76,6 +76,9 @@ obj-$(CONFIG_PHYLIB) += phy/
 obj-$(CONFIG_SUNDANCE) += sundance.o
 obj-$(CONFIG_HAMACHI) += hamachi.o
 obj-$(CONFIG_NET) += Space.o loopback.o
+#ifdef CONFIG_GEMINI_IPI
+obj-$(CONFIG_GEMINI_IPI) += ipcloop.o
+#endif
 obj-$(CONFIG_SEEQ8005) += seeq8005.o
 obj-$(CONFIG_NET_SB1000) += sb1000.o
 obj-$(CONFIG_MAC8390) += mac8390.o 8390.o
@@ -206,4 +209,18 @@ obj-$(CONFIG_ETRAX_ETHERNET) += cris/
 obj-$(CONFIG_NETCONSOLE) += netconsole.o
 
 obj-$(CONFIG_FS_ENET) += fs_enet/
+
+#obj-$(CONFIG_NET_SL2312) += sl2312_emac.o
+#obj-$(CONFIG_NET_SL2312_LEPUS)+= sl_lepus_gmac.o sl_lepus_nat.o sl_lepus_hash.o sl_lepus_crc16.o
+ifeq ($(CONFIG_NET_SL351X),y)
+obj-$(CONFIG_NET_SL351X)+= sl351x_nat.o sl351x_hash.o sl351x_crc16.o sl351x_proc.o sl_switch.o
+ifeq ($(CONFIG_SL351X_DUALCORE),y)
+obj-y += sl351x_gmac_dualcore.o
+else
+obj-y += sl351x_gmac.o
+endif
+endif
+ifeq ($(CONFIG_NET_SL2312),y) 
+obj-$(CONFIG_NET_SL2312)+= sl2312_emac.o
+endif
 

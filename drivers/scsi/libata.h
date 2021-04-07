@@ -51,7 +51,8 @@ extern void ata_dev_select(struct ata_port *ap, unsigned int device,
 extern void swap_buf_le16(u16 *buf, unsigned int buf_words);
 extern int ata_task_ioctl(struct scsi_device *scsidev, void __user *arg);
 extern int ata_cmd_ioctl(struct scsi_device *scsidev, void __user *arg);
-
+extern void ata_dev_identify(struct ata_port *ap, unsigned int device);
+extern void ata_set_mode(struct ata_port *ap);
 
 /* libata-scsi.c */
 extern void ata_scsi_scan_host(struct ata_port *ap);
@@ -84,5 +85,6 @@ extern void ata_scsi_set_sense(struct scsi_cmnd *cmd,
 extern void ata_scsi_rbuf_fill(struct ata_scsi_args *args,
                         unsigned int (*actor) (struct ata_scsi_args *args,
                                            u8 *rbuf, unsigned int buflen));
+extern int ata_scsi_slave_destroy(struct scsi_device *sdev);
 
 #endif /* __LIBATA_H__ */

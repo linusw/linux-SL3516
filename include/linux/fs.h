@@ -29,6 +29,13 @@
 #define BLOCK_SIZE_BITS 10
 #define BLOCK_SIZE (1<<BLOCK_SIZE_BITS)
 
+#ifdef CONFIG_SL2312_TSO
+struct page_chain {
+	struct page* page;
+	struct page_chain* next;
+};
+#endif
+
 /* And dynamically-tunable limits and defaults: */
 struct files_stat_struct {
 	int nr_files;		/* read only */
@@ -991,7 +998,19 @@ struct file_operations {
 	ssize_t (*writev) (struct file *, const struct iovec *, unsigned long, loff_t *);
 	ssize_t (*sendfile) (struct file *, loff_t *, size_t, read_actor_t, void *);
 	ssize_t (*sendpage) (struct file *, struct page *, int, size_t, loff_t *, int);
-	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
+#ifdef CONFIG_SL2312_TSO
+	ssize_t (*send_mpages) (struct file *, struct page_chain *, int, size_t, loff_t *, int);
+#endif
+#ifdef CONFIG_SL2312_RECVFILE
+	//int (*recvpage) (struct file *, char* buf, size_t, loff_t *, int);
+	int (*recvpage) (struct file *, char* buf, size_t, loff_t *, int, int *); // Zachary
+#endif
+#if defined(CONFIG_SL2312_MPAGE) && defined(CONFIG_SL2312_RECVFILE)
+	//int (*recv_mpages) (struct file*, struct page_chain *, int, size_t, loff_t *, int);
+        int (*recv_mpages) (struct file*, struct page_chain *, int, size_t, loff_t *, int, int *); // Zachary
+#endif
+
+ 	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
 	int (*check_flags)(int);
 	int (*dir_notify)(struct file *filp, unsigned long arg);
 	int (*flock) (struct file *, int, struct file_lock *);
@@ -1518,6 +1537,9 @@ extern int generic_file_mmap(struct file *, struct vm_area_struct *);
 extern int generic_file_readonly_mmap(struct file *, struct vm_area_struct *);
 extern int file_read_actor(read_descriptor_t * desc, struct page *page, unsigned long offset, unsigned long size);
 extern int file_send_actor(read_descriptor_t * desc, struct page *page, unsigned long offset, unsigned long size);
+#ifdef CONFIG_SL2312_TSO
+extern int file_mpage_send_actor(read_descriptor_t * desc, struct page *chain, unsigned long offset, unsigned long size);
+#endif
 extern ssize_t generic_file_read(struct file *, char __user *, size_t, loff_t *);
 int generic_write_checks(struct file *file, loff_t *pos, size_t *count, int isblk);
 extern ssize_t generic_file_write(struct file *, const char __user *, size_t, loff_t *);
@@ -1566,6 +1588,12 @@ static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
 	return 0;
 }
 #endif
+
+#ifdef CONFIG_SL2312_RECVFILE
+extern size_t generic_recvfile_write(struct file* write_file, struct file *sock_file,
+       loff_t* ppos, size_t count, int ftpFlag);
+#endif
+
 
 static inline void do_generic_file_read(struct file * filp, loff_t *ppos,
 					read_descriptor_t * desc,

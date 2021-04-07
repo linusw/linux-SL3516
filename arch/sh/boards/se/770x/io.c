@@ -1,4 +1,4 @@
-/* $Id: io.c,v 1.5 2004/02/22 23:08:43 kkojima Exp $
+/* $Id: io.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  *
  * linux/arch/sh/kernel/io_se.c
  *

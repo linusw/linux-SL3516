@@ -1,7 +1,7 @@
 /* Driver for USB Mass Storage compliant devices
  * Debugging Functions Source Code File
  *
- * $Id: debug.c,v 1.9 2002/04/22 03:39:43 mdharm Exp $
+ * $Id: debug.c,v 1.1.1.1 2006/04/03 08:41:02 amos_lee Exp $
  *
  * Current development and maintenance by:
  *   (c) 1999-2002 Matthew Dharm (mdharm-usb@one-eyed-alien.net)

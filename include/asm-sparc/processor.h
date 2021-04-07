@@ -1,4 +1,4 @@
-/* $Id: processor.h,v 1.83 2001/10/08 09:32:13 davem Exp $
+/* $Id: processor.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $
  * include/asm-sparc/processor.h
  *
  * Copyright (C) 1994 David S. Miller (davem@caip.rutgers.edu)

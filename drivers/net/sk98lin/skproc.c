@@ -2,8 +2,8 @@
  *
  * Name:	skproc.c
  * Project:	GEnesis, PCI Gigabit Ethernet Adapter
- * Version:	$Revision: 1.11 $
- * Date:	$Date: 2003/12/11 16:03:57 $
+ * Version:	$Revision: 1.1.1.1 $
+ * Date:	$Date: 2006/04/03 08:40:55 $
  * Purpose:	Funktions to display statictic data
  *
  ******************************************************************************/

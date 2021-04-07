@@ -33,7 +33,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * $Id: ib_mad.h 2775 2005-07-02 13:42:12Z halr $
+ * $Id: ib_mad.h,v 1.1.1.1 2006/04/03 08:41:22 amos_lee Exp $
  */
 
 #if !defined( IB_MAD_H )

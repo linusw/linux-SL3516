@@ -1,5 +1,5 @@
 /*
- *	$Id: proc.c,v 1.1.2.1 1998/06/07 23:21:01 geert Exp $
+ *	$Id: proc.c,v 1.1.1.1 2006/04/03 08:41:04 amos_lee Exp $
  *
  *	Procfs interface for the Zorro bus.
  *

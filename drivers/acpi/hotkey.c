@@ -1,5 +1,5 @@
 /*
- *  hotkey.c - ACPI Hotkey Driver ($Revision: 0.2 $)
+ *  hotkey.c - ACPI Hotkey Driver ($Revision: 1.1.1.1 $)
  *
  *  Copyright (C) 2004 Luming Yu <luming.yu@intel.com>
  *

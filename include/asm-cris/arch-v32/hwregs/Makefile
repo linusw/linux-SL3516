@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.8 2004/01/07 21:16:18 johana Exp $
+# $Id: Makefile,v 1.1.1.1 2006/04/03 08:41:10 amos_lee Exp $
 # Makefile to generate or copy the latest register definitions
 # and related datastructures and helpermacros.
 # The offical place for these files is at:

@@ -61,8 +61,21 @@ struct usb_hcd {	/* usb_bus.hcpriv points to this */
 	 * housekeeping
 	 */
 	struct usb_bus		self;		/* hcd is-a bus */
+	
+#ifdef  CONFIG_USB_SL2312 
+//        struct usb_bus		*bus;		/* hcd is-a bus */
+        const char		*bus_name;
+        struct list_head	hcd_list;
+#else 
+#ifdef  CONFIG_USB_SL2312_1
+        const char		*bus_name;
+        struct list_head	hcd_list;   
+#endif
+
+#endif
 
 	const char		*product_desc;	/* product/vendor string */
+	const char		*description;	/* "ehci-hcd" etc */
 	char			irq_descr[24];	/* driver + bus # */
 
 	struct timer_list	rh_timer;	/* drives root-hub polling */
@@ -74,7 +87,7 @@ struct usb_hcd {	/* usb_bus.hcpriv points to this */
 	const struct hc_driver	*driver;	/* hw-specific hooks */
 
 	/* Flags that need to be manipulated atomically */
-	unsigned long		flags;
+	unsigned long		flags ;
 #define HCD_FLAG_HW_ACCESSIBLE	0x00000001
 #define HCD_FLAG_SAW_IRQ	0x00000002
 
@@ -99,11 +112,13 @@ struct usb_hcd {	/* usb_bus.hcpriv points to this */
 
 	int			state;
 #	define	__ACTIVE		0x01
+#	define	__SLEEPY		0x02
 #	define	__SUSPEND		0x04
 #	define	__TRANSIENT		0x80
 
 #	define	HC_STATE_HALT		0
 #	define	HC_STATE_RUNNING	(__ACTIVE)
+#	define	USB_STATE_READY		(__ACTIVE|__SLEEPY)
 #	define	HC_STATE_QUIESCING	(__SUSPEND|__TRANSIENT|__ACTIVE)
 #	define	HC_STATE_RESUMING	(__SUSPEND|__TRANSIENT)
 #	define	HC_STATE_SUSPENDED	(__SUSPEND)
@@ -130,6 +145,13 @@ static inline struct usb_bus *hcd_to_bus (struct usb_hcd *hcd)
 	return &hcd->self;
 }
 
+struct hcd_dev {	/* usb_device.hcpriv points to this */
+	struct list_head	dev_list;	/* on this hcd */
+	struct list_head	urb_list;	/* pending on this dev */
+
+	/* per-configuration HC/HCD state, such as QH or ED */
+	void			*ep[32];
+};
 
 // urb.hcpriv is really hardware-specific
 
@@ -170,8 +192,16 @@ struct hc_driver {
 	const char	*product_desc;	/* product/vendor string */
 	size_t		hcd_priv_size;	/* size of private data */
 
+#ifdef  CONFIG_USB_SL2312
+	void	(*irq) (struct usb_hcd *hcd);
+#else
+#ifdef  CONFIG_USB_SL2312_1
+        void	(*irq) (struct usb_hcd *hcd);
+#else
 	/* irq handler */
 	irqreturn_t	(*irq) (struct usb_hcd *hcd, struct pt_regs *regs);
+#endif
+#endif
 
 	int	flags;
 #define	HCD_MEMORY	0x0001		/* HC regs use memory (else I/O) */
@@ -217,6 +247,14 @@ struct hc_driver {
 	int		(*bus_resume)(struct usb_hcd *);
 	int		(*start_port_reset)(struct usb_hcd *, unsigned port_num);
 	void		(*hub_irq_enable)(struct usb_hcd *);
+#ifdef CONFIG_USB_SL2312				
+	int	        (*disconnect_for_OTG) (struct usb_hcd *hcd, u32 state);
+#else 
+#ifdef CONFIG_USB_SL2312_1				
+	int	        (*disconnect_for_OTG) (struct usb_hcd *hcd, u32 state);
+#endif
+
+#endif	
 		/* Needed only if port-change IRQs are level-triggered */
 };
 
@@ -225,10 +263,18 @@ extern void usb_hcd_giveback_urb (struct usb_hcd *hcd, struct urb *urb, struct p
 extern struct usb_hcd *usb_create_hcd (const struct hc_driver *driver,
 		struct device *dev, char *bus_name);
 extern void usb_put_hcd (struct usb_hcd *hcd);
+#ifndef CONFIG_USB_SL2312
+#ifndef CONFIG_USB_SL2312_1
 extern int usb_add_hcd(struct usb_hcd *hcd,
 		unsigned int irqnum, unsigned long irqflags);
+#endif
+#endif
 extern void usb_remove_hcd(struct usb_hcd *hcd);
-
+extern struct usb_operations usb_hcd_operations;
+extern void rh_timer_func (unsigned long _hcd);
+extern void hcd_release (struct usb_bus *bus);
+#ifndef CONFIG_USB_SL2312
+#ifndef CONFIG_USB_SL2312_1
 #ifdef CONFIG_PCI
 struct pci_dev;
 struct pci_device_id;
@@ -236,12 +282,14 @@ extern int usb_hcd_pci_probe (struct pci_dev *dev,
 				const struct pci_device_id *id);
 extern void usb_hcd_pci_remove (struct pci_dev *dev);
 
+
 #ifdef CONFIG_PM
 extern int usb_hcd_pci_suspend (struct pci_dev *dev, pm_message_t state);
 extern int usb_hcd_pci_resume (struct pci_dev *dev);
 #endif /* CONFIG_PM */
-
+#endif /* CONFIG_USB_SL2312_1*/
 #endif /* CONFIG_PCI */
+#endif /* CONFIG_USB_SL2312 */
 
 /* pci-ish (pdev null is ok) buffer alloc/mapping support */
 int hcd_buffer_create (struct usb_hcd *hcd);
@@ -255,9 +303,19 @@ void hcd_buffer_free (struct usb_bus *bus, size_t size,
 /* generic bus glue, needed for host controllers that don't use PCI */
 extern irqreturn_t usb_hcd_irq (int irq, void *__hcd, struct pt_regs *r);
 
+#ifndef CONFIG_USB_SL2312
+#ifndef CONFIG_USB_SL2312_1
 extern void usb_hc_died (struct usb_hcd *hcd);
+#else 
+     extern void hc_died (struct usb_hcd *hcd);
+#endif
+#else
+extern void hc_died (struct usb_hcd *hcd);
+//extern static void hcd_irq (int irq, void *__hcd, struct pt_regs *r);
+//extern static int hcd_irq_For_OTG (struct usb_bus	*bus);
+#endif
+extern void hcd_irq (int irq, void *__hcd, struct pt_regs *r);
 extern void usb_hcd_poll_rh_status(struct usb_hcd *hcd);
-
 /* -------------------------------------------------------------------------- */
 
 /* Enumeration is only for the hub driver, or HCD virtual root hubs */
@@ -360,6 +418,12 @@ extern void usb_set_device_state(struct usb_device *udev,
 		enum usb_device_state new_state);
 
 /*-------------------------------------------------------------------------*/
+//#ifdef CONFIG_USB_SL2312
+//static int register_root_hub (struct usb_device *usb_dev,struct usb_hcd *hcd);
+
+
+//
+//#endif
 
 /* exported only within usbcore */
 
@@ -414,13 +478,23 @@ static inline int hcd_bus_resume (struct usb_bus *bus)
  * these are expected to be called from the USB core/hub thread
  * with the kernel lock held
  */
+extern void usbfs_add_bus(struct usb_bus *bus);
+extern void usbfs_remove_bus(struct usb_bus *bus);
+extern void usbfs_add_device(struct usb_device *dev);
+extern void usbfs_remove_device(struct usb_device *dev);
 extern void usbfs_update_special (void);
+
 extern int usbfs_init(void);
 extern void usbfs_cleanup(void);
 
 #else /* CONFIG_USB_DEVICEFS */
 
+static inline void usbfs_add_bus(struct usb_bus *bus) {}
+static inline void usbfs_remove_bus(struct usb_bus *bus) {}
+static inline void usbfs_add_device(struct usb_device *dev) {}
+static inline void usbfs_remove_device(struct usb_device *dev) {}
 static inline void usbfs_update_special (void) {}
+
 static inline int usbfs_init(void) { return 0; }
 static inline void usbfs_cleanup(void) { }
 

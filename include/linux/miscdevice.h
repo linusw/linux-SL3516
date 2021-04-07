@@ -23,6 +23,7 @@
 #define STORE_QUEUE_MINOR	155
 #define I2O_MINOR 166
 #define MICROCODE_MINOR		184
+#define GPIO_MINOR             185  
 #define MWAVE_MINOR	219		/* ACP/Mwave Modem */
 #define MPT_MINOR	220
 #define MISC_DYNAMIC_MINOR 255

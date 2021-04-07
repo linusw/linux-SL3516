@@ -1,4 +1,4 @@
-/* $Id: ioctl.h,v 1.2 1998/10/15 05:40:38 jj Exp $ */
+/* $Id: ioctl.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $ */
 #ifndef _SPARC64_IOCTL_H
 #define _SPARC64_IOCTL_H
 

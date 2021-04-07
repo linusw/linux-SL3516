@@ -6,7 +6,7 @@
 #include <linux/workqueue.h>
 #include <asm/ccwdev.h>
 
-#define VERSION_LCS_H "$Revision: 1.19 $"
+#define VERSION_LCS_H "$Revision: 1.1.1.1 $"
 
 #define LCS_DBF_TEXT(level, name, text) \
 	do { \

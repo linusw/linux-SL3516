@@ -1,7 +1,7 @@
 VERSION = 2
 PATCHLEVEL = 6
 SUBLEVEL = 15
-EXTRAVERSION =
+EXTRAVERSION = -Storlink_263
 NAME=Sliding Snow Leopard
 
 # *DOCUMENTATION*
@@ -190,8 +190,10 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 # Default value for CROSS_COMPILE is not to prefix executables
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 
-ARCH		?= $(SUBARCH)
-CROSS_COMPILE	?=
+#ARCH		?= $(SUBARCH)
+#CROSS_COMPILE	?=
+ARCH		= arm
+CROSS_COMPILE	= arm_920t_le-
 
 # Architecture as present in compile.h
 UTS_MACHINE := $(ARCH)

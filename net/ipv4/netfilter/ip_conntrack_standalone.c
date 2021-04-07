@@ -418,6 +418,7 @@ static unsigned int ip_conntrack_help(unsigned int hooknum,
 	ct = ip_conntrack_get(*pskb, &ctinfo);
 	if (ct && ct->helper) {
 		unsigned int ret;
+		(*pskb)->cb[40] = 0;	// Gary Chen
 		ret = ct->helper->help(pskb, ct, ctinfo);
 		if (ret != NF_ACCEPT)
 			return ret;

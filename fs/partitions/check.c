@@ -165,7 +165,32 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
 #endif
 	else {
 		disk_name(hd, 0, state->name);
-		printk(KERN_INFO " %s:", state->name);
+		/********** below is  Jack for automount   2007,10,08             *****************/
+		//printk(KERN_INFO " %s:", state->name);
+		if (NULL!=hd->driverfs_dev)
+		{
+		if (NULL!=hd->driverfs_dev->parent)
+		{
+		if (NULL!=hd->driverfs_dev->parent->parent)
+		{
+		if (NULL!=hd->driverfs_dev->parent->parent->parent)
+		{
+		if (NULL!=hd->driverfs_dev->parent->parent->parent->parent)
+		{
+		if (NULL!=hd->driverfs_dev->parent->parent->parent->parent->bus_id)
+		{
+				printk(KERN_INFO "\n device->bus_id==[%s] %s:", hd->driverfs_dev->parent->parent->parent->parent->bus_id, state->name);
+		}
+		}
+		}
+		}
+		}
+		}
+		else
+		{
+			printk(KERN_INFO " %s:", state->name);
+		}
+		/**********  above is  Jack for automount    2007,10,08             *****************/
 		if (isdigit(state->name[strlen(state->name)-1]))
 			sprintf(state->name, "p");
 	}

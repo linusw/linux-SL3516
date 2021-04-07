@@ -7,7 +7,7 @@
  *
  *	Adapted from linux/net/ipv4/af_inet.c
  *
- *	$Id: af_inet6.c,v 1.66 2002/02/01 22:01:04 davem Exp $
+ *	$Id: af_inet6.c,v 1.1.1.1 2006/04/03 08:41:30 amos_lee Exp $
  *
  * 	Fixes:
  *	piggy, Karl Knutson	:	Socket protocol table

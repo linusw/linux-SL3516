@@ -1,7 +1,7 @@
 #ifndef _ASM_M32R_IDE_H
 #define _ASM_M32R_IDE_H
 
-/* $Id$ */
+/* $Id: ide.h,v 1.1.1.1 2006/04/03 08:41:12 amos_lee Exp $ */
 
 /*
  *  linux/include/asm-m32r/ide.h

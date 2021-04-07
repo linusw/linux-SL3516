@@ -1,4 +1,4 @@
-/* $Id: comprtest.c,v 1.6 2005/11/07 11:14:38 gleixner Exp $ */
+/* $Id: comprtest.c,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $ */
 
 #include <linux/kernel.h>
 #include <linux/string.h>

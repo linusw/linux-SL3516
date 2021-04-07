@@ -126,13 +126,18 @@ typedef		__s64		int64_t;
 /* this is a special 64bit data type that is 8-byte aligned */
 #define aligned_u64 unsigned long long __attribute__((aligned(8)))
 
+
 /*
  * The type used for indexing onto a disc or disc partition.
  * If required, asm/types.h can override it and define
  * HAVE_SECTOR_T
  */
 #ifndef HAVE_SECTOR_T
+#ifdef CONFIG_LBD
+typedef u64 sector_t;
+#else
 typedef unsigned long sector_t;
+#endif
 #endif
 
 /*

@@ -1,4 +1,4 @@
-/* $Id: types.h,v 1.13 2001/12/21 01:22:59 davem Exp $ */
+/* $Id: types.h,v 1.1.1.1 2006/04/03 08:41:16 amos_lee Exp $ */
 #ifndef _SPARC_TYPES_H
 #define _SPARC_TYPES_H
 

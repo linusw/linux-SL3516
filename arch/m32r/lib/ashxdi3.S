@@ -4,7 +4,7 @@
  * Copyright (C) 2001,2002  Hiroyuki Kondo, and Hirokazu Takata
  *
  */
-/* $Id$ */
+/* $Id: ashxdi3.S,v 1.1.1.1 2006/04/03 08:40:34 amos_lee Exp $ */
 
 #include <linux/config.h>
 

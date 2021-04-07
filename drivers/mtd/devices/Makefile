@@ -1,7 +1,7 @@
 #
 # linux/drivers/devices/Makefile
 #
-# $Id: Makefile.common,v 1.7 2004/12/22 17:51:15 joern Exp $
+# $Id: Makefile,v 1.1.1.1 2006/04/03 08:40:51 amos_lee Exp $
 
 #                       *** BIG UGLY NOTE ***
 #

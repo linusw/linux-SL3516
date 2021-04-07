@@ -7,7 +7,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: write.c,v 1.97 2005/11/07 11:14:42 gleixner Exp $
+ * $Id: write.c,v 1.1.1.1 2006/04/03 08:41:05 amos_lee Exp $
  *
  */
 

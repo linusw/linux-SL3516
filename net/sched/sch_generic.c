@@ -194,7 +194,10 @@ static void dev_watchdog(unsigned long arg)
 		    netif_carrier_ok(dev)) {
 			if (netif_queue_stopped(dev) &&
 			    (jiffies - dev->trans_start) > dev->watchdog_timeo) {
+#if 1	// SJC
+#else
 				printk(KERN_INFO "NETDEV WATCHDOG: %s: transmit timed out\n", dev->name);
+#endif
 				dev->tx_timeout(dev);
 			}
 			if (!mod_timer(&dev->watchdog_timer, jiffies + dev->watchdog_timeo))

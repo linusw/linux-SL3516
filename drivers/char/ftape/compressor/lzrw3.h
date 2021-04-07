@@ -1,9 +1,9 @@
 #ifndef _LZRW3_H
 #define _LZRW3_H
 /*
- * $Source: /homes/cvs/ftape-stacked/ftape/compressor/lzrw3.h,v $
- * $Revision: 1.1 $
- * $Date: 1997/10/05 19:12:30 $
+ * $Source: /home/cvs/gemini-2.6.15/drivers/char/ftape/compressor/lzrw3.h,v $
+ * $Revision: 1.1.1.1 $
+ * $Date: 2006/04/03 08:40:46 $
  *
  *  include files for lzrw3. Only slighty modified from the original
  *  version. Assembles the three include files compress.h, port.h and

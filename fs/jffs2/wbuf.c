@@ -9,7 +9,7 @@
  *
  * For licensing information, see the file 'LICENCE' in this directory.
  *
- * $Id: wbuf.c,v 1.100 2005/09/30 13:59:13 dedekind Exp $
+ * $Id: wbuf.c,v 1.2 2007/08/01 09:59:10 aaron Exp $
  *
  */
 
@@ -283,21 +283,34 @@ static void jffs2_wbuf_recover(struct jffs2_sb_info *c)
 		D1(printk(KERN_DEBUG "Write 0x%x bytes at 0x%08x in wbuf recover\n",
 			  towrite, ofs));
 
+	//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif
+
 #ifdef BREAKMEHEADER
 		static int breakme;
 		if (breakme++ == 20) {
 			printk(KERN_NOTICE "Faking write error at 0x%08x\n", ofs);
 			breakme = 0;
+
 			c->mtd->write_ecc(c->mtd, ofs, towrite, &retlen,
 					  brokenbuf, NULL, c->oobinfo);
+
 			ret = -EIO;
 		} else
 #endif
+		
 		if (jffs2_cleanmarker_oob(c))
 			ret = c->mtd->write_ecc(c->mtd, ofs, towrite, &retlen,
 						rewrite_buf, NULL, c->oobinfo);
 		else
 			ret = c->mtd->write(c->mtd, ofs, towrite, &retlen, rewrite_buf);
+
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif
 
 		if (ret || retlen != towrite) {
 			/* Argh. We tried. Really we did. */
@@ -453,6 +466,11 @@ static int __jffs2_flush_wbuf(struct jffs2_sb_info *c, int pad)
 	/* else jffs2_flash_writev has actually filled in the rest of the
 	   buffer for us, and will deal with the node refs etc. later. */
 
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif
+
 #ifdef BREAKME
 	static int breakme;
 	if (breakme++ == 20) {
@@ -468,6 +486,11 @@ static int __jffs2_flush_wbuf(struct jffs2_sb_info *c, int pad)
 		ret = c->mtd->write_ecc(c->mtd, c->wbuf_ofs, c->wbuf_pagesize, &retlen, c->wbuf, NULL, c->oobinfo);
 	else
 		ret = c->mtd->write(c->mtd, c->wbuf_ofs, c->wbuf_pagesize, &retlen, c->wbuf);
+
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif
 
 	if (ret || retlen != c->wbuf_pagesize) {
 		if (ret)
@@ -772,7 +795,18 @@ int jffs2_flash_writev(struct jffs2_sb_info *c, const struct kvec *invecs, unsig
 
 		/* We did cross a page boundary, so we write some now */
 		if (jffs2_cleanmarker_oob(c))
+		{
+	//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif
 			ret = c->mtd->writev_ecc(c->mtd, outvecs, splitvec+1, outvec_to, &wbuf_retlen, NULL, c->oobinfo);
+
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif
+		}
 		else
 			ret = jffs2_flash_direct_writev(c, outvecs, splitvec+1, outvec_to, &wbuf_retlen);
 
@@ -867,14 +901,39 @@ int jffs2_flash_read(struct jffs2_sb_info *c, loff_t ofs, size_t len, size_t *re
 	int	ret;
 
 	if (!jffs2_is_writebuffered(c))
-		return c->mtd->read(c->mtd, ofs, len, retlen, buf);
+	{
+		
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif
+		ret = c->mtd->read(c->mtd, ofs, len, retlen, buf);
+
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif
+		return ret;
+	}
 
 	/* Read flash */
 	down_read(&c->wbuf_sem);
+
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_lock();                           // sl2312 share pin lock
+#endif
+
 	if (jffs2_cleanmarker_oob(c))
 		ret = c->mtd->read_ecc(c->mtd, ofs, len, retlen, buf, NULL, c->oobinfo);
 	else
+	{
 		ret = c->mtd->read(c->mtd, ofs, len, retlen, buf);
+	}
+//debug_Aaron on 07/30/2007 take crae of share pin
+#ifdef CONFIG_SL2312_SHARE_PIN
+        mtd_unlock();                           // sl2312 share pin lock
+#endif
 
 	if ( (ret == -EBADMSG) && (*retlen == len) ) {
 		printk(KERN_WARNING "mtd->read(0x%zx bytes from 0x%llx) returned ECC error\n",

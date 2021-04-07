@@ -1357,7 +1357,7 @@ tape_34xx_init (void)
 	debug_set_level(TAPE_DBF_AREA, 6);
 #endif
 
-	DBF_EVENT(3, "34xx init: $Revision: 1.23 $\n");
+	DBF_EVENT(3, "34xx init: $Revision: 1.1.1.1 $\n");
 	/* Register driver for 3480/3490 tapes. */
 	rc = ccw_driver_register(&tape_34xx_driver);
 	if (rc)
@@ -1378,7 +1378,7 @@ tape_34xx_exit(void)
 MODULE_DEVICE_TABLE(ccw, tape_34xx_ids);
 MODULE_AUTHOR("(C) 2001-2002 IBM Deutschland Entwicklung GmbH");
 MODULE_DESCRIPTION("Linux on zSeries channel attached 3480 tape "
-		   "device driver ($Revision: 1.23 $)");
+		   "device driver ($Revision: 1.1.1.1 $)");
 MODULE_LICENSE("GPL");
 
 module_init(tape_34xx_init);

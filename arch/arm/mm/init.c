@@ -25,6 +25,7 @@
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
+#include <asm/arch/ipi.h>
 
 #define TABLE_SIZE	(2 * PTRS_PER_PTE * sizeof(pte_t))
 
@@ -310,6 +311,12 @@ bootmem_init_node(int node, int initrd_node, struct meminfo *mi)
 		initrd_end = initrd_start + phys_initrd_size;
 	}
 #endif
+#ifdef CONFIG_GEMINI_IPI	
+	printk("CPU ID:%d\n",getcpuid());
+//	reserve_bootmem_node(NODE_DATA(0), 0x400000, 0x400000);		//CPU0 space
+//	reserve_bootmem_node(NODE_DATA(0), SHAREADDR, SHARE_MEM_SIZE);		//share memory
+	reserve_bootmem_node(NODE_DATA(0), 0x4000000, 0x4000000);		//another CPU's space
+#endif	
 
 	/*
 	 * Finally, reserve any node zero regions.

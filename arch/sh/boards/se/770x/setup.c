@@ -1,4 +1,4 @@
-/* $Id: setup.c,v 1.1.2.4 2002/03/02 21:57:07 lethal Exp $
+/* $Id: setup.c,v 1.1.1.1 2006/04/03 08:40:42 amos_lee Exp $
  *
  * linux/arch/sh/boards/se/770x/setup.c
  *
